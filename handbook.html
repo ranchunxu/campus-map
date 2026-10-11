@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026本科新生手册 · 上理工</title>
+<style>
+:root{--bg:#f7f8fa;--card:#fff;--border:#e3e6eb;--primary:#1a73e8;--text:#1f2329;--muted:#6b7280;--warn:#b54708;--warnbg:#fff7ed}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
+header{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;position:sticky;top:0;z-index:10}
+header h1{font-size:18px;font-weight:600}
+header .back{float:right;color:var(--primary);text-decoration:none;font-size:14px}
+.notice{background:var(--warnbg);color:var(--warn);padding:8px 20px;font-size:13px;border-bottom:1px solid #fde68a}
+.layout{display:flex;max-width:1200px;margin:0 auto;gap:16px;padding:16px}
+.sidebar{width:260px;flex-shrink:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;max-height:calc(100vh - 120px);overflow-y:auto;position:sticky;top:100px}
+.sidebar h3{font-size:14px;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.sidebar a{display:block;padding:6px 8px;color:var(--text);text-decoration:none;border-radius:4px;font-size:14px;cursor:pointer}
+.sidebar a:hover{background:#eef2ff}
+.sidebar a.active{background:#e8f0fe;color:var(--primary);font-weight:500}
+.main{flex:1;min-width:0}
+.search-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px}
+.search-box input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px}
+.search-box .hint{font-size:12px;color:var(--muted);margin-top:6px}
+.content{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;min-height:400px}
+.content h1{font-size:20px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--primary)}
+.content h2{font-size:17px;margin:16px 0 8px}
+.content h3{font-size:15px;margin:12px 0 6px}
+.content p{margin:8px 0}
+.content ul,.content ol{margin:8px 0 8px 24px}
+.content li{margin:4px 0}
+.content table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px}
+.content th,.content td{border:1px solid var(--border);padding:6px 8px;text-align:left}
+.content th{background:#f1f3f4;font-weight:500}
+.content blockquote{border-left:3px solid var(--primary);background:#f8faff;padding:8px 12px;margin:10px 0;color:var(--muted)}
+.content pre{background:#f1f3f4;padding:10px;border-radius:4px;overflow-x:auto;font-size:13px}
+.content code{background:#f1f3f4;padding:1px 4px;border-radius:3px;font-size:13px}
+.content mark{background:#fef08a;padding:0 2px}
+.source-tag{font-size:12px;color:var(--muted);margin-top:16px;padding-top:8px;border-top:1px dashed var(--border)}
+.no-result{padding:40px 20px;text-align:center;color:var(--muted)}
+.no-result h3{color:var(--warn);margin-bottom:8px}
+.search-results{margin-bottom:12px}
+.search-results .hit{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.search-results .hit:hover{border-color:var(--primary)}
+.search-results .hit .title{font-weight:500;color:var(--primary)}
+.search-results .hit .snippet{font-size:13px;color:var(--text);margin-top:4px}
+@media(max-width:768px){.layout{flex-direction:column;padding:8px}.sidebar{width:100%;position:static;max-height:240px}}
+</style>
+</head>
+<body>
+<header>
+<a class="back" href="/">← 返回地图</a>
+<h1>2026本科新生手册</h1>
+</header>
+<div class="notice">⚠️ 本手册为个人学习笔记，非学校官方文件。正式事项一律以学校最新官方文件为准。来源：<a href="https://ranchunxu.github.io/usst-freshman-handbook/" target="_blank">ranchunxu.github.io/usst-freshman-handbook</a>（本地存档 2026-10-04）</div>
+<div class="layout">
+<aside class="sidebar">
+<h3>章节目录</h3>
+<div id="toc"></div>
+</aside>
+<section class="main">
+<div class="search-box">
+<input id="search" placeholder="搜索关键词，如：挂科、分流、绩点、奖学金、保研…">
+<div class="hint">输入关键词搜索全部30篇内容，结果会显示出处章节。无结果时说明现有资料未查到。</div>
+</div>
+<div id="searchResults" class="search-results" style="display:none"></div>
+<div id="content" class="content"></div>
+</section>
+</div>
+<script>
+const CHAPTERS=[
+["_总览（从这里开始）.md","总览 · 从这里开始"],
+["00-网址总表与资料来源.md","00 网址总表与资料来源"],
+["00b-名词混乱急救表.md","00b 名词混乱急救表"],
+["01-学分=游戏币.md","01 学分=游戏币"],
+["02-挂科补救流程（背熟，最好用不上）.md","02 挂科补救流程"],
+["03-考试红线.md","03 考试红线"],
+["04-三层套娃：分数→绩点→GPA.md","04 三层套娃：分数→绩点→GPA"],
+["05-GPA怎么算（四步）.md","05 GPA怎么算"],
+["06-学分加权成绩=分流的真主角.md","06 学分加权成绩"],
+["07-一张表分清两兄弟.md","07 一张表分清两兄弟"],
+["08-综测一句话结构.md","08 综测一句话结构"],
+["09-基础学院细则给你划的重点.md","09 基础学院细则"],
+["10-综合成绩=为分流现做的一次性成绩.md","10 综合成绩"],
+["11-大类分流（你的头等大事）.md","11 大类分流"],
+["12-转专业=另一扇门.md","12 转专业"],
+["13-毕业证≠学位证.md","13 毕业证≠学位证"],
+["14-奖学金全家福（每学期评，名额按专业为单位）.md","14 奖学金全家福"],
+["15-困难认定与勤工助学.md","15 困难认定与勤工助学"],
+["16-竞赛与大创（电子信息类对口）.md","16 竞赛与大创"],
+["17-社团.md","17 社团"],
+["18-学生工作.md","18 学生工作"],
+["19-保研（推免）——真数据版.md","19 保研（推免）"],
+["20-入党【通用】.md","20 入党"],
+["21-天天要用的入口.md","21 天天要用的入口"],
+["22-你有申诉权.md","22 你有申诉权"],
+["23-入学装备清单（开学前采购核对）.md","23 入学装备清单"],
+["24-第一学期时间轴（2026.9—2027.1）.md","24 第一学期时间轴"],
+["25-第二学期与暑假时间轴（2027.2—8）.md","25 第二学期与暑假时间轴"],
+["26-大一高绩点作战策略（合并自《大一高绩点作战手册》）.md","26 大一高绩点作战策略"],
+["27-终极行动清单.md","27 终极行动清单"],
+["28-事实来源.md","28 事实来源"],
+["29-免责声明.md","29 免责声明"]
+];
+const toc=document.getElementById('toc');
+const contentEl=document.getElementById('content');
+const searchEl=document.getElementById('search');
+const resultsEl=document.getElementById('searchResults');
+let cache={};
+let phm=null;
+fetch('data/place_handbook_map.json').then(r=>r.json()).then(d=>phm=d);
+function stripFrontmatter(md){return md.replace(/^---[\s\S]*?---\n/,'');}
+function renderMd(md){
+  md=stripFrontmatter(md);
+  md=md.replace(/!\[[^\]]*\]\([^)]*\)/g,'');
+  md=md.replace(/\[(.*?)\]\((.*?)\)/g,'<a href="$2" target="_blank">$1</a>');
+  const lines=md.split('\n');
+  let html='',inTable=false,tableRows=[];
+  function flushTable(){
+    if(!tableRows.length)return;
+    html+='<table>';
+    tableRows.forEach((r,i)=>{
+      html+='<tr>';
+      r.forEach(c=>{html+=(i===0?'<th>':'<td>')+c+'</'+(i===0?'th':'td')+'>';});
+      html+='</tr>';
+    });
+    html+='</table>';
+    tableRows=[];
+  }
+  for(let line of lines){
+    const t=line.trim();
+    if(t.startsWith('|')&&t.endsWith('|')){
+      tableRows.push(t.slice(1,-1).split('|').map(c=>c.trim()));
+      inTable=true;continue;
+    }
+    if(inTable){flushTable();inTable=false;}
+    if(/^### /.test(t))html+='<h3>'+t.slice(4)+'</h3>';
+    else if(/^## /.test(t))html+='<h2>'+t.slice(3)+'</h2>';
+    else if(/^# /.test(t))html+='<h1>'+t.slice(2)+'</h1>';
+    else if(/^> /.test(t))html+='<blockquote>'+t.slice(2)+'</blockquote>';
+    else if(/^\d+\.\s/.test(t))html+='<ol><li>'+t.replace(/^\d+\.\s/,'')+'</li></ol>';
+    else if(/^-\s/.test(t))html+='<ul><li>'+t.slice(2)+'</li></ul>';
+    else if(t==='')html+='';
+    else html+='<p>'+t+'</p>';
+  }
+  if(inTable)flushTable();
+  return html;
+}
+async function loadChapter(file,title){
+  if(!cache[file])cache[file]=await fetch('data/handbook/'+encodeURIComponent(file)+'?v=20261004').then(r=>r.text());
+  contentEl.innerHTML=renderMd(cache[file]);
+  let extra='';
+  if(phm&&phm.handbook_to_place[file]&&phm.handbook_to_place[file].length){
+    extra='<div style="background:#e8f0fe;border:1px solid #d2e3fc;border-radius:6px;padding:8px 12px;margin-top:12px"><b style="color:#1a73e8">📍 在地图中查看</b><div style="margin-top:4px">';
+    phm.handbook_to_place[file].forEach(pid=>{
+      const p=phm.places[pid];
+      extra+='<a href="index.html?place='+pid+'" style="display:inline-block;margin-right:12px;color:#1a73e8;text-decoration:none">→ '+p.name+'</a>';
+    });
+    extra+='</div></div>';
+  }
+  contentEl.innerHTML+=extra+'<div class="source-tag">出处：《'+title+'》· <a href="https://ranchunxu.github.io/usst-freshman-handbook/" target="_blank">原文网页</a> · 本地存档 2026-10-04</div>';
+  document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
+  const idx=CHAPTERS.findIndex(c=>c[0]===file);
+  if(idx>=0)document.querySelectorAll('.sidebar a')[idx].classList.add('active');
+}
+CHAPTERS.forEach(([file,title])=>{
+  const a=document.createElement('a');
+  a.textContent=title;
+  a.onclick=()=>{resultsEl.style.display='none';contentEl.style.display='block';loadChapter(file,title);};
+  toc.appendChild(a);
+});
+function highlight(text,kw){
+  const re=new RegExp('('+kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+  return text.replace(re,'<mark>$1</mark>');
+}
+async function doSearch(){
+  const kw=searchEl.value.trim();
+  if(!kw){resultsEl.style.display='none';contentEl.style.display='block';return;}
+  resultsEl.style.display='block';contentEl.style.display='none';
+  resultsEl.innerHTML='<p style="padding:12px;color:#6b7280">搜索中…</p>';
+  const kwl=kw.toLowerCase();
+  const hits=[];
+  let fetchFail=0;
+  for(const [file,title] of CHAPTERS){
+    try{
+      if(!cache[file]){
+        const res=await fetch('data/handbook/'+encodeURIComponent(file)+'?v=20261004');
+        if(!res.ok){fetchFail++;continue;}
+        cache[file]=await res.text();
+      }
+      const text=stripFrontmatter(cache[file]);
+      const lower=text.toLowerCase();
+      let pos=lower.indexOf(kwl);
+      if(pos>=0){
+        let start=Math.max(0,pos-40);
+        let snippet=text.slice(start,pos+120).replace(/\n/g,' ');
+        hits.push({file,title,snippet});
+      }
+    }catch(e){
+      fetchFail++;
+    }
+  }
+  if(!hits.length){
+    let msg='没有章节包含「'+kw+'」。<br>本手册为个人学习笔记，可能未覆盖该问题。<br>请以学校最新官方通知或教务系统为准。';
+    if(fetchFail>0)msg='<b>部分内容加载失败（'+fetchFail+'篇），搜索结果可能不完整。</b><br>'+msg;
+    resultsEl.innerHTML='<div class="no-result"><h3>现有资料未查到</h3><p>'+msg+'</p><p style="margin-top:12px">可参考：<a href="https://jwc.usst.edu.cn/" target="_blank">教务管理系统</a> · <a href="https://myportal.usst.edu.cn/" target="_blank">信息门户</a></p></div>';
+    return;
+  }
+  resultsEl.innerHTML='<p style="padding:8px 12px;color:#6b7280;font-size:13px">找到 '+hits.length+' 篇相关内容，点击查看全文：</p>';
+  hits.forEach(h=>{
+    const div=document.createElement('div');
+    div.className='hit';
+    div.innerHTML='<div class="title">'+h.title+'</div><div class="snippet">'+highlight(h.snippet,kw)+'</div>';
+    div.onclick=()=>{resultsEl.style.display='none';contentEl.style.display='block';loadChapter(h.file,h.title);};
+    resultsEl.appendChild(div);
+  });
+}
+searchEl.addEventListener('input',doSearch);
+{
+  const params=new URLSearchParams(location.search);
+  const chapterParam=params.get('chapter');
+  const found=chapterParam?CHAPTERS.find(c=>c[0]===chapterParam):null;
+  loadChapter(found?found[0]:CHAPTERS[0][0],found?found[1]:CHAPTERS[0][1]);
+}
+</script>
+</body>
+</html>
