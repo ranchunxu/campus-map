@@ -112,8 +112,22 @@ fetch('data/place_handbook_map.json').then(r=>r.json()).then(d=>phm=d);
 function stripFrontmatter(md){return md.replace(/^---[\s\S]*?---\n/,'');}
 function renderMd(md){
   md=stripFrontmatter(md);
-  md=md.replace(/!\[[^\]]*\]\([^)]*\)/g,'');
-  md=md.replace(/\[(.*?)\]\((.*?)\)/g,'<a href="$2" target="_blank">$1</a>');
+  // 章节内图片：路径是相对 data/handbook/ 写的，补上前缀才能显示
+  md=md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,function(_,alt,src){
+    if(/^https?:/i.test(src))return '<img alt="'+alt+'" src="'+src+'" style="max-width:100%">';
+    return '<img alt="'+alt+'" src="data/handbook/'+src+'" style="max-width:100%">';
+  });
+  // 章节内指向其它 .md 的相对链接：改写成页内跳转，否则会 404
+  md=md.replace(/\[(.*?)\]\((.*?)\)/g,function(_,txt,href){
+    if(/^https?:/i.test(href)||href.startsWith('#'))return '<a href="'+href+'" target="_blank">'+txt+'</a>';
+    if(/\.md$/i.test(href)){
+      var base=href.split('/').pop();
+      var dec=base;
+      try{dec=decodeURIComponent(base);}catch(e){}
+      return '<a href="#" data-chapter="'+dec.replace(/"/g,'&quot;')+'" class="chap-link">'+txt+'</a>';
+    }
+    return '<a href="'+href+'" target="_blank">'+txt+'</a>';
+  });
   const lines=md.split('\n');
   let html='',inTable=false,tableRows=[];
   function flushTable(){
@@ -149,6 +163,14 @@ function renderMd(md){
 async function loadChapter(file,title){
   if(!cache[file])cache[file]=await fetch('data/handbook/'+encodeURIComponent(file)+'?v=20261004').then(r=>r.text());
   contentEl.innerHTML=renderMd(cache[file]);
+  contentEl.querySelectorAll('a.chap-link').forEach(function(a){
+    a.onclick=function(e){
+      e.preventDefault();
+      const f=a.getAttribute('data-chapter');
+      const hit=CHAPTERS.find(c=>c[0]===f);
+      if(hit)loadChapter(hit[0],hit[1]);
+    };
+  });
   let extra='';
   if(phm&&phm.handbook_to_place[file]&&phm.handbook_to_place[file].length){
     extra='<div style="background:#e8f0fe;border:1px solid #d2e3fc;border-radius:6px;padding:8px 12px;margin-top:12px"><b style="color:#1a73e8">📍 在地图中查看</b><div style="margin-top:4px">';
