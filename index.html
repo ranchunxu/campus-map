@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>上海理工大学基础学院 · 三维导览（草案）</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:"Microsoft YaHei",sans-serif;background:#a9c4dd;}
+  #app{position:relative;width:100%;height:100%;}
+  canvas{display:block;}
+  #banner{position:absolute;top:0;left:0;right:0;z-index:20;background:rgba(20,24,32,.88);color:#e8eaed;
+    padding:10px 16px;font-size:13px;line-height:1.5;border-bottom:1px solid rgba(255,255,255,.08);}
+  #banner b{color:#ffd166;font-size:14px;}
+  #banner .note{color:#9aa0a6;}
+  #panel{position:absolute;top:74px;right:12px;z-index:20;width:300px;max-height:70vh;overflow:auto;
+    background:rgba(25,28,36,.94);color:#e8eaed;border-radius:10px;padding:14px 16px;display:none;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);font-size:13px;line-height:1.7;}
+  #panel h3{margin:0 0 8px;font-size:16px;color:#fff;}
+  #panel .src{color:#8ab4f8;}
+  #panel .conf{color:#fdd663;}
+  #panel .close{position:absolute;top:8px;right:12px;cursor:pointer;color:#9aa0a6;font-size:16px;}
+  #labels{position:absolute;inset:0;z-index:10;pointer-events:none;overflow:hidden;}
+  .lbl{position:absolute;transform:translate(-50%,-100%);color:rgba(255,255,255,.92);font-size:11px;white-space:nowrap;
+    text-shadow:0 1px 2px rgba(0,0,0,.7);padding:1px 3px;}
+  #tip{position:absolute;bottom:12px;left:12px;z-index:20;color:#d5d9de;font-size:12px;
+    background:rgba(20,24,32,.7);padding:6px 10px;border-radius:6px;}
+  #search{position:absolute;top:74px;left:12px;z-index:20;}
+  #search input{width:180px;padding:7px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);
+    background:rgba(25,28,36,.9);color:#fff;font-size:13px;outline:none;}
+  #search .hint{color:#eef;font-size:11px;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app">
+  <div id="banner"><b id="stTitle">加载中…</b><span id="stNote" class="note"></span></div>
+  <div id="search"><input id="q" placeholder="搜楼名，如：弘毅苑 / 申三"><div class="hint">回车定位；点楼看信息；数据为草案，位置可能有偏差</div></div>
+  <div id="panel"><span class="close" onclick="panel.style.display='none'">✕</span><div id="panelBody"></div></div>
+  <div id="labels"></div>
+  <div id="tip">拖动旋转 · 滚轮缩放 · 右键平移 · 点楼看信息</div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ---------- 数据 ----------
+const resp = await fetch('./data/campus.json');
+const data = await resp.json();
+const meta = data.meta;
+const feats = data.features;
+const [oLon, oLat] = meta.projection.originLonLatGCJ02;
+const M_LAT = meta.projection.mPerDegLat, M_LON = meta.projection.mPerDegLon;
+function proj(lon, lat){ return [(lon-oLon)*M_LON, (lat-oLat)*M_LAT]; }
+const byId = {};
+for (const f of feats) byId[f.id] = f;
+
+document.getElementById('stTitle').textContent = meta.campus + ' · ' + meta.dataStatus;
+document.getElementById('stNote').textContent = ' — ' + meta.statusNote;
+
+// ---------- 场景 ----------
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa9c4dd);
+scene.fog = new THREE.Fog(0xa9c4dd, 1000, 2800);
+
+const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 1, 6000);
+camera.position.set(-190, 330, 700);
+
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+document.getElementById('app').appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI/2.08;
+controls.target.set(-330, 0, 170);
+
+scene.add(new THREE.HemisphereLight(0xdcecff, 0x55663f, 1.05));
+const sun = new THREE.DirectionalLight(0xfff3e0, 1.5);
+sun.position.set(320, 520, 240);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -650; sun.shadow.camera.right = 650;
+sun.shadow.camera.top = 650; sun.shadow.camera.bottom = -650;
+sun.shadow.camera.far = 1600;
+sun.shadow.bias = -0.0004;
+scene.add(sun);
+
+// 草坪底面
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(2400, 2400),
+  new THREE.MeshStandardMaterial({color: 0xded9cb, roughness: 1})
+);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ---------- 程序化贴图（严格按公告牌） ----------
+function makeWallTex(wall, win, brick) {
+  const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = wall; g.fillRect(0, 0, 64, 64);
+  if (brick) {
+    g.strokeStyle = 'rgba(0,0,0,.14)'; g.lineWidth = 1;
+    for (let y = 0; y < 64; y += 8) {
+      g.beginPath(); g.moveTo(0, y); g.lineTo(64, y); g.stroke();
+      g.beginPath(); g.moveTo((y/8)%2 ? 8 : 0, y); g.lineTo((y/8)%2 ? 8 : 0, y+8); g.stroke();
+    }
+  }
+  g.fillStyle = win;
+  for (const [wx, wy, ww, wh] of [[8, 8, 20, 22], [36, 8, 20, 22], [8, 38, 20, 22], [36, 38, 20, 22]])
+    g.fillRect(wx, wy, ww, wh);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(1/2.8, 1/2.8);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const WALLTEX = {
+  dorm:  makeWallTex('#b8c0cc', '#f6f9fb', false),  // 宿舍：灰蓝墙+密白窗
+  white: makeWallTex('#e6e4df', '#6a7480', false),  // 白墙深窗
+  brick: makeWallTex('#a85c48', '#f3ead8', true),   // 红砖
+  gray:  makeWallTex('#c3c6cb', '#d8dce0', false),  // 灰墙（体育馆）
+};
+// 每栋楼的美术规格（严格对齐公告牌）：[材质, 楼高]
+const ART = {
+  '申一宿舍': ['dorm', 22], '申二宿舍': ['dorm', 22], '申三宿舍': ['dorm', 22],
+  '申四宿舍': ['dorm', 24], '申五宿舍': ['dorm', 24], '申六宿舍': ['dorm', 26],
+  '申七宿舍': ['dorm', 22],
+  '格物楼': ['white', 20],
+  '勤学楼': ['brick', 18], '乐学楼': ['white', 18], '博学楼': ['white', 20],
+  '第一/二/三阶梯教室': ['white', 12],
+  '弘毅苑（食堂）': ['white', 14], '拾光食集': ['brick', 8],
+  '综合体育馆': ['gray', 16], '兵操馆': ['brick', 10],
+  '学生活动中心': ['white', 14],
+  '服务中心': ['dorm', 8], '快递站': ['dorm', 6], '校园超市': ['white', 7],
+  '垃圾房': ['dorm', 4], '门诊部': ['white', 8], '公共浴室': ['white', 8],
+  '后勤物业用房': ['dorm', 10], '一站式学生社区': ['white', 8],
+};
+// 特殊造型：弧形顶 / 红砖裙楼+白塔（严格对齐公告牌画法）
+const SPECIAL = {
+  '综合体育馆':     {vault: true},
+  '兵操馆':         {vault: true},
+  '第一/二/三阶梯教室': {vault: true},
+  '达理楼':         {stack: [['brick', 10], ['white', 16]], inset: 0.62},
+  '勤学楼':         {stack: [['brick', 7], ['white', 10]], inset: 0.72},
+  '乐学楼':         {roofCol: 0x5d7a4a},   // 图上乐学楼为绿顶
+  '博学楼':         {roofCol: 0x8a929a},
+};
+// 图上的绿色草坪块（局部米制 [x0,z0,x1,z1]，z 向南为正）
+const LAWNS = [
+  [-500, 300, -180, 480],    // 申一/申二/申三 之间大片
+  [-540, -40, -350, 260],    // 格物/达理 西侧
+  [-330, -120, 180, 60],     // 勤学/乐学/博学 周边绿带
+  [-200, 60, 120, 260],      // 思学大道南侧绿带
+  [420, -120, 700, 60],      // 申五/申四 东侧绿带
+  [-420, -240, -180, -140],  // 体育馆前
+  [480, 220, 720, 420],      // 篮球场周边
+];
+const ROOFCOL = {dorm: 0x5a636e, white: 0x8a929a, brick: 0x7d858d, gray: 0x9aa0a6};
+const HEIGHT_OVR = {'达理楼': 20, '综合体育馆': 13, '申六宿舍': 18, '弘毅苑（食堂）': 10};
+
+const pickables = [];
+const labelItems = [];
+
+// ---------- 建筑（严格按公告牌：红砖裙楼白塔 / 弧形顶 / 灰蓝密窗） ----------
+const FOOTPRINT_SHRINK = 0.8;   // 楼块略小于图上画的范围，让地图透出来
+const HEIGHT_SCALE = 0.6;       // 楼高压低，避免灰屋顶盖满画面
+for (const f of feats) {
+  if (f.kind !== 'building') continue;
+  const art = ART[f.name] || ['white', 10];
+  const spec = SPECIAL[f.name] || {};
+  let fcx = 0, fcy = 0;
+  for (const [x, y] of f.footprint.localMeters){ fcx += x; fcy += y; }
+  fcx /= f.footprint.localMeters.length; fcy /= f.footprint.localMeters.length;
+  const pts = f.footprint.localMeters.map(([x, y]) =>
+    new THREE.Vector2(fcx + (x - fcx) * FOOTPRINT_SHRINK, fcy + (y - fcy) * FOOTPRINT_SHRINK));
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const bcx = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const bcy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const spanX = Math.max(...xs) - Math.min(...xs);
+  const spanY = Math.max(...ys) - Math.min(...ys);
+  const blocks = [];
+  if (spec.stack) {
+    // 红砖裙楼 + 内缩白塔（达理楼/勤学楼画法）
+    let y0 = 0;
+    spec.stack.forEach(([mat, hRaw], idx) => {
+      const h = hRaw * HEIGHT_SCALE;
+      const inset = idx === 0 ? 1 : (spec.inset || 0.7);
+      const s2 = idx === 0 ? new THREE.Shape(pts) :
+        new THREE.Shape(pts.map(p => new THREE.Vector2(bcx + (p.x-bcx)*inset, bcy + (p.y-bcy)*inset)));
+      const geo = new THREE.ExtrudeGeometry(s2, {depth: h, bevelEnabled: false});
+      geo.rotateX(-Math.PI/2);
+      const mesh = new THREE.Mesh(geo, [
+        new THREE.MeshStandardMaterial({color: ROOFCOL[mat], roughness: .95}),
+        new THREE.MeshStandardMaterial({map: WALLTEX[mat], roughness: .92})]);
+      mesh.position.y = y0;
+      mesh.castShadow = true;
+      mesh.userData.feature = f;
+      scene.add(mesh);
+      if (idx === spec.stack.length - 1) pickables.push(mesh);
+      y0 += h;
+    });
+    labelItems.push({f, pos: new THREE.Vector3(fcx, y0 + 5, -fcy), el: null});
+    continue;
+  }
+  const h = (HEIGHT_OVR[f.name] || art[1]) * HEIGHT_SCALE;
+  const shape = new THREE.Shape(pts);
+  const geo = new THREE.ExtrudeGeometry(shape, {depth: h, bevelEnabled: false});
+  geo.rotateX(-Math.PI/2);
+  const wallMat = new THREE.MeshStandardMaterial({map: WALLTEX[art[0]], roughness: .92});
+  const roofCol = spec.roofCol || ROOFCOL[art[0]];
+  const roofMat = new THREE.MeshStandardMaterial({color: roofCol, roughness: .95});
+  const mesh = new THREE.Mesh(geo, [roofMat, wallMat]);
+  mesh.castShadow = true;
+  mesh.userData.feature = f;
+  scene.add(mesh);
+  pickables.push(mesh);
+  const vaultR = spec.vault ? Math.min(spanX, spanY) / 2 : 0;
+  if (spec.vault) {
+    // 弧形顶（体育馆/兵操馆/阶梯教室）：半圆柱沿长轴
+    const r = vaultR;
+    const L = Math.max(spanX, spanY) + 2;
+    const vg = new THREE.CylinderGeometry(r, r, L, 20, 1, false, 0, Math.PI);
+    vg.rotateZ(Math.PI/2);
+    if (spanY > spanX) vg.rotateY(Math.PI/2);
+    const vault = new THREE.Mesh(vg, new THREE.MeshStandardMaterial({color: 0x9aa0a6, roughness: .9}));
+    vault.position.set(bcx, h, -bcy);
+    vault.castShadow = true;
+    scene.add(vault);
+  }
+  labelItems.push({f, pos: new THREE.Vector3(fcx, h + vaultR + 5, -fcy), el: null});
+}
+
+// 图上的绿色草坪已由公告牌底图画出，不再额外建模
+
+// ---------- 道路（公告牌底图上已画出路面，此处不再重复建模；仅保留寻路图数据） ----------
+
+// ---------- 田径场（87m × 200m 环形跑道，旧卫星实测） ----------
+{
+  const shape = new THREE.Shape();
+  shape.absellipse(0, 0, 43.5, 100, 0, Math.PI*2);
+  const hole = new THREE.Path();
+  hole.absellipse(0, 0, 33.5, 88, 0, Math.PI*2);
+  shape.holes.push(hole);
+  const geo = new THREE.ShapeGeometry(shape, 64);
+  geo.rotateX(-Math.PI/2);
+  const track = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color: 0xb2432f, roughness: .95}));
+  track.position.y = .5;
+  scene.add(track);
+  const innerShape = new THREE.Shape();
+  innerShape.absellipse(0, 0, 33.5, 88, 0, Math.PI*2);
+  const innerGeo = new THREE.ShapeGeometry(innerShape, 64);
+  innerGeo.rotateX(-Math.PI/2);
+  const inner = new THREE.Mesh(innerGeo, new THREE.MeshStandardMaterial({color: 0x4f7a45, roughness: 1}));
+  inner.position.y = .45;
+  scene.add(inner);
+}
+
+// 官方《校区平面图》照片贴地作底图（与楼块同一映射，天然对齐）
+{
+  const tf = meta.transform;             // {anchorPx, sxMPerPx, syMPerPx, cropOffsetPx}
+  const img = new Image();
+  img.src = './data/' + tf.groundImage;
+  img.onload = () => {
+    const tex = new THREE.Texture(img);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    tex.needsUpdate = true;
+    const wM = img.width * tf.sxMPerPx;
+    const hM = img.height * tf.syMPerPx;
+    const cx = (tf.cropOffsetPx[0] + img.width / 2 - tf.anchorPx[0]) * tf.sxMPerPx;
+    const cz = (tf.cropOffsetPx[1] + img.height / 2 - tf.anchorPx[1]) * tf.syMPerPx;
+    const geo = new THREE.PlaneGeometry(wM, hM);
+    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({map: tex, roughness: 1}));
+    mesh.rotation.x = -Math.PI/2;
+    mesh.position.set(cx, 0.15, cz);
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+  };
+}
+
+// 树已由公告牌底图画出，不再 3D 建模
+
+// ---------- 门与报到点 ----------
+for (const f of feats) {
+  if (f.kind === 'gate') {
+    const p = new THREE.Vector3(...(p => [p[0], 0, -p[1]])(proj(...f.position.lonlat)));
+    const g = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 26, 16),
+      new THREE.MeshStandardMaterial({color: 0x4aa3ff, emissive: 0x1a4a80}));
+    g.position.set(p.x, 13, p.z);
+    scene.add(g);
+    labelItems.push({f, pos: new THREE.Vector3(p.x, 30, p.z), el: null});
+  } else if (f.kind === 'checkin') {
+    const p = new THREE.Vector3(...(p => [p[0], 0, -p[1]])(proj(...f.position.lonlat)));
+    const g = new THREE.Group();
+    const pinHead = new THREE.Mesh(new THREE.SphereGeometry(4.5, 14, 12),
+      new THREE.MeshStandardMaterial({color: 0xd23c3c}));
+    pinHead.position.y = 16;
+    const pinTip = new THREE.Mesh(new THREE.ConeGeometry(2.6, 8, 12),
+      new THREE.MeshStandardMaterial({color: 0xd23c3c}));
+    pinTip.position.y = 8; pinTip.rotation.x = Math.PI;
+    g.add(pinHead); g.add(pinTip);
+    g.position.set(p.x, 0, p.z);
+    scene.add(g);
+    labelItems.push({f, pos: new THREE.Vector3(p.x, 26, p.z), el: null});
+  }
+}
+
+// ---------- 标签 ----------
+const labelWrap = document.getElementById('labels');
+for (const item of labelItems) {
+  const el = document.createElement('div');
+  el.className = 'lbl';
+  el.textContent = item.f.name;
+  labelWrap.appendChild(el);
+  item.el = el;
+}
+
+// ---------- 点击拾取 ----------
+const ray = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let downXY = null;
+renderer.domElement.addEventListener('pointerdown', e => downXY = [e.clientX, e.clientY]);
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!downXY) return;
+  const dx = e.clientX-downXY[0], dy = e.clientY-downXY[1];
+  downXY = null;
+  if (dx*dx + dy*dy > 25) return;
+  mouse.x = (e.clientX/innerWidth)*2-1;
+  mouse.y = -(e.clientY/innerHeight)*2+1;
+  ray.setFromCamera(mouse, camera);
+  if (pickMode) {
+    const pt = new THREE.Vector3();
+    if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0), 0), pt)) {
+      setMyLocal(pt.x, -pt.z, '手动点选位置（模拟行走用）');
+      showStatus('位置已放到点选处；再点一次可挪动');
+    }
+    return;
+  }
+  const hit = ray.intersectObjects(pickables)[0];
+  showPanel(hit ? hit.object.userData.feature : null);
+});
+
+const panel = document.getElementById('panel');
+const panelBody = document.getElementById('panelBody');
+window.panel = panel;
+function showPanel(f) {
+  if (!f) { panel.style.display = 'none'; return; }
+  let html = `<h3>${f.name}</h3>`;
+  const catName = {dorm:'宿舍', teaching:'教学楼', food:'餐饮', sport:'体育', service:'服务'}[f.category] || '';
+  if (catName) html += `<div>类型：${catName}</div>`;
+  if (f.nameSource) html += `<div class="src">楼名来源：${f.nameSource}</div>`;
+  if (f.footprintSource) html += `<div class="src">位置来源：${f.footprintSource}</div>`;
+  if (f.confidence) html += `<div class="conf">可信度：${JSON.stringify(f.confidence).replace(/["{}]/g,' ').trim()}</div>`;
+  if (f.status) html += `<div class="conf">状态：${f.status}</div>`;
+  if (f.kind === 'building') html += `<div style="color:#9aa0a6;margin-top:6px">楼高为展示用默认值，未经实测</div>`;
+  html += `<div style="color:#9aa0a6;margin-top:6px">编号 ${f.id}</div>`;
+  if (f.kind === 'building') html += '<div id="photoSlot" style="margin:8px 0"></div>';
+  if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') {
+    html += `<div style="margin-top:8px"><button onclick='setRouteEndById("${f.id}")' style="background:#ffb020;border:0;color:#222;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px">🧭 规划从大门到这里的路线</button></div>`;
+  }
+  panelBody.innerHTML = html;
+  panel.style.display = 'block';
+  if (f.kind === 'building') {
+    // 照片层：photos/<楼名>.jpg 存在则显示，否则如实标注暂无
+    const slot = document.getElementById('photoSlot');
+    const img = new Image();
+    img.onload = () => {
+      img.style.cssText = 'width:100%;border-radius:8px;display:block';
+      slot.innerHTML = '<div style="color:#9aa0a6;font-size:11px;margin-bottom:2px">实拍照片</div>';
+      slot.appendChild(img);
+    };
+    img.onerror = () => { slot.innerHTML = '<div style="color:#9aa0a6">📷 暂无实拍照片 · 欢迎提供</div>'; };
+    img.src = './photos/' + encodeURIComponent(f.name) + '.jpg';
+  }
+}
+
+// ---------- 路网图 + 寻路 ----------
+const roadFeats = feats.filter(f => f.kind === 'road');
+const rNodes = [];
+function addRNode(x, z) {
+  for (let i = 0; i < rNodes.length; i++)
+    if (Math.hypot(rNodes[i].x - x, rNodes[i].z - z) < 4) return i;
+  rNodes.push({x, z});
+  return rNodes.length - 1;
+}
+function segX(p1, p2, p3, p4) {
+  const d1x = p2.x-p1.x, d1z = p2.z-p1.z, d2x = p4.x-p3.x, d2z = p4.z-p3.z;
+  const den = d1x*d2z - d1z*d2x;
+  if (Math.abs(den) < 1e-9) return null;
+  const t = ((p3.x-p1.x)*d2z - (p3.z-p1.z)*d2x) / den;
+  const u = ((p3.x-p1.x)*d1z - (p3.z-p1.z)*d1x) / den;
+  if (t < -0.001 || t > 1.001 || u < -0.001 || u > 1.001) return null;
+  return {t: Math.max(0, Math.min(1, t))};
+}
+const roadChains = [];
+for (const r of roadFeats) {
+  const a = r.path.localMeters[0], b = r.path.localMeters[1];
+  const p1 = {x: a[0], z: -a[1]}, p2 = {x: b[0], z: -b[1]};
+  const ts = [0, 1];
+  for (const o of roadFeats) {
+    if (o.id === r.id) continue;
+    const c = o.path.localMeters[0], d = o.path.localMeters[1];
+    const hit = segX(p1, p2, {x:c[0],z:-c[1]}, {x:d[0],z:-d[1]});
+    if (hit) ts.push(hit.t);
+  }
+  ts.sort((p, q) => p - q);
+  roadChains.push({name: r.name, chain: ts.map(t => addRNode(p1.x + (p2.x-p1.x)*t, p1.z + (p2.z-p1.z)*t))});
+}
+const rAdj = rNodes.map(() => []);
+const edgeName = new Map();
+for (const rc of roadChains)
+  for (let i = 0; i < rc.chain.length-1; i++) {
+    const a = rc.chain[i], b = rc.chain[i+1];
+    const len = Math.hypot(rNodes[a].x-rNodes[b].x, rNodes[a].z-rNodes[b].z);
+    if (len < 0.5) continue;
+    rAdj[a].push([b, len, rc.name]);
+    rAdj[b].push([a, len, rc.name]);
+    edgeName.set(a < b ? a+'_'+b : b+'_'+a, rc.name);
+  }
+for (let i = 0; i < rNodes.length; i++)
+  for (let j = i+1; j < rNodes.length; j++) {
+    const d = Math.hypot(rNodes[i].x-rNodes[j].x, rNodes[i].z-rNodes[j].z);
+    if (d > 0.5 && d < 40 && !rAdj[i].some(e => e[0] === j)) {
+      rAdj[i].push([j, d, '步行衔接']);
+      rAdj[j].push([i, d, '步行衔接']);
+    }
+  }
+function nearestNode(p) {
+  let bi = 0, bd = 1e18;
+  for (let i = 0; i < rNodes.length; i++) {
+    const d = Math.hypot(rNodes[i].x-p.x, rNodes[i].z-p.z);
+    if (d < bd) { bd = d; bi = i; }
+  }
+  return bi;
+}
+function dijkstra(s, e) {
+  const dist = rNodes.map(() => 1e18), prev = rNodes.map(() => -1), done = rNodes.map(() => false);
+  dist[s] = 0;
+  for (;;) {
+    let u = -1, ud = 1e18;
+    for (let i = 0; i < rNodes.length; i++)
+      if (!done[i] && dist[i] < ud) { ud = dist[i]; u = i; }
+    if (u === -1 || u === e) break;
+    done[u] = true;
+    for (const [v, w] of rAdj[u])
+      if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; prev[v] = u; }
+  }
+  if (dist[e] >= 1e18) return null;
+  const path = [];
+  for (let v = e; v !== -1; v = prev[v]) path.unshift(v);
+  return {path, dist: dist[e]};
+}
+function keyOf(a, b) { return a < b ? a+'_'+b : b+'_'+a; }
+let routeStart = null, routeEndPt = null, routeEndName = '', routeMesh = null;
+let lastRoute = null, traveledM = -1, offRouteM = 0;
+const routeInfo = document.createElement('div');
+routeInfo.style.cssText = 'position:absolute;bottom:44px;left:12px;z-index:20;background:rgba(25,28,36,.94);color:#e8eaed;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.7;display:none;border:1px solid rgba(255,255,255,.1);max-width:360px;max-height:60vh;overflow:auto';
+document.getElementById('app').appendChild(routeInfo);
+function tryRoute() {
+  if (!routeStart || !routeEndPt) return;
+  const r = dijkstra(nearestNode(routeStart), nearestNode(routeEndPt));
+  if (!r || r.path.length < 2) return;
+  if (routeMesh) scene.remove(routeMesh);
+  const pts = r.path.map(i => new THREE.Vector3(rNodes[i].x, 3, rNodes[i].z));
+  routeMesh = new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 64, 2.2, 8),
+    new THREE.MeshStandardMaterial({color: 0xffb020, emissive: 0x7a4a00}));
+  scene.add(routeMesh);
+  const heading = d => Math.abs(d.x) > Math.abs(d.z) ? (d.x > 0 ? '向东' : '向西') : (d.z > 0 ? '向南' : '向北');
+  const steps = [];
+  let curName = edgeName.get(keyOf(r.path[0], r.path[1])) || '步行衔接';
+  let acc = 0, prevDir = null, cum = 0;
+  for (let i = 1; i < r.path.length; i++) {
+    const a = rNodes[r.path[i-1]], b = rNodes[r.path[i]];
+    const len = Math.hypot(a.x-b.x, a.z-b.z);
+    const dir = {x: (b.x-a.x)/len, z: (b.z-a.z)/len};
+    const nm = edgeName.get(keyOf(r.path[i-1], r.path[i])) || '步行衔接';
+    if (prevDir && nm !== curName) {
+      const cross = prevDir.z*dir.x - prevDir.x*dir.z;
+      steps.push({turn: cross < -0.3 ? '右转' : cross > 0.3 ? '左转' : '继续',
+                  road: curName, dir: heading(prevDir), meters: Math.round(acc),
+                  startM: cum, endM: cum + acc});
+      cum += acc; acc = 0;
+    }
+    curName = nm; acc += len; prevDir = dir;
+  }
+  steps.push({turn: '到达终点', road: curName, dir: heading(prevDir), meters: Math.round(acc),
+              startM: cum, endM: cum + acc});
+  lastRoute = {path: r.path, dist: r.dist, steps};
+  renderRoute();
+}
+function renderRoute() {
+  if (!lastRoute) return;
+  let html = '<b style="color:#ffd166">路线：大门 → ' + routeEndName + '</b><br>' +
+    '沿道路约 <b>' + Math.round(lastRoute.dist) + '</b> 米';
+  if (traveledM >= 0) html += ' · 剩余 <b>' + Math.max(0, Math.round(lastRoute.dist - traveledM)) + '</b> 米';
+  html += '<div style="margin-top:6px">';
+  lastRoute.steps.forEach((s, i) => {
+    const cur = traveledM >= s.startM && traveledM < s.endM;
+    html += '<div style="' + (cur ? 'color:#ffd166;font-weight:bold' : 'color:#d5d9de') + '">' +
+      (i + 1) + '. ' + (s.turn === '到达终点' ? '沿' : s.turn + '进入') + s.road +
+      '（' + s.dir + ' ' + s.meters + ' 米）</div>';
+  });
+  html += '</div>';
+  if (traveledM >= 0 && offRouteM > 60)
+    html += '<span style="color:#f28b82">⚠ 你似乎已偏离路线（最近 ' + Math.round(offRouteM) + ' 米）。</span><br>';
+  html += '<span style="color:#f28b82">⚠ 路线沿道路网络自动计算，<b>尚未现场验证通行</b>；施工围挡与实际开口以现场为准。</span><br>' +
+    '<span style="color:#9aa0a6;cursor:pointer" onclick="clearRoute()">✕ 清除路线</span>';
+  routeInfo.innerHTML = html;
+  routeInfo.style.display = 'block';
+}
+function clearRoute() {
+  if (routeMesh) { scene.remove(routeMesh); routeMesh = null; }
+  routeStart = routeEndPt = null; routeEndName = '';
+  lastRoute = null; traveledM = -1;
+  routeInfo.style.display = 'none';
+}
+window.clearRoute = clearRoute;
+window.setRouteEndById = function(id) {
+  const f = byId[id];
+  if (!f) return;
+  if (f.kind === 'building') {
+    let cx = 0, cy = 0;
+    for (const [x, y] of f.footprint.localMeters){ cx += x; cy += y; }
+    routeEndPt = {x: cx/f.footprint.localMeters.length, z: -cy/f.footprint.localMeters.length};
+  } else {
+    const [lon, lat] = f.position.lonlat;
+    const [ex, ny] = proj(lon, lat);
+    routeEndPt = {x: ex, z: -ny};
+  }
+  routeEndName = f.name;
+  tryRoute();
+  panel.style.display = 'none';
+};
+const gateFeat = feats.find(f => f.kind === 'gate' && f.name === '大门');
+if (gateFeat) {
+  const [lon, lat] = gateFeat.position.lonlat;
+  const [ex, ny] = proj(lon, lat);
+  routeStart = {x: ex, z: -ny};
+}
+
+// ---------- 定位（GPS WGS84→GCJ02 / 点选模拟）+ 跟随 ----------
+function wgs2gcj(lon, lat) {
+  const a = 6378245.0, ee = 0.00669342162296594323;
+  const tl = (x, y) => {
+    let r = -100 + 2*x + 3*y + 0.2*y*y + 0.1*x*y + 0.2*Math.sqrt(Math.abs(x));
+    r += (20*Math.sin(6*x*Math.PI) + 20*Math.sin(2*x*Math.PI)) * 2/3;
+    r += (20*Math.sin(y*Math.PI) + 40*Math.sin(y/3*Math.PI)) * 2/3;
+    r += (160*Math.sin(y/12*Math.PI) + 320*Math.sin(y*Math.PI/30)) * 2/3;
+    return r;
+  };
+  const tg = (x, y) => {
+    let r = 300 + x + 2*y + 0.1*x*x + 0.1*x*y + 0.1*Math.sqrt(Math.abs(x));
+    r += (20*Math.sin(6*x*Math.PI) + 20*Math.sin(2*x*Math.PI)) * 2/3;
+    r += (20*Math.sin(x*Math.PI) + 40*Math.sin(x/3*Math.PI)) * 2/3;
+    r += (150*Math.sin(x/12*Math.PI) + 300*Math.sin(x/30*Math.PI)) * 2/3;
+    return r;
+  };
+  if (lon < 73.66 || lon > 135.05 || lat < 3.86 || lat > 53.55) return [lon, lat];
+  const dlat = tl(lon-105, lat-35), dlon = tg(lon-105, lat-35);
+  const rad = lat/180*Math.PI, magic = 1 - ee*Math.sin(rad)**2, sq = Math.sqrt(magic);
+  return [lon + dlon*180/(a/sq*Math.cos(rad)*Math.PI),
+          lat + dlat*180/((a*(1-ee))/(magic*sq)*Math.PI)];
+}
+let meMarker = null, followMode = false, pickMode = false, locWatchId = null;
+function setMyLocal(e, n, source) {
+  if (!meMarker) {
+    meMarker = new THREE.Mesh(new THREE.SphereGeometry(3.5, 16, 12),
+      new THREE.MeshBasicMaterial({color: 0x2f7bff}));
+    scene.add(meMarker);
+  }
+  meMarker.position.set(e, 2.5, -n);
+  if (followMode) {
+    controls.target.set(e, 0, -n);
+    camera.position.set(e + 90, 140, -n + 150);
+  }
+  updateNavProgress();
+}
+const toolBar = document.createElement('div');
+toolBar.style.cssText = 'position:absolute;bottom:12px;right:12px;z-index:20;display:flex;gap:6px';
+const locStatus = document.createElement('div');
+locStatus.style.cssText = 'position:absolute;bottom:52px;right:12px;z-index:20;color:#d5d9de;font-size:12px;background:rgba(20,24,32,.85);padding:5px 9px;border-radius:6px;display:none;max-width:320px';
+document.getElementById('app').appendChild(locStatus);
+function showStatus(t) { locStatus.textContent = t; locStatus.style.display = 'block'; setTimeout(() => { locStatus.style.display = 'none'; }, 6000); }
+function mkBtn(label, fn) {
+  const b = document.createElement('button');
+  b.textContent = label;
+  b.style.cssText = 'background:rgba(25,28,36,.92);color:#e8eaed;border:1px solid rgba(255,255,255,.18);padding:7px 10px;border-radius:8px;cursor:pointer;font-size:12px';
+  b.onclick = fn;
+  toolBar.appendChild(b);
+  return b;
+}
+const btnGps = mkBtn('📍 定位', () => {
+  if (locWatchId !== null) {
+    navigator.geolocation.clearWatch(locWatchId); locWatchId = null;
+    btnGps.textContent = '📍 定位'; btnGps.style.color = '#e8eaed';
+    return;
+  }
+  if (!navigator.geolocation) { showStatus('此环境不支持定位；可用「点选位置」模拟'); return; }
+  locWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      const [glon, glat] = wgs2gcj(pos.coords.longitude, pos.coords.latitude);
+      const [e, n] = proj(glon, glat);
+      setMyLocal(e, n, 'GPS（精度约 ' + Math.round(pos.coords.accuracy) + ' 米）');
+    },
+    err => showStatus('定位失败：' + err.message + '。手机浏览器要 HTTPS 才给定位，当前可用「点选位置」模拟。'),
+    {enableHighAccuracy: true, maximumAge: 2000});
+});
+const btnPick = mkBtn('🖱 点选位置', () => {
+  pickMode = !pickMode;
+  btnPick.style.color = pickMode ? '#ffd166' : '#e8eaed';
+  if (pickMode) showStatus('点选模式：在道路上点一下，把你的位置放过去（模拟行走用）');
+});
+const btnFollow = mkBtn('🎥 跟随', () => {
+  followMode = !followMode;
+  btnFollow.style.color = followMode ? '#ffd166' : '#e8eaed';
+});
+document.getElementById('app').appendChild(toolBar);
+function updateNavProgress() {
+  if (!lastRoute || !meMarker) return;
+  const me = {x: meMarker.position.x, z: meMarker.position.z};
+  let acc = 0, bestD = 1e18, bestTraveled = 0;
+  for (let i = 1; i < lastRoute.path.length; i++) {
+    const a = rNodes[lastRoute.path[i-1]], b = rNodes[lastRoute.path[i]];
+    const abx = b.x-a.x, abz = b.z-a.z, abLen = Math.hypot(abx, abz);
+    const t = Math.max(0, Math.min(1, ((me.x-a.x)*abx + (me.z-a.z)*abz) / (abLen*abLen)));
+    const px = a.x + abx*t, pz = a.z + abz*t;
+    const d = Math.hypot(me.x-px, me.z-pz);
+    if (d < bestD) { bestD = d; bestTraveled = acc + abLen*t; }
+    acc += abLen;
+  }
+  offRouteM = bestD; traveledM = bestTraveled;
+  renderRoute();
+}
+
+// ---------- 搜索 ----------
+const q = document.getElementById('q');
+q.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const kw = q.value.trim();
+  const f = feats.find(x => x.name && x.name.includes(kw));
+  if (!f) return;
+  let p;
+  if (f.kind === 'building') {
+    let cx = 0, cy = 0;
+    for (const [x, y] of f.footprint.localMeters){ cx += x; cy += y; }
+    p = new THREE.Vector3(cx/f.footprint.localMeters.length, 40, -cy/f.footprint.localMeters.length);
+  } else {
+    const [lon, lat] = f.position.lonlat;
+    const [ex, ny] = proj(lon, lat);
+    p = new THREE.Vector3(ex, 30, -ny);
+  }
+  controls.target.copy(p.clone().setY(0));
+  camera.position.set(p.x + 120, 170, p.z + 150);
+  showPanel(f);
+});
+
+// ---------- 数据说明面板（评委视角的"这地图哪来的"） ----------
+const infoBtn = document.createElement('span');
+infoBtn.textContent = 'ℹ️ 数据说明';
+infoBtn.style.cssText = 'float:right;cursor:pointer;color:#8ab4f8;font-size:12px';
+infoBtn.onclick = () => dataInfo.style.display = dataInfo.style.display === 'block' ? 'none' : 'block';
+document.getElementById('banner').appendChild(infoBtn);
+const dataInfo = document.createElement('div');
+dataInfo.style.cssText = 'position:absolute;top:86px;right:12px;z-index:30;width:320px;max-height:70vh;overflow:auto;' +
+  'background:rgba(25,28,36,.96);color:#e8eaed;border-radius:10px;padding:14px 16px;font-size:13px;line-height:1.8;display:none;' +
+  'border:1px solid rgba(255,255,255,.1)';
+dataInfo.innerHTML = '<b style="color:#ffd166">这份数据是怎么来的</b><div style="margin-top:8px">' +
+  '🏢 楼名来源：<b>校方导向图 + 校门公告牌</b>（权威，未做任何猜测）<br>' +
+  '📐 楼栋位置：对照公告牌逐栋读取，与底图同源对齐<br>' +
+  '🎯 校准锚点：田径场中心（旧卫星影像实测，误差约 11 米）<br>' +
+  '🛰 底图之外的高德/天地图/百度卫星影像均为改建前老校区，故未采用<br>' +
+  '⚠ 位置精度为草案级（数十米内），实地校对进行中</div>' +
+  '<div style="margin-top:10px;color:#9aa0a6" id="dataCounts"></div>' +
+  '<span style="color:#9aa0a6;cursor:pointer" onclick="dataInfo.style.display=\'none\'">✕ 关闭</span>';
+document.getElementById('app').appendChild(dataInfo);
+window.dataInfo = dataInfo;
+{
+  const k = {};
+  for (const f of feats) k[f.kind] = (k[f.kind] || 0) + 1;
+  document.getElementById('dataCounts').textContent =
+    '当前数据：' + (k.building || 0) + ' 栋楼 · ' + (k.road || 0) + ' 条道路 · ' +
+    (k.gate || 0) + ' 个出入口 · ' + (k.checkin || 0) + ' 个报到点 · ' +
+    '状态 ' + meta.dataStatus;
+}
+
+// ---------- 标签投影 ----------
+const tmp = new THREE.Vector3();
+function updateLabels() {
+  for (const it of labelItems) {
+    tmp.copy(it.pos).project(camera);
+    const behind = tmp.z > 1;
+    const tooFar = camera.position.distanceTo(it.pos) > 420;   // 远视角隐藏浮字，让底图标签说话
+    it.el.style.display = (behind || tooFar) ? 'none' : 'block';
+    if (!behind && !tooFar) {
+      it.el.style.left = ((tmp.x*.5+.5)*innerWidth) + 'px';
+      it.el.style.top = ((-tmp.y*.5+.5)*innerHeight) + 'px';
+    }
+  }
+}
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+(function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  if (meMarker) {
+    const s = 1 + 0.18 * Math.sin(performance.now()/180);
+    meMarker.scale.set(s, s, s);
+    if (followMode) {
+      const dx = meMarker.position.x - controls.target.x;
+      const dz = meMarker.position.z - controls.target.z;
+      if (Math.hypot(dx, dz) > 2) {
+        controls.target.x += dx*0.06; controls.target.z += dz*0.06;
+        camera.position.x += dx*0.06; camera.position.z += dz*0.06;
+      }
+    }
+  }
+  updateLabels();
+  renderer.render(scene, camera);
+})();
+</script>
+</body>
+</html>
