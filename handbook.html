@@ -2,248 +2,1572 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>2026本科新生手册 · 上理工</title>
+<title>大学信息差大白话手册 · 上海理工大学</title>
 <style>
-:root{--bg:#f7f8fa;--card:#fff;--border:#e3e6eb;--primary:#1a73e8;--text:#1f2329;--muted:#6b7280;--warn:#b54708;--warnbg:#fff7ed}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
-header{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;position:sticky;top:0;z-index:10}
-header h1{font-size:18px;font-weight:600}
-header .back{float:right;color:var(--primary);text-decoration:none;font-size:14px}
-.notice{background:var(--warnbg);color:var(--warn);padding:8px 20px;font-size:13px;border-bottom:1px solid #fde68a}
-.layout{display:flex;max-width:1200px;margin:0 auto;gap:16px;padding:16px}
-.sidebar{width:260px;flex-shrink:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;max-height:calc(100vh - 120px);overflow-y:auto;position:sticky;top:100px}
-.sidebar h3{font-size:14px;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.sidebar a{display:block;padding:6px 8px;color:var(--text);text-decoration:none;border-radius:4px;font-size:14px;cursor:pointer}
-.sidebar a:hover{background:#eef2ff}
-.sidebar a.active{background:#e8f0fe;color:var(--primary);font-weight:500}
-.main{flex:1;min-width:0}
-.search-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px}
-.search-box input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px}
-.search-box .hint{font-size:12px;color:var(--muted);margin-top:6px}
-.content{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;min-height:400px}
-.content h1{font-size:20px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--primary)}
-.content h2{font-size:17px;margin:16px 0 8px}
-.content h3{font-size:15px;margin:12px 0 6px}
-.content p{margin:8px 0}
-.content ul,.content ol{margin:8px 0 8px 24px}
-.content li{margin:4px 0}
-.content table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px}
-.content th,.content td{border:1px solid var(--border);padding:6px 8px;text-align:left}
-.content th{background:#f1f3f4;font-weight:500}
-.content blockquote{border-left:3px solid var(--primary);background:#f8faff;padding:8px 12px;margin:10px 0;color:var(--muted)}
-.content pre{background:#f1f3f4;padding:10px;border-radius:4px;overflow-x:auto;font-size:13px}
-.content code{background:#f1f3f4;padding:1px 4px;border-radius:3px;font-size:13px}
-.content mark{background:#fef08a;padding:0 2px}
-.source-tag{font-size:12px;color:var(--muted);margin-top:16px;padding-top:8px;border-top:1px dashed var(--border)}
-.no-result{padding:40px 20px;text-align:center;color:var(--muted)}
-.no-result h3{color:var(--warn);margin-bottom:8px}
-.search-results{margin-bottom:12px}
-.search-results .hit{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
-.search-results .hit:hover{border-color:var(--primary)}
-.search-results .hit .title{font-weight:500;color:var(--primary)}
-.search-results .hit .snippet{font-size:13px;color:var(--text);margin-top:4px}
-@media(max-width:768px){.layout{flex-direction:column;padding:8px}.sidebar{width:100%;position:static;max-height:240px}}
+/* =====================================================================
+   大学信息差大白话手册 · 结构重写版（CodeArts 重实现）
+   设计语言：学籍档案 × 编辑部 —— 藏青墨 / 暖纸 / 单一鎏金强调
+   结构变更：① 搜索区改为文档流内的独立工具栏（不再 fixed 悬浮遮挡正文）
+             ② 桌面/移动共用同一套 section 跳转逻辑，按顶栏实高定位
+   ===================================================================== */
+:root{
+  --ink:#1b2231; --ink-strong:#10141f;
+  --paper:#f6f4ef; --paper-2:#efede6;
+  --navy:#0d1220; --navy-2:#161e33; --navy-3:#1f2942;
+  --gold:#b8912e; --gold-deep:#8a6d1a; --gold-bright:#e3c56b; --gold-soft:#f4ecd4;
+  --line:#e2ddd0; --line-2:#d5cfc0; --muted:#6e7382;
+  --warn:#b3401f; --ok:#2e7d4f;
+  --r-lg:14px; --r-md:12px; --r-sm:8px;
+  --shadow-1:0 1px 2px rgba(18,23,38,.05),0 2px 10px rgba(18,23,38,.05);
+  --shadow-2:0 2px 6px rgba(18,23,38,.07),0 12px 32px rgba(18,23,38,.09);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --topbar-h:0px;
+  --sans:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  --mono:"Cascadia Code",Consolas,"JetBrains Mono","Microsoft YaHei",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);
+     line-height:1.92;font-size:15.5px;
+     font-feature-settings:"tnum";text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+::selection{background:var(--gold-bright);color:var(--ink-strong)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#c9c2b2;border-radius:8px;border:2px solid var(--paper)}
+::-webkit-scrollbar-thumb:hover{background:#b3ab97}
+aside ::-webkit-scrollbar-thumb{background:#2c3650;border-color:var(--navy)}
+
+/* ---------- 阅读进度 ---------- */
+#progress{position:fixed;top:0;left:0;height:2.5px;width:0;z-index:99;
+  background:linear-gradient(90deg,var(--gold-deep),var(--gold-bright));box-shadow:0 0 8px rgba(227,197,107,.5)}
+
+/* ---------- 侧边导航 ---------- */
+aside{position:fixed;top:0;left:0;bottom:0;width:300px;background:var(--navy);color:#c6cbd8;
+  overflow-y:auto;padding:26px 18px 44px;z-index:50;border-right:1px solid rgba(255,255,255,.04)}
+aside .brand{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:13px;border-bottom:1px solid #1e2639}
+aside .brand img{width:46px;height:44px;background:#fff;border-radius:50%;padding:3px;flex:none}
+aside .brand .bt{font-size:14px;color:#f4f2ea;letter-spacing:1.5px;line-height:1.5;font-weight:600}
+aside .brand .bt span{font-size:11px;color:#7e8598;font-weight:400;letter-spacing:.5px}
+aside h1{color:#f4f2ea;font-size:20px;line-height:1.4;letter-spacing:.5px;font-weight:700}
+aside h1 b{color:var(--gold-bright)}
+aside .sub{font-size:11.5px;color:#7e8598;margin:8px 0 16px;padding-bottom:14px;border-bottom:1px solid #1e2639;letter-spacing:2px}
+aside nav a{position:relative;display:block;color:#a7aec0;text-decoration:none;font-size:13px;
+  padding:5.5px 11px;border-radius:var(--r-sm);transition:color .25s var(--ease),background .25s var(--ease),padding .25s var(--ease)}
+aside nav a::before{content:"";position:absolute;left:0;top:20%;bottom:20%;width:2.5px;border-radius:2px;background:var(--gold-bright);
+  transform:scaleY(0);transition:transform .3s var(--ease)}
+aside nav a:hover{color:#fff;background:var(--navy-2);padding-left:14px}
+aside nav a.on{color:var(--gold-bright);background:var(--navy-2);font-weight:600;padding-left:15px}
+aside nav a.on::before{transform:scaleY(1)}
+aside .grp{font-size:10.5px;color:#5e667c;letter-spacing:3px;margin:16px 0 5px;padding-left:11px;font-weight:600}
+.navgrp{margin-bottom:2px}
+.navgrp>.grp{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;padding-right:4px}
+.navgrp>.grp::after{content:"▾";font-size:9px;color:#5e667c;transition:transform .25s var(--ease)}
+.navgrp.closed>.grp::after{transform:rotate(-90deg)}
+.navgrp.closed>a{display:none}
+
+/* ---------- 主区 ---------- */
+main{margin-left:300px;padding:0 0 90px}
+.wrap{max-width:1140px;margin:0 auto;padding:0 44px}
+
+/* ---------- 搜索工具栏（文档流内，占据真实高度，不遮挡正文） ---------- */
+#searchBar{position:sticky;top:var(--topbar-h);z-index:80;background:rgba(246,244,239,.94);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line-2)}
+#searchBar .sbwrap{max-width:1140px;margin:0 auto;padding:12px 44px;display:flex;flex-direction:column;gap:6px}
+#searchBar .sbrow{display:flex;align-items:center;gap:12px}
+#searchBox{position:relative;flex:1;max-width:560px}
+#searchBox input{width:100%;padding:10px 40px 10px 38px;border-radius:999px;border:1px solid var(--line-2);
+  background:#fff;color:var(--ink);font-size:13.5px;outline:none;box-shadow:var(--shadow-1);
+  transition:border .25s,box-shadow .25s}
+#searchBox input::placeholder{color:#98a0b0}
+#searchBox input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,145,46,.14)}
+#searchBox .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none}
+#searchBox .kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);
+  border:1px solid var(--line-2);border-radius:6px;padding:1px 6px;pointer-events:none;background:var(--paper-2)}
+#searchHint{font-size:11px;color:var(--muted);white-space:nowrap;letter-spacing:.3px}
+#searchResults{display:none;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);
+  box-shadow:var(--shadow-2);overflow:hidden}
+#searchResults.show{display:block}
+#searchResults .list{max-height:56vh;overflow-y:auto}
+#searchResults .r{padding:11px 16px;cursor:pointer;border-bottom:1px solid #f1ede2;transition:background .15s}
+#searchResults .r:last-child{border-bottom:none}
+#searchResults .r:hover,#searchResults .r.sel{background:var(--gold-soft)}
+#searchResults .rt{font-weight:700;font-size:13.5px;color:var(--ink-strong)}
+#searchResults .rs{font-size:12.5px;color:#5c6270;margin-top:2px;line-height:1.55}
+#searchResults .rs b{color:var(--gold-deep)}
+#searchResults .rc{font-size:11px;color:var(--muted);padding:8px 16px 2px;letter-spacing:1px}
+mark.hit{background:#ffe08a;color:#4c3b08;padding:0 2px;border-radius:3px}
+
+/* ---------- 免责声明 ---------- */
+.disclaimer{background:#fdf6ec;border:1px solid #eccf9f;border-left:4px solid #cf8a1a;border-radius:var(--r-md);
+  padding:16px 22px;margin:24px 0 0;font-size:13px;color:#5c4a26;line-height:1.85}
+.disclaimer b.t{color:#9c6207;font-size:14.5px;display:block;margin-bottom:2px}
+.disclaimer ol{margin:8px 0 0 18px}
+.disclaimer li{margin:4px 0}
+
+/* ---------- 门厅 Hero ---------- */
+header.hero{position:relative;color:#f2f1ea;overflow:hidden;
+  background:radial-gradient(1100px 460px at 82% -10%,#26304f 0%,transparent 62%),
+             linear-gradient(160deg,var(--navy) 0%,#131a2c 58%,#0d1220 100%);
+  padding:56px 0 40px;margin-bottom:52px;border-bottom:1px solid rgba(227,197,107,.18)}
+header.hero::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:radial-gradient(420px 200px at 12% 112%,rgba(227,197,107,.10),transparent 70%),
+   repeating-linear-gradient(0deg,transparent 0 47px,rgba(255,255,255,.022) 47px 48px)}
+header.hero>.wrap{position:relative;z-index:1}
+.backmap{margin-bottom:22px}
+.backmap a{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#cfd4e0;text-decoration:none;
+  border:1px solid rgba(227,197,107,.35);border-radius:999px;padding:6px 15px;background:rgba(255,255,255,.05);
+  transition:.25s var(--ease);letter-spacing:.5px}
+.backmap a:hover{color:var(--gold-bright);border-color:var(--gold-bright);background:rgba(255,255,255,.1)}
+.mast{display:flex;align-items:center;gap:26px}
+.badge{width:92px;height:90px;border-radius:50%;background:#fff;padding:6px;flex:none;
+  box-shadow:0 0 0 5px rgba(227,197,107,.14),0 10px 30px rgba(0,0,0,.4)}
+.sch{font-size:12.5px;letter-spacing:4px;color:var(--gold-bright);margin-bottom:8px;font-weight:600}
+header.hero h2{font-size:clamp(30px,4.2vw,44px);letter-spacing:.5px;line-height:1.22;font-weight:800}
+header.hero h2 b{color:var(--gold-bright)}
+.motto{color:#b9bfd0;font-size:13.5px;margin-top:10px;letter-spacing:1px}
+.hero .meta{margin-top:18px;color:#8b92a6;font-size:12.5px;max-width:760px;line-height:1.8}
+.hero .meta b{color:var(--gold-bright)}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);margin-top:30px;
+  border-top:1px solid rgba(255,255,255,.10);border-bottom:1px solid rgba(255,255,255,.10)}
+.stat{text-align:center;padding:18px 8px 15px;border-left:1px solid rgba(255,255,255,.10)}
+.stat:first-child{border-left:none}
+.stat b{display:block;font-size:clamp(24px,2.6vw,32px);color:var(--gold-bright);font-family:var(--mono);
+  font-weight:600;line-height:1.15;letter-spacing:-.5px}
+.stat span{font-size:12px;color:#9aa1b5;letter-spacing:.5px}
+details.log{margin-top:26px;background:rgba(255,255,255,.045);border:1px solid rgba(227,197,107,.22);
+  border-radius:var(--r-md);padding:0;overflow:hidden}
+details.log>summary{cursor:pointer;list-style:none;padding:12px 18px;font-size:13.5px;font-weight:600;
+  color:var(--gold-bright);user-select:none;transition:background .25s}
+details.log>summary::-webkit-details-marker{display:none}
+details.log>summary::before{content:"▸";display:inline-block;margin-right:9px;transition:transform .3s var(--ease)}
+details.log[open]>summary::before{transform:rotate(90deg)}
+details.log>summary:hover{background:rgba(255,255,255,.05)}
+details.log .muted{color:#aab0c2;font-size:12.5px;line-height:1.9;padding:2px 18px 14px;max-width:none}
+details.log .muted b{color:var(--gold-bright)}
+
+/* ---------- 章节与标题 ---------- */
+section{margin:58px 0;scroll-margin-top:calc(var(--topbar-h) + 78px)}
+h3.sec{position:relative;font-size:clamp(19px,2vw,22.5px);font-weight:800;color:var(--ink-strong);
+  margin:0 0 18px;padding:0 44px 14px 20px;letter-spacing:.3px;border-bottom:1px solid var(--line-2)}
+h3.sec::before{content:"";position:absolute;left:0;top:5px;bottom:19px;width:5px;border-radius:3px;
+  background:linear-gradient(180deg,var(--gold-bright),var(--gold-deep))}
+h4{font-size:16px;font-weight:700;margin:26px 0 10px;color:#232a3d;letter-spacing:.2px}
+h4::before{content:"";display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--gold);
+  margin-right:9px;vertical-align:2px;opacity:.85}
+p{margin:11px 0;max-width:76ch}
+.muted{color:var(--muted);font-size:13px;line-height:1.85}
+strong{color:var(--ink-strong);font-weight:650}
+.warn{color:var(--warn);font-weight:600}
+
+/* ---------- 表格 ---------- */
+.tw{margin:14px 0;overflow-x:auto;border-radius:var(--r-md);box-shadow:var(--shadow-1);border:1px solid var(--line);background:#fff}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:13.8px;line-height:1.7}
+th{background:#f1eee5;color:#3c4356;padding:10px 14px;text-align:left;font-weight:700;font-size:12.3px;
+  letter-spacing:1px;white-space:nowrap;border-bottom:2px solid #d9d2bf}
+td{padding:9px 14px;border-top:1px solid #efeadf;vertical-align:top;transition:background .2s}
+tr:hover td{background:#faf8f1}
+td b{color:var(--ink-strong)}
+.tw table{border-collapse:separate;border-spacing:0}
+.tw td:first-child,.tw th:first-child{position:sticky;left:0;z-index:1}
+.tw th:first-child{background:#f1eee5}
+.tw td:first-child{background:#fff;box-shadow:inset -1px 0 0 #efeadf}
+.tw tr:hover td:first-child{background:#faf8f1}
+
+/* ---------- 提示卡 ---------- */
+.card{position:relative;background:#fffdf6;border:1px solid #eadfb8;border-left:4px solid var(--gold);
+  border-radius:var(--r-lg);padding:16px 22px;margin:18px 0;box-shadow:var(--shadow-1)}
+.card .t{font-weight:700;color:var(--gold-deep);font-size:14.5px;display:block;margin-bottom:7px;letter-spacing:.5px}
+.card p{margin:6px 0;font-size:14px;line-height:1.85;max-width:none}
+.card b.k{color:var(--gold-deep)}
+
+/* ---------- 账本树图 ---------- */
+pre.tree{background:var(--navy);color:#d6dbe8;border-radius:var(--r-md);padding:18px 22px;font-family:var(--mono);
+  font-size:13px;line-height:1.85;overflow-x:auto;margin:14px 0;border:1px solid #232c44;box-shadow:var(--shadow-1)}
+pre.tree b{color:var(--gold-bright)}
+
+/* ---------- 折叠板块 ---------- */
+details.block{margin:30px 0;border:1px solid var(--line);border-radius:var(--r-lg);background:#fff;
+  box-shadow:var(--shadow-1);overflow:hidden;transition:box-shadow .3s}
+details.block:hover{box-shadow:var(--shadow-2)}
+details.block[open]{box-shadow:var(--shadow-2)}
+details.block>summary{cursor:pointer;list-style:none;padding:17px 24px;font-size:17px;font-weight:700;
+  background:linear-gradient(90deg,#f2eee1,#fffdf8 62%);color:var(--ink-strong);user-select:none;
+  display:flex;align-items:center;transition:background .25s}
+details.block>summary:hover{background:linear-gradient(90deg,#ede8d6,#fbf8ef 62%)}
+details.block>summary::-webkit-details-marker{display:none}
+details.block>summary::before{content:"";width:9px;height:9px;margin-right:13px;flex:none;
+  border-right:2.2px solid var(--gold-deep);border-bottom:2.2px solid var(--gold-deep);
+  transform:rotate(-45deg);transition:transform .3s var(--ease)}
+details.block[open]>summary::before{transform:rotate(45deg);margin-top:-4px}
+details.block>.inner{padding:6px 30px 24px;animation:detailsIn .45s var(--ease)}
+@keyframes detailsIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+/* ---------- 链接 ---------- */
+a{color:var(--gold-deep);text-decoration:none;background:linear-gradient(var(--gold),var(--gold)) left 100%/0 1.5px no-repeat;
+  transition:background-size .3s var(--ease),color .2s}
+a:hover{color:#6b5310;background-size:100% 1.5px}
+
+/* ---------- 复制链接按钮 ---------- */
+.cpy{position:absolute;right:0;top:-3px;width:30px;height:30px;border:1px solid var(--line-2);border-radius:8px;
+  background:#fff;color:var(--muted);cursor:pointer;font-size:13px;opacity:0;transition:opacity .25s,color .2s,border-color .2s;
+  display:inline-flex;align-items:center;justify-content:center}
+h3.sec:hover .cpy,.cpy:focus-visible{opacity:1}
+.cpy:hover{color:var(--gold-deep);border-color:var(--gold)}
+
+/* ---------- 回到顶部 / Toast ---------- */
+#topBtn{position:fixed;right:28px;bottom:28px;width:46px;height:46px;border:none;border-radius:50%;background:var(--gold-bright);
+  color:var(--ink-strong);font-size:18px;cursor:pointer;opacity:0;pointer-events:none;transition:.35s var(--ease);
+  box-shadow:0 6px 20px rgba(0,0,0,.28);z-index:60;transform:translateY(8px)}
+#topBtn.show{opacity:1;pointer-events:auto;transform:none}
+#topBtn:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,0,0,.32)}
+#topBtn:active{transform:translateY(-1px) scale(.96)}
+#toast{position:fixed;bottom:34px;left:50%;transform:translate(-50%,14px);background:var(--ink-strong);color:#f2efe4;
+  font-size:13px;padding:9px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.3s var(--ease);
+  z-index:98;letter-spacing:.5px}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- 计算器 ---------- */
+.calc{background:#fffdf6;border:1px solid #eadfb8;border-radius:var(--r-lg);padding:18px 22px;margin:18px 0;box-shadow:var(--shadow-1)}
+.calc .ct{font-weight:700;color:var(--gold-deep);font-size:14.5px;display:block;margin-bottom:12px;letter-spacing:.5px}
+.calc .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:7px 14px}
+.calc label{display:flex;align-items:center;gap:7px;font-size:13px;color:#3c4356;cursor:pointer;user-select:none}
+.calc input[type=checkbox]{accent-color:var(--gold);width:15px;height:15px;flex:none}
+.calc input[type=number],.calc select{width:76px;padding:4px 8px;border:1px solid var(--line-2);border-radius:8px;
+  font:inherit;font-size:13px;background:#fff;color:var(--ink)}
+.calc input[type=number]:focus,.calc select:focus{outline:none;border-color:var(--gold)}
+.calc .row{display:flex;align-items:center;gap:8px;font-size:13px;color:#3c4356;margin:7px 0;flex-wrap:wrap}
+.calc .out{margin-top:14px;padding:13px 16px;background:var(--navy);color:#f0eee4;border-radius:var(--r-md);
+  display:flex;flex-wrap:wrap;gap:6px 24px;align-items:baseline;font-family:var(--mono)}
+.calc .out b{font-size:24px;color:var(--gold-bright);font-weight:600;line-height:1.1}
+.calc .out .lb{font-size:11.5px;color:#8b92a6;font-family:var(--sans);display:block;margin-top:2px}
+.calc .out .st{font-size:12.5px;font-family:var(--sans);width:100%}
+.calc .out .good{color:#8fe0ae}.calc .out .bad{color:#ffa488}
+.calc .hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.75}
+.calc .gr{display:grid;grid-template-columns:1fr 78px 78px;gap:6px 12px;align-items:center;font-size:13px;color:#3c4356;margin:3px 0}
+.calc .gr input{width:100%;padding:5px 9px;border:1px solid var(--line-2);border-radius:8px;font:inherit;font-size:13px;background:#fff;color:var(--ink)}
+.calc .gr input:focus{outline:none;border-color:var(--gold)}
+.calc .gr .hd{font-size:11.5px;color:var(--muted);letter-spacing:1px;font-weight:700}
+.calc .btn{border:1px solid var(--line-2);background:#fff;border-radius:8px;padding:5px 14px;font:inherit;font-size:12.5px;
+  color:#3c4356;cursor:pointer;transition:.2s}
+.calc .btn:hover{border-color:var(--gold);color:var(--gold-deep)}
+.ranktbl td[contenteditable]{min-width:110px;background:#fffdf6;cursor:text;transition:background .2s}
+.ranktbl td[contenteditable]:focus{outline:2px solid var(--gold);outline-offset:-2px;background:#fff}
+.ranktbl td[contenteditable]:empty::before{content:"待填";color:#c4bda9;font-size:12px}
+
+/* ---------- 页脚 ---------- */
+footer.foot{margin-top:60px;padding:30px 0 6px;border-top:1px solid var(--line-2);text-align:center;color:var(--muted);
+  font-size:13px;letter-spacing:3px}
+footer.foot b{color:var(--gold-deep)}
+footer.foot .footbar{display:flex;gap:12px;justify-content:center;margin-top:16px;letter-spacing:0;flex-wrap:wrap}
+footer.foot .fbtn{display:inline-flex;align-items:center;gap:6px;font-size:13px;letter-spacing:.5px;color:var(--ink);
+  background:#fff;border:1px solid var(--line-2);border-radius:999px;padding:7px 18px;cursor:pointer;text-decoration:none;
+  transition:.25s var(--ease);font-family:inherit;background-image:none}
+footer.foot .fbtn:hover{color:var(--gold-deep);border-color:var(--gold);background:var(--gold-soft)}
+footer.foot .footnote{margin-top:14px;font-size:11.5px;color:#9aa0ae;letter-spacing:.5px;line-height:1.8}
+
+/* ---------- 进场动效（尊重 reduced-motion） ---------- */
+@media (prefers-reduced-motion:no-preference){
+  .rv{opacity:0;transform:translateY(16px);transition:opacity .75s var(--ease),transform .75s var(--ease);transition-delay:var(--d,0ms)}
+  .rv.in{opacity:1;transform:none}
+  .mast,.hero .meta,.stats,details.log{animation:heroUp .8s var(--ease) backwards}
+  .hero .meta{animation-delay:.12s}.stats{animation-delay:.22s}details.log{animation-delay:.32s}
+  @keyframes heroUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+}
+
+/* ---------- 移动端顶部栏 & 抽屉 ---------- */
+#topbar{display:none;position:fixed;top:0;left:0;right:0;height:50px;z-index:96;background:var(--navy);color:#f0eee4;
+  align-items:center;gap:11px;padding:0 13px;border-bottom:1px solid #1e2639}
+#topbar .burger{width:38px;height:38px;border:none;border-radius:8px;background:transparent;color:inherit;font-size:19px;
+  cursor:pointer;transition:background .2s}
+#topbar .burger:hover{background:var(--navy-2)}
+#topbar .tt{font-size:13.5px;font-weight:700;letter-spacing:1px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topbar .vv{font-size:10.5px;color:#7e8598;white-space:nowrap}
+#backdrop{position:fixed;inset:0;background:rgba(8,12,22,.55);opacity:0;pointer-events:none;transition:opacity .3s;z-index:94}
+#backdrop.show{opacity:1;pointer-events:auto}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:1120px){.wrap{padding:0 30px}#searchBar .sbwrap{padding:12px 30px}}
+@media (max-width:960px){
+  :root{--topbar-h:50px}
+  #topbar{display:flex}
+  aside{position:fixed;top:0;left:0;bottom:0;width:min(320px,85vw);height:auto;transform:translateX(-103%);
+    transition:transform .4s var(--ease);z-index:95;box-shadow:0 0 60px rgba(0,0,0,.5)}
+  aside.open{transform:none}
+  main{margin-left:0;margin-top:50px}
+  aside nav{columns:1}
+  header.hero{padding:44px 0 32px}
+  .stats{grid-template-columns:repeat(2,1fr);border:none}
+  .stat{border:1px solid rgba(255,255,255,.08);border-radius:var(--r-md);margin-top:10px;background:rgba(255,255,255,.035)}
+  .stat:nth-child(odd){border-left:1px solid rgba(255,255,255,.08)}
+  .stat:last-child{grid-column:1/-1}
+  .badge{width:74px;height:72px}
+}
+@media (max-width:640px){
+  .wrap{padding:0 18px}
+  #searchBar .sbwrap{padding:10px 18px}
+  #searchBar .sbrow{flex-wrap:wrap}
+  #searchHint{font-size:10.5px}
+  body{font-size:14.5px}
+  .mast{gap:16px}
+  .sch{font-size:11px;letter-spacing:2px}
+  details.block>.inner{padding:4px 16px 18px}
+  .card{padding:13px 15px}
+  #topBtn{right:16px;bottom:16px}
+}
+@media print{
+  aside,#topBtn,#progress,#searchBar,#topbar,#backdrop{display:none}
+  main{margin:0}
+  details.block{page-break-inside:avoid}
+  .rv{opacity:1;transform:none}
+  header.hero{background:var(--navy);-webkit-print-color-adjust:exact}
+  .calc .out{background:#fff;color:var(--ink)}
+}
 </style>
 </head>
 <body>
-<header>
-<a class="back" href="index.html">← 返回地图</a>
-<h1>2026本科新生手册</h1>
-</header>
-<div class="notice">⚠️ 本手册为个人学习笔记，非学校官方文件。正式事项一律以学校最新官方文件为准。来源：<a href="https://ranchunxu.github.io/usst-freshman-handbook/" target="_blank">ranchunxu.github.io/usst-freshman-handbook</a>（本地存档 2026-10-04）</div>
-<div class="layout">
-<aside class="sidebar">
-<h3>章节目录</h3>
-<div id="toc"></div>
-</aside>
-<section class="main">
-<div class="search-box">
-<input id="search" placeholder="搜索关键词，如：挂科、分流、绩点、奖学金、保研…">
-<div class="hint">输入关键词搜索全部30篇内容，结果会显示出处章节。无结果时说明现有资料未查到。</div>
+<div id="progress"></div>
+
+<!-- 移动端顶栏（桌面隐藏） -->
+<div id="topbar">
+  <button class="burger" id="burger" aria-label="打开目录">☰</button>
+  <span class="tt">大学信息差大白话手册</span>
+  <span class="vv">2026级 · 电信类</span>
 </div>
-<div id="searchResults" class="search-results" style="display:none"></div>
-<div id="content" class="content"></div>
+<div id="backdrop"></div>
+
+<!-- 侧边目录 -->
+<aside id="aside">
+  <div class="brand">
+    <img src="data:image/png;base64,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" alt="上海理工大学校徽">
+    <div class="bt">大学信息差<br><span>大白话手册</span></div>
+  </div>
+  <h1>大学信息差<br><b>大白话手册</b></h1>
+  <div class="sub">信义勤爱 · 思学致远</div>
+  <nav id="nav">
+      <a href="#sec-toc">🔗 网址总表</a>
+      <a href="#sec-map">🆘 名词急救表</a>
+      <div class="grp">一 · 学分底层</div>
+      <a href="#sec1">1 学分 = 游戏币</a>
+      <a href="#sec2">2 挂科补救流程</a>
+      <a href="#sec3">3 考试红线</a>
+      <div class="grp">二 · 成绩两张脸</div>
+      <a href="#sec4">4 分数→绩点→GPA</a>
+      <a href="#sec5">5 GPA 怎么算</a>
+      <a href="#sec6">6 学分加权成绩</a>
+      <a href="#sec7">7 两兄弟对照表</a>
+      <div class="grp">三 · 综测账本</div>
+      <a href="#sec8">8 综测一句话结构</a>
+      <a href="#sec9">9 基础学院细则重点</a>
+      <div class="grp">四 · 排名与分流</div>
+      <a href="#sec10">10 综合成绩（一次性）</a>
+      <a href="#sec11">11 大类分流</a>
+      <a href="#sec12">12 转专业</a>
+      <a href="#sec13">13 毕业证 ≠ 学位证</a>
+      <div class="grp">五 · 钱</div>
+      <a href="#sec14">14 奖学金全家福</a>
+      <a href="#sec15">15 困难认定与勤工助学</a>
+      <div class="grp">六 · 履历资产</div>
+      <a href="#sec16">16 竞赛与大创</a>
+      <a href="#sec17">17 社团</a>
+      <a href="#sec18">18 学生工作</a>
+      <a href="#sec19">19 保研（真数据版）</a>
+      <a href="#sec20">20 入党</a>
+      <div class="grp">七 · 生活办事</div>
+      <a href="#sec21">21 天天要用的入口</a>
+      <a href="#sec22">22 申诉权</a>
+      <a href="#sec23">23 入学装备清单</a>
+      <div class="grp">八 · 时间轴与作战</div>
+      <a href="#sec24">24 大一上时间轴</a>
+      <a href="#sec25">25 大一下+暑假</a>
+      <a href="#sec26">26 高绩点作战策略</a>
+      <div class="grp">收尾</div>
+      <a href="#sec-act">✅ 终极行动清单</a>
+      <a href="#sec-src">📌 事实来源</a>
+  </nav>
+</aside>
+
+<main>
+<!-- 搜索工具栏：文档流内独立一层，占真实高度，正文从它下方开始，不遮挡 -->
+<div id="searchBar">
+  <div class="sbwrap">
+    <div class="sbrow">
+      <div id="searchBox">
+        <span class="ico">🔍</span>
+        <input id="searchInput" type="text" placeholder="搜索手册…（标题 / 正文 / 拼音首字母，如 dlfl）" autocomplete="off" aria-label="搜索手册">
+        <span class="kbd">Ctrl K</span>
+      </div>
+      <span id="searchHint">Esc 关闭 · ↑↓ 选择 · 回车跳转</span>
+    </div>
+    <div id="searchResults"></div>
+  </div>
+</div>
+
+<div class="wrap">
+<section class="disclaimer" id="sec-disclaimer">
+  <b class="t">⚠️ 免责声明（请先阅读）</b>
+  <ol>
+    <li><b>非官方文件</b>：本手册是个人学习笔记，不是上海理工大学的官方文件，也不代表学校或任何学院的立场。</li>
+    <li><b>内容可能过时</b>：整理自 2026 版《学生手册》、2026 版《本科培养计划》及各学院公开文件与个人收集资料，其中部分规定可能已被学校修订、替换或废止，请勿默认其仍然有效。</li>
+    <li><b>仅供参考，不作为决策依据</b>：学业、选课、大类分流、转专业、评奖评优、保研、入党等重要事项，请一律以上海理工大学官方发布的最新文件与通知为准。</li>
+    <li><b>后果自担</b>：任何人因使用、参考或传播本手册内容所做的决定及其产生的一切后果，均由其本人自行承担；整理者不对因信息过时、错漏或理解偏差导致的任何损失或纠纷承担责任。</li>
+    <li><b>分享请完整保留本声明</b>，请勿用于任何商业用途；如内容与学校最新文件不一致，以学校文件为准。</li>
+  </ol>
 </section>
 </div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="backmap"><a href="index.html">← 返回校园地图</a></div>
+    <div class="mast">
+      <img class="badge" src="data:image/png;base64,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" alt="上海理工大学校徽">
+      <div class="names">
+        <div class="sch">上海理工大学 · UNIVERSITY OF SHANGHAI FOR SCIENCE AND TECHNOLOGY</div>
+        <h2>大学信息差<b>大白话手册</b></h2>
+        <div class="motto">校训：信义勤爱 · 思学致远 ｜ 2026级 工科试验班（电子与信息类）</div>
+      </div>
+    </div>
+    <p class="meta">依据《学生手册（2026）》《基础学院综测办法》《理学院2026届推免细则》《2026级本科培养计划》整理 · 所有条款注明出处 · 规则以学校当年发文为准 · <b>v7</b>（2026-10-01 依 2026 级官方文件更新）</p>
+    <div class="stats">
+      <div class="stat"><b>320</b><span>页官方学生手册（2026版）</span></div>
+      <div class="stat"><b>44</b><span>份规定已归档</span></div>
+      <div class="stat"><b>13</b><span>个分流候选专业（2026版）</span></div>
+      <div class="stat"><b>26</b><span>节导航即点即达</span></div>
+      <div class="stat"><b>100%</b><span>条款注明出处</span></div>
+    </div>
+    <details class="log">
+      <summary>🔄 v7 更新记录（2026-10-01 · 依据 2026 级官方培养计划系列 6 份文件逐条核对）</summary>
+      <p class="muted">➕ <b>新增</b>：①大一上必修课「人工智能通识导论A」1.0·考查（2026 新设"数智基础类"，理工农医类必修）；②格致创新班官方出处：2026 培养计划下册 p398（智能科技学院·人工智能格致创新班 3201）。<br>
+      🔄 <b>修改</b>：①分流候选专业 15 → 13（2026 级起医学影像技术、智能医学工程划入智能化制造类），13 个专业页码全部换 2026 版；②程序设计及实践(C) 3.0 → (C)A 2.0（一/1–一/2）；③程序设计课程设计(C) 从"短1 集中 2 周"改到一/2 学期内（64 实验学时）；④军训官方定档：1.0 学分、排大一短1（2026 通识-军体类表）；⑤基础学院 2026-03 并入基础学部（basis 域名已注销），相关链接改指理学院官网；⑥"毕业 160 学分"升格为官方确认（上册电信类专业 160 / 医学信息工程 156）；⑦电信类大类阶段总学分 28.5 → 26.5；⑧二次检验时发现《学生手册（2026）》已发布（2026-09-09），逐条核对：1.80 学位线、25/60/100 警示线、90/10 分流公式、补考记 60 分、绩点表全部未变——来源与页码引用已切换到 2026 版（320 页）；2025 版学生手册/培养计划按要求移出资料来源表（本地仍有存档）。<br>🛠 <b>v8.1 工具批（2026-10-01）</b>：手机端导航抽屉、侧栏板块折叠、宽表首列吸附、节标题复制链接、拼音首字母搜索（输 dlfl 直达大类分流）、综测计算器、GPA/加权双算器、往年分流位次线登记表（仅存本机浏览器，不上传）。<br>
+      ❌ <b>删除</b>：①大一课程表中的「工程制图(1)」2.0（2026 电信类大类基础理论课已不再开设）。</p>
+    </details>
+  </div>
+</header>
+
+<div class="wrap">
+<section id="sec-toc">
+  <h3 class="sec">🔗 网址总表（出处 + 日常查询入口）</h3>
+  <h4>资料来源（每条规定都注明出处 · 共五份）</h4>
+  <div class="tw"><table>
+    <tr><th>资料</th><th>来源网址</th><th>本地存档</th></tr>
+    <tr><td>本科学生手册（2026）✅ 现行版</td><td><a href="https://jwc.usst.edu.cn/2026/0909/c10348a370207/page.htm" target="_blank">jwc.usst.edu.cn/2026/0909/…</a>（2026-09-09 发布，PDF 已存档）</td><td>学生手册2026.pdf（320页，v7 二次检验时切换）</td></tr>
+    <tr><td>基础学院综测办法</td><td><a href="https://lxy.usst.edu.cn/" target="_blank">原 basis.usst.edu.cn（⚠️ 2026-03 基础学院并入基础学部，原域名已注销；现看理学院/基础学部官网）</a></td><td>基础学院学生综合表现评定办法.pdf</td></tr>
+    <tr><td>2026 级本科培养计划（上/下册 + 4 份附表）</td><td>教务处发布（2026-10-01 微信官方文件版核对）</td><td>2026本科培养计划上册.pdf / 下册.pdf（各约 440 页）+ 阅读指南/大类一览表/通识课程/学科基础附表</td></tr>
+    <tr><td>理学院推免细则（2026届）</td><td><a href="https://lxy.usst.edu.cn/_upload/article/files/4e/eb/0c256a264f4ba973dacfc21a9449/dd2b9ed2-08e3-48e3-88d4-752e026a587c.pdf" target="_blank">lxy.usst.edu.cn/…/dd2b9ed2….pdf</a></td><td>理学院2026届推免细则.pdf</td></tr>
+    <tr><td>校定A类竞赛名单（2025）</td><td><a href="https://cxcy.usst.edu.cn/2025/1031/c16875a349793/page.psp" target="_blank">cxcy.usst.edu.cn/2025/1031/…</a></td><td>校定A类竞赛名单.pdf（106项）</td></tr>
+  </table></div>
+  <h4>常用网站全表 · 按用途分类（标注大一使用场景）</h4>
+  <p class="muted">全量收录自教务处《学生常用网站》，并补充基础学部（原基础学院）入口。⚠️ 统一身份认证初始密码 = 身份证后6位+usst，首次登录立刻改密。</p>
+
+  <h4>🏫 教务与学习（大一最常用）</h4>
+  <div class="tw"><table>
+    <tr><th>站点</th><th>网址</th><th>主要功能</th><th>大一什么时候用得上</th></tr>
+    <tr><td>信息门户（一网通办）</td><td><a href="http://myportal.usst.edu.cn/" target="_blank">myportal.usst.edu.cn</a></td><td>学生专属门户，100+ 项在线业务（教务、财务、奖助、就业）</td><td><b>天天用</b>；办任何业务的起点</td></tr>
+    <tr><td>教务管理系统</td><td><a href="https://jwc.usst.edu.cn/" target="_blank">jwc.usst.edu.cn</a></td><td>选课、成绩查询、课表、学籍管理</td><td><b>选课周、出分日必刷</b>；分流志愿也在这里填</td></tr>
+    <tr><td>本科生院</td><td><a href="https://bksy.usst.edu.cn/" target="_blank">bksy.usst.edu.cn</a></td><td>教学通知、办事指南、下载专区</td><td>常年盯通知；分流/考试安排季高频</td></tr>
+    <tr><td>基础学部（原基础学院）</td><td><a href="https://lxy.usst.edu.cn/" target="_blank">lxy.usst.edu.cn</a></td><td>大一学部通知；综测细则发布地（原 basis.usst.edu.cn 已于 2026-03 机构合并后注销）</td><td><b>大一全年盯紧</b>——综测细则就发在这里</td></tr>
+    <tr><td>图书馆</td><td><a href="https://library.usst.edu.cn/" target="_blank">library.usst.edu.cn</a></td><td>馆藏、数据库、座位预约、电子资源</td><td>期中期末抢座位；写论文查数据库</td></tr>
+    <tr><td>创新创业学院</td><td><a href="http://cxcy.usst.edu.cn/" target="_blank">cxcy.usst.edu.cn</a></td><td>创新创业项目、竞赛信息、创业指导</td><td>大一下申大创、竞赛报名季</td></tr>
+    <tr><td>研究生教育管理系统</td><td><a href="https://yjs.usst.edu.cn/" target="_blank">yjs.usst.edu.cn</a></td><td>研究生选课、成绩、培养管理</td><td>大一用不上；考研上岸后的家</td></tr>
+  </table></div>
+
+  <h4>💼 招生与就业</h4>
+  <div class="tw"><table>
+    <tr><th>站点</th><th>网址</th><th>主要功能</th><th>大一什么时候用得上</th></tr>
+    <tr><td>就业信息网</td><td><a href="https://91.usst.edu.cn/" target="_blank">91.usst.edu.cn</a></td><td>招聘、双选会、就业指导、生源信息</td><td>大一二了解行业；大三实习、大四主战场</td></tr>
+    <tr><td>研究生招生网</td><td><a href="https://yz.usst.edu.cn/" target="_blank">yz.usst.edu.cn</a></td><td>招生简章、报名、调剂、复试</td><td>大三大四用；大一想保研/考研可先了解</td></tr>
+    <tr><td>本科招生网</td><td><a href="https://zhaoban.usst.edu.cn/" target="_blank">zhaoban.usst.edu.cn</a></td><td>招生计划、录取查询、政策</td><td>基本用不上；帮亲戚小孩查录取时用</td></tr>
+  </table></div>
+
+  <h4>🏠 校园生活与服务</h4>
+  <div class="tw"><table>
+    <tr><th>站点</th><th>网址</th><th>主要功能</th><th>大一什么时候用得上</th></tr>
+    <tr><td>学生处</td><td><a href="https://xsc.usst.edu.cn/" target="_blank">xsc.usst.edu.cn</a></td><td>学工公告、奖助贷、心理健康、征兵</td><td><b>评奖季、困难认定</b>（开学初）；有困扰时找心理支持</td></tr>
+    <tr><td>学生邮箱</td><td><a href="https://mail.st.usst.edu.cn/" target="_blank">mail.st.usst.edu.cn</a></td><td>校内邮箱（学号@st.usst.edu.cn）</td><td><b>天天看</b>——选课、评奖等正式通知都发这里</td></tr>
+    <tr><td>Welink 移动校园</td><td>手机 APP</td><td>移动端校园卡、教务、邮箱、电子班级</td><td>随装随用，手机办事全靠它</td></tr>
+    <tr><td>场馆预约系统</td><td><a href="http://sfile.usst.edu.cn/eweb/indexxsgyy.so" target="_blank">sfile.usst.edu.cn</a></td><td>体育场馆、会议室预约</td><td>想打球健身先约；考试周抢自习位</td></tr>
+    <tr><td>校园 GIS 地图</td><td><a href="http://gis.usst.edu.cn/" target="_blank">gis.usst.edu.cn</a></td><td>三维地图、建筑定位、宿舍查询</td><td>报到前找到宿舍楼；找教学楼靠它<br><span class="muted">2026-09 实测需校园网/VPN</span></td></tr>
+  </table></div>
+
+  <h4>🔧 网络与技术服务</h4>
+  <div class="tw"><table>
+    <tr><th>站点</th><th>网址</th><th>主要功能</th><th>大一什么时候用得上</th></tr>
+    <tr><td>学校主页</td><td><a href="https://www.usst.edu.cn/" target="_blank">www.usst.edu.cn</a></td><td>官方门户、新闻、院系导航</td><td>了解学校大事；找各院系入口</td></tr>
+    <tr><td>信息化办公室</td><td><a href="http://net.usst.edu.cn/" target="_blank">net.usst.edu.cn</a></td><td>校园网、VPN、正版软件、网络报修</td><td>网断了报修；VPN 用法教程在这里</td></tr>
+    <tr><td>微软正版软件</td><td><a href="http://ms.usst.edu.cn/" target="_blank">ms.usst.edu.cn</a></td><td>免费正版 Office、Windows</td><td><b>拿到电脑第一件事</b>——别自己花钱买<br><span class="muted">2026-09 实测校外直连失败，走 VPN 或校内网</span></td></tr>
+    <tr><td>VPN 服务</td><td><a href="https://www.usst.edu.cn/_t50/main.psp" target="_blank">usst.edu.cn VPN 入口</a></td><td>校外访问校内资源通道</td><td>寒暑假在家查成绩/进教务必备</td></tr>
+    <tr><td>信息公开网</td><td><a href="https://xxgk.usst.edu.cn/" target="_blank">xxgk.usst.edu.cn</a></td><td>学校信息公开（财务、人事、招生）</td><td>很少用；查官方数据时来</td></tr>
+    <tr><td>校友总会</td><td><a href="http://alumni.usst.edu.cn/" target="_blank">alumni.usst.edu.cn</a></td><td>校友服务、活动、捐赠</td><td>毕业后再见 👋</td></tr>
+  </table></div>
+</section>
+
+<!-- ============ 急救表 ============ -->
+<section id="sec-map">
+  <h3 class="sec">🆘 名词混乱急救表（先贴墙上，防串台）</h3>
+  <div class="tw"><table>
+    <tr><th>名词</th><th>一句话</th><th>制度</th><th>谁用</th></tr>
+    <tr><td><b>分数</b></td><td>你考的原始分</td><td>0~100</td><td>一切的原料</td></tr>
+    <tr><td><b>绩点</b></td><td>一门课分数换算后的"段位分"</td><td>0~4.5</td><td>算 GPA 的原料</td></tr>
+    <tr><td><b>GPA（=平均绩点）</b></td><td>所有课绩点按学分加权平均</td><td>0~4.5</td><td>学位证、转专业</td></tr>
+    <tr><td><b>学分加权成绩</b></td><td>所有课<b>原始分</b>按学分加权平均</td><td>0~100</td><td><b>分流90%</b>、奖学金分档</td></tr>
+    <tr><td><b>综测（=综合表现成绩）</b></td><td>课外表现分：规定动作+活动−违纪</td><td>0~100</td><td><b>分流10%</b>、奖学金门槛</td></tr>
+    <tr><td><b>综合成绩</b></td><td>加权×90%+综测×10% 的<b>一次性合成数</b></td><td>0~100</td><td><b>只用于分流，用完退役</b></td></tr>
+  </table></div>
+  <p>⚠️ "综合成绩"和"综测"最容易混：综测是原料，综合成绩是分流时现做的成品。</p>
+</section>
+
+<!-- ============ 板块一 ============ -->
+<details class="block" open><summary>板块一 · 游戏底层——学分</summary><div class="inner">
+
+  <section id="sec1">
+    <h3 class="sec">1. 学分 = 游戏币 🪙</h3>
+    <p>每门课值几个学分 = 它多"值钱"（学校定死，跟你考多少分无关）。毕业 = 攒够专业要求的总学分。</p>
+    <p>上理硬性进度线（学籍办法第37条）——数的是<b>"已取得"的学分</b>，挂科多了就可能踩线：</p>
+    <div class="tw"><table>
+      <tr><th>时间节点</th><th>已取得学分须超过</th></tr>
+      <tr><td>大一结束</td><td><b>25 学分</b></td></tr>
+      <tr><td>大二结束</td><td><b>60 学分</b></td></tr>
+      <tr><td>大三结束</td><td><b>100 学分</b></td></tr>
+    </table></div>
+    <div class="tw"><table>
+      <tr><th>不达标次数</th><th>后果</th></tr>
+      <tr><td>第 1 次</td><td><span class="warn">学业警示</span>——一年内所有评奖评优取消</td></tr>
+      <tr><td>第 2 次</td><td><span class="warn">退学警告 + 降级修读</span></td></tr>
+      <tr><td>第 3 次</td><td><span class="warn">退学</span></td></tr>
+    </table></div>
+    <p>选课弹性：每学期学分可在培养计划建议学分的 <strong>±30%</strong> 浮动。</p>
+    <div class="card"><span class="t">💡 提示卡｜学分</span>
+      <p><b class="k">🎯 能干什么</b>：唯一硬通货——攒不够不能毕业；不够进度线触发学业警示/退学。毕业总学分以你专业培养计划为准（✅ v7 已核 2026 官方：上册电信类专业 160 / 医学信息工程 156）。</p>
+      <p><b class="k">🎁 怎么拿到</b>：四环链条缺一不可——①教务系统<b>选课成功</b>（蹭课无效）→ ②上满学期别被<b>取消考试资格</b>（旷课/缺作业太多）→ ③<b>参加考核</b>（缺考=0分）→ ④<b>考核及格 ≥60</b>。</p>
+      <p><b class="k">📈 怎么提高</b>：学分没有"提高"只有"保住"——每学期选的每门课目标只有一个：及格。挂一门 = 钱花了时间花了进度条不动；及格过的课学分只算一次，重修刷分没意义。</p>
+    </div>
+  </section>
+
+  <section id="sec2">
+    <h3 class="sec">2. 挂科补救流程（背熟，最好用不上）</h3>
+    <div class="tw"><table>
+      <tr><th>情形</th><th>规则</th><th>补救窗口</th></tr>
+      <tr><td>期末不及格</td><td>学分拿不到，绩点记 0</td><td><b>补考</b>：下学期初，过了也只记 60 分</td></tr>
+      <tr><td>补考还不合格</td><td>仍无学分</td><td><b>重修</b>：跟下一届重新上课再考</td></tr>
+      <tr><td>实践类课程挂科（实验/实习/设计）</td><td><span class="warn">没有补考</span></td><td>只能重修</td></tr>
+      <tr><td>考前生病等特殊情况</td><td>可申请<b>缓考</b></td><td>下学期再考；缓考没有补考</td></tr>
+      <tr><td>毕业那学期挂科</td><td><span class="warn">没有补考资格</span></td><td>直接威胁毕业，务必提前避坑</td></tr>
+    </table></div>
+    <p>补考重修成绩如实进档案（绩点真受伤），但评奖学金时不计入。</p>
+  </section>
+
+  <section id="sec3">
+    <h3 class="sec">3. 考试红线 ⚠️⚠️</h3>
+    <p>作弊 = 该科零分 + 纪律处分。连锁反应：处分期间分流排最后、评奖评优全取消；学术失信受留校察看或两次记过，<span class="warn">学位证都可能不发</span>（综测同步扣 10~40 分）。手机带进座位响铃都算违纪。<strong>别碰。</strong></p>
+  </section>
+
+</div></details>
+
+<!-- ============ 板块二 ============ -->
+<details class="block" open><summary>板块二 · 成绩的两张脸——绩点系 vs 加分系</summary><div class="inner">
+
+  <section id="sec4">
+    <h3 class="sec">4. 三层套娃：分数 → 绩点 → GPA 🪆</h3>
+    <p><strong>分数</strong>（0~100）：你考出来的原始分，一门课一个。<br>
+       <strong>绩点</strong>（0~4.5）：学校把分数按段位换算，一门课一个绩点。<br>
+       <strong>GPA（=平均绩点）</strong>：所有课绩点按学分加权平均的总段位。GPA 的 A 就是 Average——名字里写着"平均"。"总绩点"是口语模糊词；官方只有<b>学期平均绩点</b>（这学期）和<b>累计平均绩点</b>（四年总账）。</p>
+    <p>上理官方换算表（学籍办法第18条），背下来：</p>
+    <div class="tw"><table>
+      <tr><th>分数</th><th>绩点</th><th>分数</th><th>绩点</th></tr>
+      <tr><td>95–100</td><td>4.5</td><td>75–79</td><td>2.5</td></tr>
+      <tr><td>90–94</td><td>4.0</td><td>70–74</td><td>2.0</td></tr>
+      <tr><td>85–89</td><td>3.5</td><td>61–69</td><td>1.5</td></tr>
+      <tr><td>80–84</td><td>3.0</td><td>60</td><td>1.0</td></tr>
+      <tr><td>≤59</td><td><b>0</b></td><td></td><td></td></tr>
+    </table></div>
+    <div class="card"><span class="t">💡 提示卡｜绩点 / GPA</span>
+      <p><b class="k">🎯 能干什么</b>：累计平均绩点 ≥1.80 才发<b>学位证</b>；转专业、修辅修的基本依据；保研看排名也离不开它。</p>
+      <p><b class="k">🎁 怎么得到</b>：不用"得到"，每学期考完自动生成学期 GPA；四年累计就是累计 GPA。</p>
+      <p><b class="k">📈 怎么提高</b>：①<b>大课优先</b>——高数 6 学分一门顶六门；②<b>卡档位</b>——78 和 79 都是 2.5，79→80 跳 3.0，复习冲档位线；③<b>别压及格线</b>——60 分绩点只有 1.0，大一大二正是攒 GPA 黄金期。</p>
+    </div>
+  </section>
+
+  <section id="sec5">
+    <h3 class="sec">5. GPA 怎么算（四步）</h3>
+    <p><strong>GPA = Σ（每门课绩点 × 学分）÷ Σ（总学分）</strong></p>
+    <div class="tw"><table>
+      <tr><th>课程</th><th>学分</th><th>分数</th><th>查表→绩点</th><th>绩点 × 学分</th></tr>
+      <tr><td>高等数学</td><td>6</td><td>92</td><td>4.0</td><td>24.0</td></tr>
+      <tr><td>大学英语</td><td>3</td><td>84</td><td>3.0</td><td>9.0</td></tr>
+      <tr><td>大学物理</td><td>4</td><td>78</td><td>2.5</td><td>10.0</td></tr>
+      <tr><td>体育</td><td>1</td><td>90</td><td>4.0</td><td>4.0</td></tr>
+      <tr><td><b>合计</b></td><td><b>14</b></td><td>—</td><td>—</td><td><b>47.0</b></td></tr>
+    </table></div>
+    <p><strong>GPA = 47.0 ÷ 14 = 3.36</strong>。"乘学分"是灵魂：学分就是话语权——体育满分轻轻推一把，高数翻车直接拽下水。</p>
+  </section>
+
+  
+  <div class="calc" id="gpaCalc">
+    <span class="ct">🧮 GPA / 加权成绩 双算器（同一组成绩，两条赛道）</span>
+    <div class="gr" style="margin-bottom:8px">
+      <span class="hd">课程（可改）</span><span class="hd">学分</span><span class="hd">分数</span>
+    </div>
+    <div class="gr"><input value="高等数学"><input type="number" value="6" min="0" step="0.5"><input type="number" value="92" min="0" max="100"></div>
+    <div class="gr"><input value="大学英语"><input type="number" value="3" min="0" step="0.5"><input type="number" value="84" min="0" max="100"></div>
+    <div class="gr"><input value="大学物理"><input type="number" value="4" min="0" step="0.5"><input type="number" value="78" min="0" max="100"></div>
+    <div class="gr"><input value="电路原理"><input type="number" value="4" min="0" step="0.5"><input type="number" value="85" min="0" max="100"></div>
+    <div class="gr"><input value="体育"><input type="number" value="1" min="0" step="0.5"><input type="number" value="90" min="0" max="100"></div>
+    <div class="gr"><input value="" placeholder="再加一门"><input type="number" value="" min="0" step="0.5" placeholder="学分"><input type="number" value="" min="0" max="100" placeholder="分数"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="gpaReset">恢复示例</button>
+      <span class="hint" style="margin:0">随便填，右边实时出两个结果</span>
+    </div>
+    <div class="out" id="gpaOut"></div>
+    <p class="hint">左边按学籍办法第二十条换绩点再平均（GPA，学位线看它）；右边原始分直接平均（加权成绩，分流 90% 看它）。填同一组分，差距一眼看穿。</p>
+  </div>
+
+  <section id="sec6">
+    <h3 class="sec">6. 学分加权成绩 = 分流的真主角 🎯</h3>
+    <p><strong>学分加权成绩 = Σ（每门课原始分数 × 学分）÷ Σ（总学分）</strong>——公式和 GPA 一模一样，但乘的是<b>原始分</b>，不换绩点。</p>
+    <p>同一组成绩（92/84/78/90，学分 6/3/4/1），两种算法各算一遍：</p>
+    <div class="tw"><table>
+      <tr><th>算法</th><th>乘的是什么</th><th>计算过程</th><th>结果</th></tr>
+      <tr><td><b>学分加权成绩</b></td><td>原始分数</td><td>（92×6 + 84×3 + 78×4 + 90×1）÷ 14</td><td><b>86.1 分</b>（百分制）</td></tr>
+      <tr><td>GPA</td><td>换算后的绩点</td><td>47.0 ÷ 14</td><td><b>3.36</b>（4.5 制）</td></tr>
+    </table></div>
+    <p>一根藤上两个瓜：信息同源，但主战场不同（见下表）。</p>
+    <p><span class="warn">关键区别：GPA 有档位保护（85 和 89 都是 3.5），加权成绩一分是一分。分流排名零点几分定生死，这条赛道上没有"白考的分"。</span></p>
+    <div class="card"><span class="t">💡 提示卡｜学分加权成绩</span>
+      <p><b class="k">🎯 能干什么</b>：①<b>大类分流综合成绩的 90%</b>（你进哪个专业的最大变量）；②<b>奖学金分档硬线</b>：三等≥75 / 二等≥80 / 一等≥85 / 特等≥90。</p>
+      <p><b class="k">🎁 怎么得到</b>：每学期考完教务系统可见（评奖学金按学期算，重修成绩不计入）。</p>
+      <p><b class="k">📈 怎么提高</b>：①学分大的课往死里抓（高数多考 2 分 ≈ 加权 +0.86）；②<b>卡档位策略在这里失效</b>——一分是一分；③每学期修满建议学分（低于 80% 取消奖学金资格）。</p>
+    </div>
+  </section>
+
+  <section id="sec7">
+    <h3 class="sec">7. 一张表分清两兄弟</h3>
+    <div class="tw"><table>
+      <tr><th></th><th>GPA</th><th>学分加权成绩</th></tr>
+      <tr><td>乘的是什么</td><td>换算后的绩点（0~4.5）</td><td>原始分数（0~100）</td></tr>
+      <tr><td>满分</td><td>4.5</td><td>100</td></tr>
+      <tr><td>档位保护</td><td>有（5分一档）</td><td><b>无，一分是一分</b></td></tr>
+      <tr><td>主战场</td><td>学位证、转专业、保研</td><td><b>分流 90%、奖学金分档</b></td></tr>
+      <tr><td>策略</td><td>冲档位线</td><td>每一分都咬</td></tr>
+    </table></div>
+  </section>
+
+</div></details>
+
+<!-- ============ 板块三 ============ -->
+<details class="block" open><summary>板块三 · 课外表现——综测账本 📒</summary><div class="inner">
+
+  <section id="sec8">
+    <h3 class="sec">8. 综测一句话结构</h3>
+    <p><strong>综测 = 核心模块（0~60，必须≥50）+ 额外表现（发展+卓越+征兵，合计 0~50）− 违纪扣分，总账封顶 100。</strong></p>
+    <pre class="tree">你的综测账本
+├─ <b>口袋A 核心</b>（0~60，必须≥50，B补不上）：晚自习20+各项规定动作40
+├─ <b>口袋B 额外</b>（合计≤50）
+│   ├─ B1 发展：学院活动（院外活动一学期最多认2分）
+│   ├─ B2 卓越：竞赛/论文/专利/荣誉/学生工作
+│   └─ B3 征兵：报名体检+3 / 正式入伍+40
+└─ <b>口袋C 扣分</b>：警告-10 / 严重警告-20 / 记过-30 / 留校察看-40</pre>
+  </section>
+
+  <section id="sec9">
+    <h3 class="sec">9. 基础学院细则给你划的重点</h3>
+    <h4>核心模块清单（每学期合计 60 分，基本线 50，全是"人到就有"）</h4>
+    <div class="tw"><table>
+      <tr><th>项目</th><th>大一上分值</th><th>项目（大一下）</th><th>分值</th></tr>
+      <tr><td><b>晚自习</b></td><td><b>20</b></td><td><b>晚自习</b></td><td><b>20</b></td></tr>
+      <tr><td>新生入学认知教育</td><td>10</td><td>专业博览会暨生涯启航嘉年华</td><td>7</td></tr>
+      <tr><td>新生职业生涯测试</td><td>5</td><td><b>寒假大作业</b></td><td>6</td></tr>
+      <tr><td>心理健康测试</td><td>5</td><td>安全教育系列活动</td><td>5</td></tr>
+      <tr><td>主题班团课</td><td>5</td><td>主题班团课</td><td>5</td></tr>
+      <tr><td>"班班有歌声"合唱初赛</td><td>5</td><td>诚信教育系列活动</td><td>5</td></tr>
+      <tr><td>安全教育系列活动</td><td>3</td><td>"聚力青春"团体体育竞技赛</td><td>5</td></tr>
+      <tr><td>寝室安全卫生无黑牌</td><td>3</td><td>二级学院学科介绍暨专业宣讲会</td><td>4</td></tr>
+      <tr><td>运动知识答题</td><td>2</td><td>寝室安全卫生无黑牌</td><td>3</td></tr>
+      <tr><td>易班注册</td><td>1</td><td>—</td><td>—</td></tr>
+      <tr><td>到梦空间注册</td><td>1</td><td>—</td><td>—</td></tr>
+      <tr><td><b>合计</b></td><td><b>60</b></td><td><b>合计</b></td><td><b>60</b></td></tr>
+    </table></div>
+    <h4>卓越模块分值表（与发展模块合计上限 50 分）</h4>
+    <div class="tw"><table>
+      <tr><th>类别</th><th>档位 / 说明</th><th>分值</th></tr>
+      <tr><td>竞赛 · 国家级</td><td>一等及以上 40 ｜ 二等 35 ｜ 三等 30</td><td>30–40</td></tr>
+      <tr><td>竞赛 · 市级</td><td>一等及以上 30 ｜ 二等 25 ｜ 三等 20</td><td>20–30</td></tr>
+      <tr><td>荣誉 · 国家级 / 市级</td><td>国家级 30 ｜ 市级 20</td><td>20–30</td></tr>
+      <tr><td>荣誉 · 校级（校党委/校章）</td><td>一等 15 ｜ 二等 14 ｜ 三等 13 ｜ 优胜/优秀 12</td><td>12–15</td></tr>
+      <tr><td>荣誉 · 校部门级（部门章）</td><td>一等 8 ｜ 二等 7 ｜ 三等及以下 6</td><td>6–8</td></tr>
+      <tr><td>荣誉 · 院级</td><td>一等 5 ｜ 二等 4 ｜ 三等及以下 3</td><td>3–5</td></tr>
+      <tr><td>论文</td><td>按发表期刊级别给分</td><td>10–40</td></tr>
+      <tr><td>专利</td><td>发明 30 ｜ 实用新型 10 ｜ 外观 5</td><td>5–30</td></tr>
+      <tr><td>学院学生社会工作</td><td>班委、学生会等，按实际给分</td><td>1–5</td></tr>
+      <tr><td>征兵模块</td><td>报名并体检 +3 ｜ 正式入伍 +40（两项不累计）</td><td>≤40</td></tr>
+    </table></div>
+    
+  <div class="calc" id="zcCalc">
+    <span class="ct">🧮 综测计算器（大一上 · 点一点自动算）</span>
+    <div class="grid" id="zcA">
+      <label><input type="checkbox" data-v="20">晚自习 20</label>
+      <label><input type="checkbox" data-v="10">新生入学认知教育 10</label>
+      <label><input type="checkbox" data-v="5">新生职业生涯测试 5</label>
+      <label><input type="checkbox" data-v="5">心理健康测试 5</label>
+      <label><input type="checkbox" data-v="5">主题班团课 5</label>
+      <label><input type="checkbox" data-v="5">"班班有歌声"合唱 5</label>
+      <label><input type="checkbox" data-v="3">安全教育系列活动 3</label>
+      <label><input type="checkbox" data-v="3">寝室安全卫生无黑牌 3</label>
+      <label><input type="checkbox" data-v="2">运动知识答题 2</label>
+      <label><input type="checkbox" data-v="1">易班注册 1</label>
+      <label><input type="checkbox" data-v="1">到梦空间注册 1</label>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <b style="font-size:12.5px;color:#232a3d">口袋B：</b>
+      <label style="gap:4px">发展活动 <input type="number" id="zcB1" min="0" max="50" value="0"></label>
+      <label style="gap:4px">卓越成果 <input type="number" id="zcB2" min="0" max="50" value="0"></label>
+      <label style="gap:4px">征兵
+        <select id="zcB3"><option value="0">无</option><option value="3">报名并体检 +3</option><option value="40">正式入伍 +40</option></select>
+      </label>
+      <label style="gap:4px">违纪
+        <select id="zcCF"><option value="0">无</option><option value="10">警告 -10</option><option value="20">严重警告 -20</option><option value="30">记过 -30</option><option value="40">留校察看 -40</option></select>
+      </label>
+    </div>
+    <div class="out" id="zcOut"></div>
+    <p class="hint">口径：核心模块 0~60 须 ≥50（B 口袋补不上）；额外 = 发展 + 卓越 + 征兵，合计 ≤50；总分封顶 100。分值依《基础学院学生综合表现评定办法》（基础〔2025〕2号，手册第 9 节），每学期以学院公示细则为准。</p>
+  </div>
+
+  <p><strong>时间线</strong>：每学期<b>第 14 周启动、16 周前公示 5 天</b>，异议找辅导员，过期不候。</p>
+    <div class="card"><span class="t">💡 提示卡｜综测</span>
+      <p><b class="k">🎯 能干什么</b>：①大类分流综合成绩的 <b>10%</b>；②奖学金评定的<b>德育资格线</b>（不达标，加权再高也取消资格）；③评优依据。它是<b>防守型分数</b>：守住白送分，守不住会咬人（晚自习翘一学期 = 综合成绩白丢 2 分）。</p>
+      <p><b class="k">🎁 怎么得到</b>：核心模块靠<b>考勤自动到账</b>；发展模块参加学院活动（老师报名单）；卓越模块<b>自己交材料申请</b>（限参评学年内、上理本科生身份，同一成果只用一次）；违纪自动扣。</p>
+      <p><b class="k">📈 怎么提高</b>：①晚自习全勤（全表最大单项 20 分）；②规定动作一个不漏；③开学竞选班委；④偶尔凑学院活动；⑤大二再上竞赛/专利。⚠️ 大家实际挤在 55~70 分，B 口袋凑到 40 就顶格——<b>拉开差距靠"谁缺勤多"，不靠"谁活动多"</b>。</p>
+      <p class="muted">⚠️ 2026级注意：这版自2025级施行，你们大概率有修订版。⚠️ v7 提示：基础学院 2026 年 3 月已并入<b>基础学部</b>（与理学院合署运营 lxy.usst.edu.cn），新版综测细则盯理学院官网。</p>
+    </div>
+  </section>
+
+</div></details>
+
+<!-- ============ 板块四 ============ -->
+<details class="block" open><summary>板块四 · 排名决定什么</summary><div class="inner">
+
+  <section id="sec10">
+    <h3 class="sec">10. 综合成绩 = 为分流现做的一次性成绩 🏁</h3>
+    <p><strong>综合成绩 = 学分加权成绩 × 90% + 综测 × 10%</strong>——大一末算一次，全大类排名，用完退役（像高考总分）。<br>
+    但<b>原料不退役</b>：加权成绩每学期继续发奖学金，综测每学期继续卡评奖资格。</p>
+  </section>
+
+  <section id="sec11">
+    <h3 class="sec">11. 大类分流（你的头等大事）</h3>
+    <p>你是"工科试验班（电子与信息类）"，2026 级起一共 <b>13</b> 个专业可分流（页码 = 2026 版培养计划可查详情）。<span class="warn">⚠️ v7 注意：医学影像技术、智能医学工程自 2026 级起划入智能化制造类，不再是大类候选。</span></p>
+    <div class="tw"><table>
+      <tr><th>#</th><th>专业</th><th>2026版页码</th><th>#</th><th>专业</th><th>2026版页码</th></tr>
+      <tr><td>1</td><td>测控技术与仪器</td><td>上册 p63–75</td><td>8</td><td>光电信息科学与工程</td><td>上册 p162–180（中德 p181–195，单独招生）</td></tr>
+      <tr><td>2</td><td>电子信息工程</td><td>上册 p76–89</td><td>9</td><td>数据科学与大数据技术</td><td>上册 p196–207</td></tr>
+      <tr><td>3</td><td>通信工程</td><td>上册 p90–105</td><td>10</td><td>人工智能</td><td>上册 p271–285</td></tr>
+      <tr><td>4</td><td>电子科学与技术</td><td>上册 p106–121</td><td>11</td><td>电气工程及其自动化</td><td>上册 p346–358</td></tr>
+      <tr><td>5</td><td>智能科学与技术</td><td>上册 p122–134</td><td>12</td><td>医学信息工程</td><td>下册 p111–121</td></tr>
+      <tr><td>6</td><td>计算机科学与技术</td><td>上册 p135–147</td><td>13</td><td>新媒体技术</td><td>下册 p241–255</td></tr>
+      <tr><td>7</td><td>自动化</td><td>上册 p148–161</td><td></td><td></td><td></td></tr>
+    </table></div>
+    <p>时间线：<b>大一下考试周前填志愿</b>（志愿数=专业数，13个全排序）→ <b>大一短学期完成分流</b> → 大二进专业。全大学只有一次。<br>
+    规则：综合成绩高者先选；同分看加权成绩；处分期间学生排最后。</p>
+    <p>🥚 彩蛋（存在已证实，细节待核实）：<b>格致创新班</b>——培养计划注明其"单独招生"；《大一高绩点作战手册》（公开信息整理）称 2027 年 4~5 月选拔、AI 方向、择优给保研推荐资格、门槛为英语提高班/卓越班。<b>v7 补充：2026 官方培养计划下册 p398 已收录「人工智能（格致创新班）3201」（智能科技学院）培养计划。</b><span class="warn">开学英语分级考试尽力考高——这条记死。</span></p>
+    <div class="card"><span class="t">💡 提示卡｜大类分流</span>
+      <p><b class="k">🎯 能干什么</b>：直接决定你大二起在哪个专业、跟谁竞争、拿哪套培养计划——等于"高考再现"。</p>
+      <p><b class="k">🎁 怎么得到</b>：不用得到，是你要"打赢"的排位赛。90% 看大一加权成绩，10% 看综测。</p>
+      <p><b class="k">📈 怎么提高</b>：①大一一切为加权成绩让路（尤其 6 学分的高数）；②综测守住考勤底线；③寒假摸清 13 个专业出路，填志愿前找直系学长要<b>往年各专业实际分流位次线</b>——比任何官方文件都真实。</p>
+    </div>
+  
+  <div class="calc" id="fsxStore">
+    <span class="ct">📒 往年分流位次线登记表（向学长要来填，只存在你自己的浏览器）</span>
+    <div class="tw ranktbl"><table>
+      <tr><th>学年</th><th>专业</th><th>实际分流线（综合成绩 / 名次）</th><th>信息来源</th></tr>
+      <tr><td contenteditable></td><td contenteditable></td><td contenteditable></td><td contenteditable></td></tr>
+      <tr><td contenteditable></td><td contenteditable></td><td contenteditable></td><td contenteditable></td></tr>
+      <tr><td contenteditable></td><td contenteditable></td><td contenteditable></td><td contenteditable></td></tr>
+      <tr><td contenteditable></td><td contenteditable></td><td contenteditable></td><td contenteditable></td></tr>
+      <tr><td contenteditable></td><td contenteditable></td><td contenteditable></td><td contenteditable></td></tr>
+      <tr><td contenteditable></td><td contenteditable></td><td contenteditable></td><td contenteditable></td></tr>
+    </table></div>
+    <div class="row"><button class="btn" id="fsxAdd">加一行</button><button class="btn" id="fsxClear">清空</button>
+      <span class="hint" style="margin:0">自动保存，换设备不带走（浏览器本地存储）</span></div>
+  </div>
+
+</section>
+
+  <section id="sec12">
+    <h3 class="sec">12. 转专业 = 另一扇门</h3>
+    <p>分流之外换专业的渠道：条件各学院自定并公示，转入学院组织考核。【通用】窗口一般在大一学年末。分流不理想时的补救渠道。</p>
+  </section>
+
+  <section id="sec13">
+    <h3 class="sec">13. 毕业证 ≠ 学位证 📜</h3>
+    <p><strong>累计平均绩点 ≥ 1.80</strong> 才有学士学位 ≈ 四年平均每门课稳在 64 分档以上。摆烂四年真有人够不着——毕业证拿了学位证没拿，考研考公很多岗直接卡死。</p>
+  </section>
+
+</div></details>
+
+<!-- ============ 板块五 ============ -->
+<details class="block" open><summary>板块五 · 钱 💰</summary><div class="inner">
+
+  <section id="sec14">
+    <h3 class="sec">14. 奖学金全家福（每学期评，名额按专业为单位）</h3>
+    <div class="tw"><table>
+      <tr><th>奖项</th><th>金额</th><th>比例</th><th>硬线</th></tr>
+      <tr><td>优秀学生·特等</td><td>2500/学期</td><td>≤0.3%</td><td>加权≥90+德育综测</td></tr>
+      <tr><td>优秀学生·一等</td><td>1500/学期</td><td>≤3%</td><td>加权≥85</td></tr>
+      <tr><td>优秀学生·二等</td><td>800/学期</td><td>≤9%</td><td>加权≥80</td></tr>
+      <tr><td>优秀学生·三等</td><td>500/学期</td><td>≤17%</td><td>加权≥75</td></tr>
+      <tr><td>校长奖学金</td><td>10000/年</td><td>全校≤10人</td><td>顶配卷王</td></tr>
+      <tr><td>国家/上海市奖学金</td><td>10000/年*</td><td>极少</td><td>学院推荐·二年级起</td></tr>
+      <tr><td>国家励志奖学金</td><td>6000/年*</td><td>需困难认定</td><td>成绩好+家庭困难·二年级起</td></tr>
+      <tr><td>国家助学金</td><td>2500–5000/年</td><td>按困难等级</td><td>一般3400/较困3800/特困4300</td></tr>
+    </table></div>
+    <p class="muted">*金额：手册 2025 版为旧标准（8000/5000）；2024 年国家提标后现行 10000/6000（你的《大一时间表》同此记载），以学生处当年通知为准。⚠️ 国奖大二才能评，看的是大一成绩——大一就把"专业前 10%"当目标。</p>
+    <p>二三等加起来约 26% 的人能拿——<b>不神秘，够得着</b>。⚠️ 三个信息差：①名额按<b>专业</b>算；②<b>学期学分 &lt; 建议 80% → 直接取消资格</b>；③重修成绩不计入评奖；④国家资助标准近年有调整动向，以学生处当年通知为准。</p>
+    <div class="card"><span class="t">💡 提示卡｜奖学金</span>
+      <p><b class="k">🎯 能干什么</b>：真金白银 + 简历背书 + 入党材料加分。</p>
+      <p><b class="k">🎁 怎么得到</b>：每学期自动评审——达标（加权线+综测门槛+学分修够80%）+ 名额内即到手；特等奖和国奖需主动申报。</p>
+      <p><b class="k">📈 怎么提高</b>：加权成绩是分档线，综测是门票，两个都别瘸；分流后研究小专业的名额竞争格局。</p>
+    </div>
+  </section>
+
+  <section id="sec15">
+    <h3 class="sec">15. 困难认定与勤工助学</h3>
+    <p>家庭经济困难认定是励志奖学金/助学金的<b>前提</b>，材料开学初就办。勤工助学 = 校内兼职（图书馆/办公室），走学生处申请，钱不多但踏实。</p>
+  </section>
+
+</div></details>
+
+<!-- ============ 板块六 ============ -->
+<details class="block" open><summary>板块六 · 履历资产 🏆</summary><div class="inner">
+
+  <section id="sec16">
+    <h3 class="sec">16. 竞赛与大创（电子信息类对口）</h3>
+    <p><b>官方认定底线先搞清楚</b>：学校发布了《校定 A 类竞赛名单》（2025 版，共 <b>106 项</b>，创新创业学院官网可查，PDF 已存 D:\Downloads）——<b>只有名单内赛事在综测卓越模块、评奖材料里才是"硬通货"</b>。电子信息类对口的（光电学院/公共实验中心牵头为主）提取如下：</p>
+    <div class="tw"><table>
+      <tr><th>官方编号</th><th>竞赛名称</th><th>牵头单位</th></tr>
+      <tr><td>#1</td><td>中国国际大学生创新大赛（原"互联网+"）</td><td>创新创业学院</td></tr>
+      <tr><td>#2 / #3</td><td>"挑战杯"课外学术科技作品竞赛 / 创业计划大赛</td><td>校团委</td></tr>
+      <tr><td>#4</td><td>ACM-ICPC 国际大学生程序设计竞赛</td><td>光电学院、公共实验中心</td></tr>
+      <tr><td>#5</td><td>全国大学生数学建模竞赛</td><td>理学院</td></tr>
+      <tr><td>#6</td><td>全国大学生电子设计竞赛</td><td>光电学院</td></tr>
+      <tr><td>#11</td><td>全国大学生智能汽车竞赛</td><td>机械学院</td></tr>
+      <tr><td>#13</td><td>中国大学生工程实践与创新能力大赛</td><td>公共实验中心、机械学院</td></tr>
+      <tr><td>#23</td><td>"西门子杯"中国智能制造挑战赛</td><td>光电学院</td></tr>
+      <tr><td>#25</td><td>中国大学生计算机设计大赛</td><td>光电学院、公共实验中心</td></tr>
+      <tr><td>#26</td><td>中国高校计算机大赛（大数据/天梯赛/移动应用/网络技术/AI创意 五赛道）</td><td>光电学院、公共实验中心</td></tr>
+      <tr><td>#27</td><td>蓝桥杯全国软件和信息技术专业人才大赛</td><td>光电学院、公共实验中心</td></tr>
+      <tr><td>#30</td><td>全国大学生光电设计竞赛</td><td>光电学院</td></tr>
+      <tr><td>#31</td><td>全国大学生集成电路创新创业大赛</td><td>光电学院</td></tr>
+      <tr><td>#33</td><td>全国大学生信息安全竞赛</td><td>光电学院、公共实验中心</td></tr>
+      <tr><td>#38</td><td>"中国软件杯"大学生软件设计大赛</td><td>光电学院</td></tr>
+      <tr><td>#40</td><td>睿抗机器人开发者大赛（RAICOM）</td><td>机械学院、公共实验中心</td></tr>
+      <tr><td>#41</td><td>"大唐杯"新一代信息通信技术大赛</td><td>光电学院</td></tr>
+      <tr><td>#42</td><td>华为 ICT 大赛</td><td>光电学院</td></tr>
+      <tr><td>#43</td><td>全国大学生嵌入式芯片与系统设计竞赛</td><td>光电学院</td></tr>
+      <tr><td>#51</td><td>中国机器人及人工智能大赛</td><td>机械学院</td></tr>
+      <tr><td>#58</td><td>百度之星·程序设计大赛</td><td>光电学院、公共实验中心</td></tr>
+      <tr><td>#63</td><td>全国大学生计算机系统能力大赛</td><td>光电学院、公共实验中心</td></tr>
+      <tr><td>#65</td><td>全国大学生物联网设计竞赛</td><td>光电学院</td></tr>
+      <tr><td>#76</td><td>全球校园人工智能算法精英大赛</td><td>光电学院、管理学院、机械学院</td></tr>
+      <tr><td>#79 / #80</td><td>全国大学生英语竞赛 / 全国大学生数学竞赛</td><td>外语学院 / 理学院</td></tr>
+      <tr><td>#81</td><td>中国大学生程序设计竞赛</td><td>光电学院、公共实验中心</td></tr>
+    </table></div>
+    <p class="muted">完整 106 项名单见 <a href="https://cxcy.usst.edu.cn/2025/1031/c16875a349793/page.psp" target="_blank">创新创业学院官网原文</a>（含 15 项研究生赛事，2025 年新增 3 项）。你专业最对口的牵头单位就是<b>光电学院和公共实验中心</b>——组队、找指导老师优先去这两个口。</p>
+    <p>上面这些赛事的全年时间窗（来自你的《大一时间表》）：</p>
+    <div class="tw"><table>
+      <tr><th>竞赛</th><th>级别</th><th>大一可参与的时间窗</th><th>大一怎么参与</th></tr>
+      <tr><td>数学建模国赛</td><td>国家级</td><td>每年 9 月（大一上）</td><td>报名期已过，可观摩攒经验</td></tr>
+      <tr><td>数学竞赛 CMC</td><td>国家级</td><td>10—11 月初赛（大一上）</td><td>可报低年级组</td></tr>
+      <tr><td>蓝桥杯</td><td>国家级</td><td>10—12 月报名 → 次年 4 月省赛、6 月总决赛</td><td><b>大一上即可报名</b>，起步首选</td></tr>
+      <tr><td>美赛 MCM/ICM</td><td>国际</td><td>寒假约 4 天（大一下寒假）</td><td>可体验</td></tr>
+      <tr><td>英语竞赛 NECCS</td><td>国家级</td><td>12 月报名、3 月截止、4 月初赛、5 月决赛</td><td>大一可报</td></tr>
+      <tr><td>中国国际大学生创新大赛</td><td>国家级</td><td>3—5 月报名、5—10 月比赛</td><td>建议跟学长组队</td></tr>
+      <tr><td>挑战杯（大挑）</td><td>国家级</td><td>2027 年（奇数年）</td><td>大一下找导师选题</td></tr>
+      <tr><td>全国大学生电子设计竞赛</td><td>国家级</td><td>8 月（奇数年：2027）</td><td>参加校内选拔</td></tr>
+    </table></div>
+    <p><b>大创</b>（大学生创新创业训练计划）：国家级/市级/校级三级，校级约 5000 元经费（立项先拨 50%），主要面向大二大三，<b>大一下 3—5 月即可牵头申报校级</b>；大一最优策略是先进学长的队伍学经验。</p>
+    <div class="card"><span class="t">💡 提示卡｜竞赛</span>
+      <p><b class="k">🎯 能干什么</b>：综测卓越模块加分（国家级一等 40 分顶格）、评奖材料、保研筹码，部分成果可申请<b>学分认定</b>。</p>
+      <p><b class="k">🎁 怎么得到</b>：关注学院/创新基地组队通知；大创大二自己立项，大一先进队伍。</p>
+      <p><b class="k">📈 怎么提高</b>：先跟队后带队；选对口赛道（电赛/智能车/ICPC 最贴你专业）。⚠️ 大一优先级永远排在加权成绩之后。</p>
+    </div>
+  </section>
+
+  <section id="sec17">
+    <h3 class="sec">17. 社团</h3>
+    <p>校团委注册+年审制。1 个兴趣 + 1 个技能/学术，别贪多。混成骨干 = 综测加分 + 评奖材料。</p>
+  </section>
+
+  <section id="sec18">
+    <h3 class="sec">18. 学生工作</h3>
+    <p>班委大一最容易选上，性价比最高（综测 + 社会工作奖 200 元 + 评优材料）。⚠️ 服务岗不是权力岗，别耽误学习。</p>
+  </section>
+
+  <section id="sec19">
+    <h3 class="sec">19. 保研（推免）——真数据版 🎓</h3>
+    <p><b>推免 = 不用考研直接读研</b>。名额按专业分配（比例各学院不同），大三结束后的 9 月申请。下面以<b>理学院 2026 届评分细则</b>为样本（各学院框架统一、分值细节自定，原文已存 D:\Downloads）：</p>
+    <p><strong>推免综合成绩 = 学业成绩 × 85% + 学术及创新成果 × 7.5% + 综合素质评价 × 7.5%</strong>（各项满分 100，按专业排名+名额推免）</p>
+    <div class="tw"><table>
+      <tr><th>板块</th><th>权重</th><th>里面是什么</th></tr>
+      <tr><td>学业成绩</td><td><b>85%</b></td><td>前三年<b>学分加权平均分</b>（归一后）——和分流同源！</td></tr>
+      <tr><td>学术及创新成果</td><td>7.5%</td><td>竞赛 / 专利 / 软著 / 论文加分（细则见下表）</td></tr>
+      <tr><td>综合素质评价</td><td>7.5%</td><td><b>前6学期综测平均分×80%</b> + 志愿服务×10% + 国际组织实习×10%；退伍+1，三等功以上综质满分</td></tr>
+    </table></div>
+    <h4>学术及创新成果加分细则（理学院 2026 届）</h4>
+    <div class="tw"><table>
+      <tr><th>项目</th><th>分值</th></tr>
+      <tr><td>国家级竞赛</td><td>特等 25 ｜ 一等 20 ｜ 二等 15 ｜ 三等 10</td></tr>
+      <tr><td>省部级竞赛</td><td>特等 15 ｜ 一等 12</td></tr>
+      <tr><td>发明专利</td><td>已授权 12 ｜ 进入实审 4</td></tr>
+      <tr><td>软件著作权</td><td>4</td></tr>
+      <tr><td>论文（SCI/EI/SSCI、北大核心、南大核心、校订A类）</td><td>A 类 12 ｜ B 类 8</td></tr>
+    </table></div>
+    <p class="muted">团队获奖个人按排名 10:6:4:3:2 分配（前 5 名）；同一方面多项成果只取 1 项；统计截止申请当年 8 月 31 日。</p>
+    <p>和分流 90/10 对照，信息量巨大：</p>
+    <p>· <b>保研比分流更"成绩为王"</b>：学业占 85%，竞赛科研合计才 7.5%<br>
+       · <b>竞赛在保研里有正式席位</b>（分流里没有），但杠杆小：一分归一后才值 0.075<br>
+       · <b>你大一大二大三的每学期综测都进保研公式</b>——大一偷的懒，大四还要还<br>
+       · <b>志愿服务是长线股</b>：超 50h=4 分、超 100h=12 分，进博会等重大赛事志愿者最高 20<br>
+       · 成果统计截止<b>申请当年 8 月 31 日</b>——大四上开学前，竞赛论文专利的死线</p>
+    <div class="card"><span class="t">💡 提示卡｜保研（推免）</span>
+      <p><b class="k">🎯 能干什么</b>：跳过考研初试直接读研；上理各学院均有名额，是成绩顶尖学生的默认出路。</p>
+      <p><b class="k">🎁 怎么得到</b>：三年攒一条"加权成绩领跑 + 若干竞赛/论文 + 综测不拉胯 + 志愿时长达标"的履历，大三末学院公示细则后按综合成绩排名+名额确定。</p>
+      <p><b class="k">📈 怎么提高</b>：①<b>加权成绩是 85% 的主战场</b>——大一打的底子直接算进推免；②大二大三补竞赛/论文（国赛一等 20 分，归一后更小，是锦不是主菜）；③每学期综测认真拿（六个学期平均着算）；④志愿时长往 50h/100h 凑；⑤大三上盯学院官网当年细则。</p>
+      <p class="muted">⚠️ 样本说明：以上数字是理学院 2026 届的，你们未来学院（光电/通信/计算机）细则会不一样，但"85+7.5+7.5"框架是全校通行思路——以你当年学院公布的为准。</p>
+    </div>
+  </section>
+
+  <section id="sec20">
+    <h3 class="sec">20. 入党【通用】</h3>
+    <div class="tw"><table>
+      <tr><th>阶段</th><th>关键点</th><th>参考时长</th></tr>
+      <tr><td>递交入党申请书</td><td>大一上就交 = 最大时间优势</td><td>—</td></tr>
+      <tr><td>入党积极分子</td><td>支部确定 + 培养考察、参加党课</td><td>一年以上</td></tr>
+      <tr><td>发展对象</td><td>政审 + 短期集中培训</td><td>—</td></tr>
+      <tr><td>预备党员</td><td>宣誓入党，继续考察</td><td>一年</td></tr>
+      <tr><td>转正</td><td>成为正式党员</td><td>全程两年起步</td></tr>
+    </table></div>
+    <p>对考公/选调/国企是真加分。【通用】具体要求以学院党委当年通知为准。</p>
+  </section>
+
+</div></details>
+
+<!-- ============ 板块七 ============ -->
+<details class="block" open><summary>板块七 · 生活与办事 🔧</summary><div class="inner">
+
+  <section id="sec21">
+    <h3 class="sec">21. 天天要用的入口</h3>
+    <p><b>信息门户</b> myportal（一网通办总入口）｜<b>教务系统</b> jwc（选课/成绩/课表，最重要）｜<b>学生邮箱</b> 学号@st.usst.edu.cn。</p>
+    <p><span class="warn">⚠️ 统一身份认证初始密码 = 身份证后 6 位 + usst，首次登录强制改密——立刻改，别裸奔。</span>校外查成绩挂 VPN；Office/Windows 上理正版免费（ms.usst.edu.cn），别自己花钱买。</p>
+    <div class="card"><span class="t">💡 提示卡｜账号安全</span>
+      <p><b class="k">🎯 能干什么</b>：教务系统管你选课/成绩/毕业审核，账号丢 = 一切瘫痪。</p>
+      <p><b class="k">🎁 怎么得到</b>：入学自带，激活即用。</p>
+      <p><b class="k">📈 怎么提高</b>：改强密码 + 绑手机号；别在任何群里交学号+密码。</p>
+    </div>
+  </section>
+
+  <section id="sec22">
+    <h3 class="sec">22. 你有申诉权</h3>
+    <p>对处分/处理不服：先<b>复核</b>，再<b>申诉</b>（申诉处理规定）。按流程走，别硬刚也别忍气。</p>
+  </section>
+
+  <section id="sec23">
+    <h3 class="sec">23. 入学装备清单（开学前采购核对 🧳）</h3>
+    <p class="muted">合并自《准大一入学超全清单》· 标注"学校可买"的可到校再买 · 点开类别逐项核对</p>
+    <details open><summary><b>🎒 证件材料（最重要，随身）</b></summary><p>录取通知书、准考证 ｜ 身份证及复印件 ｜ 证件照（红/白/蓝底，1寸2寸）｜ 户口本及复印件（按要求）｜ 档案袋（按要求）</p></details>
+    <details><summary><b>🧴 洗护用品</b></summary><p>牙刷/牙膏/牙杯、洗发膏/发膜、洗面奶/洗脸巾、浴巾/毛巾/搓澡巾、肥皂+盒、洗衣液、沐浴露、身体乳、护肤水乳、洗洁精</p></details>
+    <details><summary><b>🛏️ 床上用品</b></summary><p>四件套、枕头、床帘、床上桌、蚊帐、凉席（按需）</p></details>
+    <details><summary><b>👕 衣物</b></summary><p>防晒衣/帽、睡衣裤、内衣裤袜子、运动鞋/休闲鞋、外套</p></details>
+    <details><summary><b>🖥️ 电子产品</b></summary><p>手机/充电器/充电宝、电脑、U盘、耳机、插排、平板</p></details>
+    <details><summary><b>💊 药品</b></summary><p>创可贴、感冒药、碘伏/体温计、止痛/退烧/消炎药、酒精、口罩</p></details>
+    <details><summary><b>🧺 生活用品</b></summary><p>雨伞、吹风机/干发帽（注意宿舍功率）、脸盆/澡篮/垃圾桶（学校可买）、镜子/梳子/台灯、衣架/裤夹/粘钩、剪刀/水果刀（学校可买）、水杯/餐盒、行李箱/书包、花露水/指甲刀、湿巾/纸巾、拖鞋/鞋刷/鞋架、香薰、小电扇、收纳箱袋、腰带、抹布</p></details>
+    <details><summary><b>🎖️ 军训用品（v7 官方定档：军训 1.0 学分排大一短1，2027 夏初——到时必用）</b></summary><p>防晒喷雾、大容量水杯、修护面膜、冰凉贴、糖/巧克力、鞋垫、藿香正气水、皮筋发夹、芦荟胶</p></details>
+  </section>
+
+</div></details>
+
+<!-- ============ 板块八 ============ -->
+<details class="block" open><summary>板块八 · 大一学年时间轴与作战策略 🗓️</summary><div class="inner">
+
+  <section id="sec24">
+    <h3 class="sec">24. 第一学期时间轴（2026.9—2027.1）</h3>
+    <p class="muted">合并自你的《大一时间表》xlsx · 报到日期为录取通知书确认信息 · <b>用法：每月初翻一遍，报名窗口设手机提醒</b></p>
+    <div class="tw"><table>
+      <tr><th>时间</th><th>事项</th><th>备注</th></tr>
+      <tr><td><b>9月19日（周六）</b></td><td><b>新生开学报到</b></td><td>你的开学日；2026.9 无军训（✅ v7 官方定档：军训排大一短1）</td></tr>
+      <tr><td>9月中下旬</td><td>入学教育、选课、体检、社团招新</td><td>无军训时间宽裕，尽早熟悉校园</td></tr>
+      <tr><td>9月中下旬</td><td><b>四六级报名（下半年）</b></td><td>窗口仅7-10天，错过无补报，能报四级就报</td></tr>
+      <tr><td>9月中旬</td><td>数学建模国赛 <b>校定A类 #5</b></td><td>已过报名期，可观摩积累</td></tr>
+      <tr><td>10—11月</td><td>数学竞赛 CMC 初赛 <b>校定A类 #80</b></td><td>大一可报低年级组</td></tr>
+      <tr><td>11月21—22日</td><td>四六级口语考试</td><td>选考、机考</td></tr>
+      <tr><td>11月中下旬</td><td>期中考试周</td><td>约第9-10教学周</td></tr>
+      <tr><td>10—12月中</td><td><b>蓝桥杯报名</b> <b>校定A类 #27</b></td><td>大一上可报，2027年4月省赛</td></tr>
+      <tr><td><b>12月12日</b></td><td><b>四级/六级笔试</b></td><td>四级上午9:00、六级下午15:00</td></tr>
+      <tr><td>12月底—1月中</td><td><b>期末考试周</b></td><td>绩点直接关系分流排名</td></tr>
+      <tr><td>1月中下旬</td><td>寒假开始</td><td>2027年春节2月6日</td></tr>
+    </table></div>
+  </section>
+
+  <section id="sec25">
+    <h3 class="sec">25. 第二学期与暑假时间轴（2027.2—8）</h3>
+    <div class="tw"><table>
+      <tr><th>时间</th><th>事项</th><th>备注</th></tr>
+      <tr><td>1月底—2月初</td><td>美赛</td><td>寒假约4天，可体验；<span class="warn">⚠️ 不在校定A类名单内</span>，综测/评奖认定口径先问学院</td></tr>
+      <tr><td>2月底—3月初</td><td>新学期开学</td><td></td></tr>
+      <tr><td>3月</td><td>计算机等级考试 NCRE</td><td>每年3/9月两次</td></tr>
+      <tr><td>3月</td><td>中国国际大学生创新大赛报名 <b>校定A类 #1</b></td><td>3-5月报名，建议跟学长组队</td></tr>
+      <tr><td>3月初</td><td>英语竞赛 NECCS 报名截止</td><td>12月起报</td></tr>
+      <tr><td>3—5月</td><td><b>大创申报</b></td><td>校级项目大一可牵头</td></tr>
+      <tr><td>4月</td><td>NECCS 初赛 / 蓝桥杯省赛</td><td>校定A类 #79 / #27</td></tr>
+      <tr><td>5月</td><td>NECCS 决赛</td><td>初赛晋级者</td></tr>
+      <tr><td><b>5月底—6月</b></td><td><b>大类分流志愿填报</b></td><td>13个专业按综合成绩+志愿分流（v7：2026 级起候选名单已更新）</td></tr>
+      <tr><td>6月中上旬</td><td>蓝桥杯总决赛</td><td>省赛一等奖晋级</td></tr>
+      <tr><td>6月中旬（预计）</td><td>四六级笔试</td><td>待官方公布</td></tr>
+      <tr><td><b>6月底—7月</b></td><td><b>分流结果公布</b></td><td>期末成绩录入后定专业，公示转学籍</td></tr>
+      <tr><td>6月底—7月</td><td>期末考试周</td><td>大一全年绩点定分流去留</td></tr>
+      <tr><td>7月上旬</td><td>暑假开始</td><td>可社会实践/三下乡</td></tr>
+      <tr><td>8月</td><td>全国大学生电子设计竞赛 <b>校定A类 #6</b></td><td>奇数年举办，可参加校内选拔</td></tr>
+    </table></div>
+  </section>
+
+  <section id="sec26">
+    <h3 class="sec">26. 大一高绩点作战策略（合并自《大一高绩点作战手册》）</h3>
+    <h4>课程地图 · 第一学期（2026.9—2027.1）</h4>
+    <div class="tw"><table>
+      <tr><th>课程</th><th>学分</th><th>考核</th><th>备注</th></tr>
+      <tr><td><b>高等数学 A(1)</b></td><td><b class="k">6.0 🔴</b></td><td>考试</td><td>全学期最大权重，绩点命门</td></tr>
+      <tr><td>大学英语(1)</td><td>3.0</td><td>考试</td><td>分级后定起点</td></tr>
+      <tr><td>思想道德与法治</td><td>3.0</td><td>考试</td><td></td></tr>
+      <tr><td>中国近现代史纲要</td><td>3.0</td><td>考试</td><td></td></tr>
+      <tr><td>程序设计及实践(C)A</td><td><b class="k">2.0 🟠</b></td><td>考试</td><td>大类限选 C，你的方向课（v7：2026 版为 A 版 2.0 学分，一/1–一/2 跨学期）</td></tr>
+      <tr><td>人工智能通识导论A</td><td>1.0</td><td>考查</td><td>➕ v7 新增：2026 新设"数智基础类"必修（理工农医类）</td></tr>
+      <tr><td>军事理论 / 军训</td><td>各 1.0</td><td>考查</td><td>v7 官方定档：军训排大一短1（2027 夏初），2026.9 入学季无军训</td></tr>
+      <tr><td>形势与政策(Ⅰ)</td><td>1.0</td><td>考查</td><td></td></tr>
+      <tr><td>工程学导论(2组)</td><td>1.0</td><td>考查</td><td></td></tr>
+      <tr><td>体育</td><td>约 1.0</td><td>考查</td><td></td></tr>
+    </table></div>
+    <h4>课程地图 · 第二学期（2027.2—7）</h4>
+    <div class="tw"><table>
+      <tr><th>课程</th><th>学分</th><th>考核</th><th>备注</th></tr>
+      <tr><td><b>高等数学 A(2)</b></td><td><b class="k">6.0 🔴</b></td><td>考试</td><td>继续主战场</td></tr>
+      <tr><td><b>大学物理 A(1)</b></td><td><b class="k">4.0 🔴</b></td><td>考试</td><td>学分巨头</td></tr>
+      <tr><td><b>电路原理</b></td><td><b class="k">4.0 🔴</b></td><td>考试</td><td>电子信息核心课</td></tr>
+      <tr><td>线性代数 B</td><td>2.0</td><td>考试</td><td></td></tr>
+      <tr><td>学术英语读写</td><td>3.0</td><td>考试</td><td>英语 track</td></tr>
+      <tr><td>信息智能与物联网技术</td><td>1.0</td><td>考查</td><td></td></tr>
+      <tr><td>电路原理实验</td><td>0.5</td><td>考查</td><td>实践课挂科无补考</td></tr>
+      <tr><td>形势与政策(Ⅱ)</td><td>1.0</td><td>考查</td><td></td></tr>
+      <tr><td>体育</td><td>约 1.0</td><td>考查</td><td></td></tr>
+      <tr><td>程序设计课程设计(C)</td><td>2.0</td><td>考查</td><td>v7：2026 版改在学期内（64 实验学时，一/2），不再占短1</td></tr>
+    </table></div>
+    <p class="muted">🔴=学分巨头、GPA 主战场；🟠=你的方向课。课程清单 v7 已按 2026 级官方培养计划逐门核对，以教务系统实际为准。</p>
+    <h4>六大作战要点</h4>
+    <div class="tw"><table>
+      <tr><th>#</th><th>要点</th><th>具体怎么做</th></tr>
+      <tr><td>1</td><td>开学摸清规则</td><td>通读手册、查培养方案、打听分流算法</td></tr>
+      <tr><td>2</td><td><b>主攻学分大头</b></td><td>高数 12 学分 + 大物 + 电路 + C 语言——🔴🟠 优先级最高</td></tr>
+      <tr><td>3</td><td>水课不摆烂</td><td>思政/通识都算绩点：出勤别丢、平时分保住、期末突击背</td></tr>
+      <tr><td>4</td><td>吃透平时分</td><td>很多课平时分占 30~50%：每门课第一周问清构成</td></tr>
+      <tr><td>5</td><td>绝不挂科</td><td>宁可 60 低空飞过，也不挂科重修</td></tr>
+      <tr><td>6</td><td>综测顺手攒</td><td>小组长/课代表 + 1~2 个比赛；成绩第一，软性分锦上添花</td></tr>
+    </table></div>
+    <h4>三大坑</h4>
+    <div class="tw"><table>
+      <tr><th>坑</th><th>为什么致命</th></tr>
+      <tr><td><span class="warn">"60 分万岁"</span></td><td>60 分 = 绩点 1.0，直接拖垮平均分，分流排名掉一大截</td></tr>
+      <tr><td><span class="warn">水课摆烂</span></td><td>任何课都算绩点，摆一门白丢一分</td></tr>
+      <tr><td><span class="warn">志愿没填/填错</span></td><td>随机分配，一学期努力全白费</td></tr>
+    </table></div>
+    <h4>竞赛布局（时间表提示页精选）</h4>
+    <p>四六级尽早考（评奖保研硬指标）；大一起步"蓝桥杯 + 英语竞赛"，数模/电赛先观摩跟队，大二再冲高含金量；2027（奇数年）有挑战杯，大一下可找导师选题；<b>国奖大一评不了，大二申请看的就是大一成绩——现在就把"专业前 10%"当目标。</b></p>
+    <div class="card"><span class="t">⚠️ 冲突标注（合并校验结论）</span>
+      <p>1️⃣ 作战手册把综测定义为"成绩大头+竞赛+活动"——<b>与基础学院官方细则不符</b>，本手册以官方细则为准：综测 = 考勤规定动作 + 活动 − 违纪，<b>不含课程成绩</b></p>
+      <p>2️⃣ 军训：✅ v7 已由 2026 官方培养计划定档——1.0 学分，排大一短1（2027 夏初）；与你时间表"2026.9 无军训"一致</p>
+      <p>3️⃣ "毕业需 160 学分"✅ v7 已由 2026 官方培养计划确认：上册电信类专业共 160 学分（如电子信息工程、数据科学），医学信息工程 156——以各专业培养计划页为准</p>
+      <p>4️⃣ 格致创新班选拔时间/门槛 → 向辅导员核实</p>
+    </div>
+  </section>
+
+</div></details>
+
+<!-- ============ 行动清单 ============ -->
+<section id="sec-act">
+  <h3 class="sec">✅ 终极行动清单</h3>
+  <div class="tw"><table>
+    <tr><th>时间点</th><th>做什么</th></tr>
+    <tr><td><b>开学一周内</b></td><td>改掉所有初始密码；找辅导员要①学院综测细则（←基础学院版已到手）②培养计划电子版</td></tr>
+    <tr><td><b>报到前后</b></td><td>英语分级测试尽力考高——决定英语课起点，也是格致创新班的门槛</td></tr>
+    <tr><td><b>第一学期</b></td><td>一切为加权成绩让路（高数最大权重）；晚自习全勤；班委或社团选一个</td></tr>
+    <tr><td><b>11 月前后</b></td><td>想入党就交申请书（早交早排队）</td></tr>
+    <tr><td><b>寒假</b></td><td>完成寒假大作业（综测 6 分）+ 摸清 13 个分流专业出路</td></tr>
+    <tr><td><b>大一下填志愿前</b></td><td>找直系学长要<b>往年各专业实际分流位次线</b>——比任何官方文件都真实</td></tr>
+    <tr><td><b>每学期 14~16 周</b></td><td>综测公示期核对分数，漏记当场找辅导员</td></tr>
+  </table></div>
+</section>
+
+<!-- ============ 事实来源 ============ -->
+<section id="sec-src">
+  <h3 class="sec">📌 事实来源</h3>
+  <p>· 绩点表/加权公式/学业警示线：《学籍管理办法》学生手册2026印刷页 57 起（绩点表第二十条、警示线第三十八条）<br>
+     · 补考重修缓考：《课程考核管理办法》学生手册2026印刷页 113 起（补考记60分第二十五条）<br>
+     · 分流公式与时间：《大类分流实施办法》学生手册2026印刷页 91–93<br>
+     · 奖学金金额比例：《校长奖学金和优秀学生奖学金评审办法》学生手册2026印刷页 199 起<br>
+     · 学位线 1.80：《授予学士学位管理办法》学生手册2026印刷页 71 起（第五条）<br>
+     · 综测模块/分值/时间线：《基础学院学生综合表现评定办法》（上理工基础〔2025〕2号）<br>
+     · 推免评分框架：《上海理工大学理学院 2026 届推免生评分细则》（lxy.usst.edu.cn）<br>
+     · 大一时间轴/课程地图/入学清单：《大一时间表_上理工电子信息_2026级.xlsx》《大一高绩点作战手册》《准大一入学超全清单》（D:\ai工作目录，2026-09-06 并入）<br>
+     · v7（2026-10-01）：分流名单/页码/大一课程/军训/毕业学分——《2026 级本科培养计划》上册 440 页 + 下册 448 页 + 阅读指南 + 大类一览表 + 通识课程 + 学科基础附表（共 6 份官方文件）<br>
+     · 国家奖助提标金额：2024 年国家政策 + 你的时间表记载，以学生处当年通知为准<br>
+     · 【通用】项：入党流程——以官方最新通知为准；2026 级新版发布后需核对</p>
+  <p class="muted">本手册由 ZCode 于 2026-09-06 整理生成（v7：2026-10-01 依 2026 级官方培养计划更新） · 配套文件见 D:\Downloads\上理工新生资料索引.md</p>
+</section>
+
+<footer class="foot">
+  <div>信义勤爱 · 思学致远 ｜ <b>上海理工大学</b> ｜ 本手册为个人学习笔记 · 规则以学校当年发文为准</div>
+  <div class="footbar">
+    <button class="fbtn" id="fbBtn" type="button">💬 反馈 / 纠错</button>
+    <a class="fbtn" href="index.html">🗺️ 返回校园地图</a>
+  </div>
+  <div class="footnote">页面结构 / 样式 / 交互由「华为云 CodeArts」于 2026-10-11 重写实现 · 正文、表格、公式等素材与事实来源见上方各节及「事实来源」小节</div>
+</footer>
+</div>
+</main>
+
+<button id="topBtn" title="回到顶部">↑</button>
+<div id="toast"></div>
+
+<script>/* 拼音首字母索引（数据素材，随原手册保留） */window._PY={"sec-toc": "wzzbccrccxrk wz lb", "sec-map": "mchljjbxtqsfct mcmc jb", "sec1": "xfyxb xf", "sec2": "gkbjlcbszhybs gkbc hk", "sec3": "kshx kshx hx", "sec4": "sctwfsjd fsjd jd", "sec5": "zmssb gpa js", "sec6": "xfjqcjfldzzj xfjqcjd jq", "sec7": "yzbfqlxd lxd db", "sec8": "zcyjhjg zcjg zc", "sec9": "jcxyxzgnhdzd jcyj zc", "sec10": "zhcjwflxzdycxcj zhcj", "sec11": "dlflndtdds dlfl fz", "sec12": "zzylysm zzy", "sec13": "byzxwz byz xwz xw", "sec14": "jxjqjfmxqpmeazywdw jxj qian", "sec15": "knrdyqgzx knrd qgzx", "sec16": "jsydcdzxxldk js dc dachuang", "sec17": "st sth", "sec18": "xsgz xsgz bw", "sec19": "bytmzsjb by tmj", "sec20": "rdty rd dang", "sec21": "ttyydrk wk rk sl", "sec22": "nyssq ssq", "sec23": "rxzbqdkxqcghd rxzb zb qd", "sec24": "dyxqsjz dysx sjj sj", "sec25": "dexqysjsjz dyx sjj", "sec26": "dygjdzzclhbzdygjdzzsc gjd zz", "sec-act": "zjxdqd zhxd qd", "sec-src": "ssly shilaiyuan ly"};</script>
 <script>
-const CHAPTERS=[
-["_总览（从这里开始）.md","总览 · 从这里开始"],
-["00-网址总表与资料来源.md","00 网址总表与资料来源"],
-["00b-名词混乱急救表.md","00b 名词混乱急救表"],
-["01-学分=游戏币.md","01 学分=游戏币"],
-["02-挂科补救流程（背熟，最好用不上）.md","02 挂科补救流程"],
-["03-考试红线.md","03 考试红线"],
-["04-三层套娃：分数→绩点→GPA.md","04 三层套娃：分数→绩点→GPA"],
-["05-GPA怎么算（四步）.md","05 GPA怎么算"],
-["06-学分加权成绩=分流的真主角.md","06 学分加权成绩"],
-["07-一张表分清两兄弟.md","07 一张表分清两兄弟"],
-["08-综测一句话结构.md","08 综测一句话结构"],
-["09-基础学院细则给你划的重点.md","09 基础学院细则"],
-["10-综合成绩=为分流现做的一次性成绩.md","10 综合成绩"],
-["11-大类分流（你的头等大事）.md","11 大类分流"],
-["12-转专业=另一扇门.md","12 转专业"],
-["13-毕业证≠学位证.md","13 毕业证≠学位证"],
-["14-奖学金全家福（每学期评，名额按专业为单位）.md","14 奖学金全家福"],
-["15-困难认定与勤工助学.md","15 困难认定与勤工助学"],
-["16-竞赛与大创（电子信息类对口）.md","16 竞赛与大创"],
-["17-社团.md","17 社团"],
-["18-学生工作.md","18 学生工作"],
-["19-保研（推免）——真数据版.md","19 保研（推免）"],
-["20-入党【通用】.md","20 入党"],
-["21-天天要用的入口.md","21 天天要用的入口"],
-["22-你有申诉权.md","22 你有申诉权"],
-["23-入学装备清单（开学前采购核对）.md","23 入学装备清单"],
-["24-第一学期时间轴（2026.9—2027.1）.md","24 第一学期时间轴"],
-["25-第二学期与暑假时间轴（2027.2—8）.md","25 第二学期与暑假时间轴"],
-["26-大一高绩点作战策略（合并自《大一高绩点作战手册》）.md","26 大一高绩点作战策略"],
-["27-终极行动清单.md","27 终极行动清单"],
-["28-事实来源.md","28 事实来源"],
-["29-免责声明.md","29 免责声明"]
-];
-const toc=document.getElementById('toc');
-const contentEl=document.getElementById('content');
-const searchEl=document.getElementById('search');
-const resultsEl=document.getElementById('searchResults');
-let cache={};
-let phm=null;
-fetch('data/place_handbook_map.json').then(r=>r.json()).then(d=>phm=d);
-function stripFrontmatter(md){return md.replace(/^---[\s\S]*?---\n/,'');}
-function renderMd(md){
-  md=stripFrontmatter(md);
-  // 章节内图片：路径是相对 data/handbook/ 写的，补上前缀才能显示
-  md=md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,function(_,alt,src){
-    if(/^https?:/i.test(src))return '<img alt="'+alt+'" src="'+src+'" style="max-width:100%">';
-    return '<img alt="'+alt+'" src="data/handbook/'+src+'" style="max-width:100%">';
-  });
-  // 章节内指向其它 .md 的相对链接：改写成页内跳转，否则会 404
-  md=md.replace(/\[(.*?)\]\((.*?)\)/g,function(_,txt,href){
-    if(/^https?:/i.test(href)||href.startsWith('#'))return '<a href="'+href+'" target="_blank">'+txt+'</a>';
-    if(/\.md$/i.test(href)){
-      var base=href.split('/').pop();
-      var dec=base;
-      try{dec=decodeURIComponent(base);}catch(e){}
-      return '<a href="#" data-chapter="'+dec.replace(/"/g,'&quot;')+'" class="chap-link">'+txt+'</a>';
-    }
-    return '<a href="'+href+'" target="_blank">'+txt+'</a>';
-  });
-  const lines=md.split('\n');
-  let html='',inTable=false,tableRows=[];
-  function flushTable(){
-    if(!tableRows.length)return;
-    html+='<table>';
-    tableRows.forEach((r,i)=>{
-      html+='<tr>';
-      r.forEach(c=>{html+=(i===0?'<th>':'<td>')+c+'</'+(i===0?'th':'td')+'>';});
-      html+='</tr>';
+/* =====================================================================
+   重写版脚本 · 单文件统一管理
+   修复 A：搜索区已在文档流内，不再 fixed 悬浮
+   修复 B：所有入口共用 jumpToSection()，先展开折叠再按顶栏实高定位
+   ===================================================================== */
+(function(){
+  "use strict";
+  var doc=document, root=doc.documentElement;
+
+  /* ---------- 顶栏实高 -> CSS 变量（供 sticky 搜索栏与 scroll-margin 使用） ---------- */
+  var topbar=doc.getElementById('topbar');
+  function syncTopbar(){
+    var mobile=matchMedia('(max-width:960px)').matches;
+    var h=(mobile&&topbar)?topbar.offsetHeight:0;
+    root.style.setProperty('--topbar-h', h+'px');
+    return h;
+  }
+  syncTopbar();
+  addEventListener('resize',syncTopbar);
+
+  /* ---------- 纯布局位置（offsetTop 链，规避进场动效 transform 残留） ---------- */
+  function docTop(el){var y=0;while(el){y+=el.offsetTop;el=el.offsetParent;}return y;}
+
+  /* ---------- 统一章节跳转：展开全部折叠层级，再按顶栏实高定位 ---------- */
+  function openDetailsOf(el){
+    var d=el.closest('details');
+    while(d){ d.open=true; d=d.parentElement?d.parentElement.closest('details'):null; }
+  }
+  function jumpToSection(target, opts){
+    opts=opts||{};
+    var el=null;
+    if(typeof target==='string') el=doc.getElementById(target.replace(/^#/,''));
+    else el=target;
+    if(!el) return false;
+    openDetailsOf(el);
+    var head=(el.querySelector && el.querySelector('h3.sec')) || el;
+    var sb=doc.getElementById('searchBar');
+    var sbh=sb?sb.offsetHeight:0;                     // sticky 搜索栏实高，定位时须让出
+    var offset=opts.offset!=null?opts.offset:(syncTopbar()+sbh+12);
+    root.style.scrollBehavior='auto';                 // 精确定位，避免 smooth 抖动
+    var y=Math.max(0, docTop(head)-offset);
+    scrollTo(0,y);
+    requestAnimationFrame(function(){
+      root.style.scrollBehavior='';
+      var y2=Math.max(0, docTop(head)-offset);        // 折叠展开后二次校准
+      if(Math.abs(y2-window.pageYOffset)>2) scrollTo(0,y2);
     });
-    html+='</table>';
-    tableRows=[];
-  }
-  for(let line of lines){
-    const t=line.trim();
-    if(t.startsWith('|')&&t.endsWith('|')){
-      tableRows.push(t.slice(1,-1).split('|').map(c=>c.trim()));
-      inTable=true;continue;
+    if(opts.hash!==false){
+      if(location.hash!=='#'+el.id){ try{ history.pushState({hb:el.id},'','#'+el.id); }catch(e){} }
     }
-    if(inTable){flushTable();inTable=false;}
-    if(/^### /.test(t))html+='<h3>'+t.slice(4)+'</h3>';
-    else if(/^## /.test(t))html+='<h2>'+t.slice(3)+'</h2>';
-    else if(/^# /.test(t))html+='<h1>'+t.slice(2)+'</h1>';
-    else if(/^> /.test(t))html+='<blockquote>'+t.slice(2)+'</blockquote>';
-    else if(/^\d+\.\s/.test(t))html+='<ol><li>'+t.replace(/^\d+\.\s/,'')+'</li></ol>';
-    else if(/^-\s/.test(t))html+='<ul><li>'+t.slice(2)+'</li></ul>';
-    else if(t==='')html+='';
-    else html+='<p>'+t+'</p>';
+    return true;
   }
-  if(inTable)flushTable();
-  return html;
-}
-async function loadChapter(file,title){
-  if(!cache[file])cache[file]=await fetch('data/handbook/'+encodeURIComponent(file)+'?v=20261004').then(r=>r.text());
-  contentEl.innerHTML=renderMd(cache[file]);
-  contentEl.querySelectorAll('a.chap-link').forEach(function(a){
-    a.onclick=function(e){
+  window.hbJump=jumpToSection;  // 暴露给调试/验收脚本
+
+  /* ---------- 导航点击（桌面侧栏 / 手机抽屉共用） ---------- */
+  doc.querySelectorAll('#nav a[href^="#"]').forEach(function(a){
+    a.addEventListener('click',function(e){
       e.preventDefault();
-      const f=a.getAttribute('data-chapter');
-      const hit=CHAPTERS.find(c=>c[0]===f);
-      if(hit)loadChapter(hit[0],hit[1]);
-    };
-  });
-  let extra='';
-  if(phm&&phm.handbook_to_place[file]&&phm.handbook_to_place[file].length){
-    extra='<div style="background:#e8f0fe;border:1px solid #d2e3fc;border-radius:6px;padding:8px 12px;margin-top:12px"><b style="color:#1a73e8">📍 在地图中查看</b><div style="margin-top:4px">';
-    phm.handbook_to_place[file].forEach(pid=>{
-      const p=phm.places[pid];
-      extra+='<a href="index.html?place='+pid+'" style="display:inline-block;margin-right:12px;color:#1a73e8;text-decoration:none">→ '+p.name+'</a>';
+      jumpToSection(a.getAttribute('href'));
     });
-    extra+='</div></div>';
-  }
-  contentEl.innerHTML+=extra+'<div class="source-tag">出处：《'+title+'》· <a href="https://ranchunxu.github.io/usst-freshman-handbook/" target="_blank">原文网页</a> · 本地存档 2026-10-04</div>';
-  document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
-  const idx=CHAPTERS.findIndex(c=>c[0]===file);
-  if(idx>=0)document.querySelectorAll('.sidebar a')[idx].classList.add('active');
-}
-CHAPTERS.forEach(([file,title])=>{
-  const a=document.createElement('a');
-  a.textContent=title;
-  a.onclick=()=>{resultsEl.style.display='none';contentEl.style.display='block';loadChapter(file,title);};
-  toc.appendChild(a);
-});
-function highlight(text,kw){
-  const re=new RegExp('('+kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
-  return text.replace(re,'<mark>$1</mark>');
-}
-async function doSearch(){
-  const kw=searchEl.value.trim();
-  if(!kw){resultsEl.style.display='none';contentEl.style.display='block';return;}
-  resultsEl.style.display='block';contentEl.style.display='none';
-  resultsEl.innerHTML='<p style="padding:12px;color:#6b7280">搜索中…</p>';
-  const kwl=kw.toLowerCase();
-  const hits=[];
-  let fetchFail=0;
-  for(const [file,title] of CHAPTERS){
-    try{
-      if(!cache[file]){
-        const res=await fetch('data/handbook/'+encodeURIComponent(file)+'?v=20261004');
-        if(!res.ok){fetchFail++;continue;}
-        cache[file]=await res.text();
-      }
-      const text=stripFrontmatter(cache[file]);
-      const lower=text.toLowerCase();
-      let pos=lower.indexOf(kwl);
-      if(pos>=0){
-        let start=Math.max(0,pos-40);
-        let snippet=text.slice(start,pos+120).replace(/\n/g,' ');
-        hits.push({file,title,snippet});
-      }
-    }catch(e){
-      fetchFail++;
-    }
-  }
-  if(!hits.length){
-    let msg='没有章节包含「'+kw+'」。<br>本手册为个人学习笔记，可能未覆盖该问题。<br>请以学校最新官方通知或教务系统为准。';
-    if(fetchFail>0)msg='<b>部分内容加载失败（'+fetchFail+'篇），搜索结果可能不完整。</b><br>'+msg;
-    resultsEl.innerHTML='<div class="no-result"><h3>现有资料未查到</h3><p>'+msg+'</p><p style="margin-top:12px">可参考：<a href="https://jwc.usst.edu.cn/" target="_blank">教务管理系统</a> · <a href="https://myportal.usst.edu.cn/" target="_blank">信息门户</a></p></div>';
-    return;
-  }
-  resultsEl.innerHTML='<p style="padding:8px 12px;color:#6b7280;font-size:13px">找到 '+hits.length+' 篇相关内容，点击查看全文：</p>';
-  hits.forEach(h=>{
-    const div=document.createElement('div');
-    div.className='hit';
-    div.innerHTML='<div class="title">'+h.title+'</div><div class="snippet">'+highlight(h.snippet,kw)+'</div>';
-    div.onclick=()=>{resultsEl.style.display='none';contentEl.style.display='block';loadChapter(h.file,h.title);};
-    resultsEl.appendChild(div);
   });
-}
-searchEl.addEventListener('input',doSearch);
-{
-  const params=new URLSearchParams(location.search);
-  const chapterParam=params.get('chapter');
-  const found=chapterParam?CHAPTERS.find(c=>c[0]===chapterParam):null;
-  loadChapter(found?found[0]:CHAPTERS[0][0],found?found[1]:CHAPTERS[0][1]);
-}
+
+  /* ---------- 侧栏板块折叠 ---------- */
+  (function(){
+    var nav=doc.getElementById('nav'); if(!nav) return;
+    var items=[].slice.call(nav.children), cur=null;
+    items.forEach(function(el){
+      if(el.classList.contains('grp')){
+        cur=doc.createElement('div'); cur.className='navgrp';
+        nav.insertBefore(cur,el); cur.appendChild(el);
+      }else if(cur){ cur.appendChild(el); }
+    });
+    nav.querySelectorAll('.navgrp>.grp').forEach(function(g){
+      g.addEventListener('click',function(){ g.parentElement.classList.toggle('closed'); });
+    });
+  })();
+
+  /* ---------- 手机抽屉 ---------- */
+  var aside=doc.getElementById('aside'), backdrop=doc.getElementById('backdrop');
+  function closeNav(){ aside.classList.remove('open'); backdrop.classList.remove('show'); }
+  doc.getElementById('burger').addEventListener('click',function(){
+    var open=aside.classList.toggle('open'); backdrop.classList.toggle('show',open);
+  });
+  backdrop.addEventListener('click',closeNav);
+  doc.getElementById('nav').addEventListener('click',function(e){
+    if(e.target.closest('a')&&matchMedia('(max-width:960px)').matches) closeNav();
+  });
+  window.hbCloseNav=closeNav;
+
+  /* ---------- 进度条 + 回到顶部 ---------- */
+  var bar=doc.getElementById('progress'), topBtn=doc.getElementById('topBtn');
+  addEventListener('scroll',function(){
+    var sh=root.scrollHeight-root.clientHeight;
+    bar.style.width=(sh>0?root.scrollTop/sh*100:0)+'%';
+    topBtn.classList.toggle('show',root.scrollTop>600);
+  },{passive:true});
+  topBtn.onclick=function(){scrollTo({top:0,behavior:'smooth'});};
+
+  /* ---------- 滚动高亮当前章节 ---------- */
+  (function(){
+    var links=[].slice.call(doc.querySelectorAll('#nav a'));
+    var map={}; links.forEach(function(a){ map[a.getAttribute('href').slice(1)]=a; });
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){l.classList.remove('on');});
+          var l=map[e.target.id];
+          if(l){ l.classList.add('on'); var g=l.closest('.navgrp'); if(g) g.classList.remove('closed'); }
+        }
+      });
+    },{rootMargin:'-20% 0px -70% 0px'});
+    doc.querySelectorAll('main section[id]').forEach(function(s){io.observe(s);});
+  })();
+
+  /* ---------- 进场动效 ---------- */
+  (function(){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var targets=doc.querySelectorAll('main section, main .card, main details.block, main .tw, main pre.tree, main footer.foot');
+    targets.forEach(function(el){
+      el.classList.add('rv');
+      var sibs=el.parentElement?[].filter.call(el.parentElement.children,function(c){return c.classList&&c.classList.contains('rv');}):[];
+      el.style.setProperty('--d',Math.min(sibs.indexOf(el),7)*70+'ms');
+    });
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    },{rootMargin:'0px 0px -4% 0px',threshold:0});
+    targets.forEach(function(el){io.observe(el);});
+    window.hbRevealNow=function(t){
+      if(!t) return;
+      var scope=t.classList&&t.classList.contains('rv')?[t]:[t].concat([].slice.call(t.querySelectorAll('.rv')));
+      scope.forEach(function(el){ if(el.classList.contains('rv')){ el.style.transitionDelay='0ms'; el.classList.add('in'); } });
+    };
+  })();
+
+  /* ---------- 搜索（标题 / 正文 / 拼音首字母）+ 结果高亮 ---------- */
+  (function(){
+    var box=doc.getElementById('searchBox'), input=doc.getElementById('searchInput'), panel=doc.getElementById('searchResults');
+    if(!box) return;
+    var marks=[];
+    var secs=[].slice.call(doc.querySelectorAll('main section[id]')).map(function(s){
+      var h=s.querySelector('h3.sec');
+      return {id:s.id, el:s, py:((window._PY||{})[s.id]||''),
+        title:(h?h.textContent:s.id).replace(/🔗/g,'').trim(),
+        text:s.innerText.replace(/\s+/g,' ')};
+    });
+    function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    /* 只解包高亮节点、合并文本，绝不重建 DOM：控件节点与监听器、用户实时编辑内容都保留 */
+    function clearMarks(){
+      marks.forEach(function(mk){
+        var p=mk.parentNode; if(!p) return;
+        p.replaceChild(doc.createTextNode(mk.textContent), mk);
+        p.normalize();
+      });
+      marks=[];
+    }
+    /* 跳过表单控件与可编辑区域的文本节点，避免破坏输入与 contenteditable 编辑内容 */
+    function skipNode(node){
+      var p=node.parentElement; if(!p) return true;
+      if(p.closest('#searchBar')) return true;
+      var tag=p.tagName;
+      if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||tag==='BUTTON'||tag==='SCRIPT'||tag==='STYLE') return true;
+      if(p.isContentEditable) return true;
+      return false;
+    }
+    function markSection(sec,q){
+      if(!q) return;
+      var w=doc.createTreeWalker(sec,NodeFilter.SHOW_TEXT,null),nodes=[],n;
+      while((n=w.nextNode())){ if(skipNode(n))continue;
+        if(n.nodeValue.toLowerCase().indexOf(q)!==-1) nodes.push(n); }
+      var count=0;
+      nodes.forEach(function(node){
+        var text=node.nodeValue, lower=text.toLowerCase(), pos=0, idx;
+        var frag=doc.createDocumentFragment();
+        while((idx=lower.indexOf(q,pos))!==-1&&count<80){
+          if(idx>pos) frag.appendChild(doc.createTextNode(text.slice(pos,idx)));
+          var mk=doc.createElement('mark'); mk.className='hit'; mk.textContent=text.slice(idx,idx+q.length);
+          frag.appendChild(mk); pos=idx+q.length; count++; marks.push(mk);
+        }
+        frag.appendChild(doc.createTextNode(text.slice(pos)));
+        node.parentNode.replaceChild(frag,node);
+      });
+    }
+    function snip(text,q){
+      var i=text.toLowerCase().indexOf(q); if(i<0) return esc(text.slice(0,90));
+      var start=Math.max(0,i-32);
+      var s=(start>0?'…':'')+text.slice(start,Math.min(text.length,i+q.length+52))+(i+q.length+52<text.length?'…':'');
+      s=esc(s);
+      var j=s.toLowerCase().indexOf(esc(q).toLowerCase());
+      if(j>=0) s=s.slice(0,j)+'<b>'+s.slice(j,j+q.length)+'</b>'+s.slice(j+q.length);
+      return s;
+    }
+    function closePanel(){ panel.classList.remove('show'); panel.innerHTML=''; }
+    function doSearch(){
+      clearMarks();
+      var q=input.value.trim().toLowerCase();
+      if(!q){ closePanel(); return; }
+      var hits=secs.filter(function(s){
+        return s.title.toLowerCase().indexOf(q)!==-1 || (s.py&&s.py.indexOf(q)!==-1) || s.text.toLowerCase().indexOf(q)!==-1;
+      });
+      hits.sort(function(a,b){
+        var ta=a.title.toLowerCase().indexOf(q)!==-1?0:1, tb=b.title.toLowerCase().indexOf(q)!==-1?0:1;
+        return ta-tb;
+      });
+      var html='<div class="rc">找到 '+hits.length+' 条'+(hits.length>12?'，显示前 12':'')+'</div><div class="list">';
+      hits.slice(0,12).forEach(function(s){
+        html+='<div class="r" data-id="'+s.id+'"><div class="rt">'+esc(s.title)+'</div><div class="rs">'+snip(s.text,q)+'</div></div>';
+      });
+      html+='</div>';
+      if(!hits.length) html='<div class="rc">没有找到「'+esc(input.value.trim())+'」</div>';
+      panel.innerHTML=html; panel.classList.add('show');
+    }
+    function goResult(id,q){
+      var sec=doc.getElementById(id);
+      if(!sec) return;
+      closePanel();
+      /* 用户主动选结果：更新地址栏 #id 并压入历史，便于分享与前进/后退 */
+      jumpToSection(sec,{hash:true});
+      markSection(sec,q||input.value.trim().toLowerCase());
+      window.hbRevealNow&&window.hbRevealNow(sec);
+      input.blur();
+    }
+    input.addEventListener('input',doSearch);
+    input.addEventListener('keydown',function(e){
+      var rs=[].slice.call(panel.querySelectorAll('.r')), sel=panel.querySelector('.r.sel');
+      if(e.key==='Escape'){ input.value=''; clearMarks(); closePanel(); input.blur(); e.stopPropagation(); }
+      else if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+        if(!rs.length) return; e.preventDefault();
+        var i=rs.indexOf(sel); if(sel) sel.classList.remove('sel');
+        i=e.key==='ArrowDown'?(i+1)%rs.length:(i-1+rs.length)%rs.length;
+        rs[i].classList.add('sel'); rs[i].scrollIntoView({block:'nearest'});
+      }else if(e.key==='Enter'){
+        var t=sel||rs[0]; if(t&&t.dataset.id) goResult(t.dataset.id,input.value.trim().toLowerCase());
+      }
+    });
+    panel.addEventListener('click',function(e){
+      var r=e.target.closest('.r'); if(r&&r.dataset.id) goResult(r.dataset.id,input.value.trim().toLowerCase());
+    });
+    doc.addEventListener('click',function(e){ if(!box.contains(e.target)) closePanel(); });
+    doc.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+      if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){ e.preventDefault(); input.focus(); input.select(); }
+      if(e.key==='/'&&!e.ctrlKey&&!e.metaKey){ e.preventDefault(); input.focus(); }
+    });
+    window.hbSearch=function(q){ input.value=q; doSearch(); return true; };
+  })();
+
+  /* ---------- 复制本章链接 ---------- */
+  var toast=doc.getElementById('toast'), tmr;
+  function showToast(m){ toast.textContent=m; toast.classList.add('show'); clearTimeout(tmr); tmr=setTimeout(function(){toast.classList.remove('show');},1600); }
+  function copyText(t,cb){
+    cb=cb||function(){};
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){cb(true);},function(){ cb(fallback(t)); });
+    } else cb(fallback(t));
+  }
+  function fallback(t){
+    var ok=false, ta=null;
+    try{
+      ta=doc.createElement('textarea'); ta.value=t; ta.setAttribute('readonly','');
+      ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+      doc.body.appendChild(ta); ta.focus(); ta.select();
+      ok=doc.execCommand('copy');                       // 真实返回值，失败时不谎报成功
+    }catch(e){ ok=false; }
+    finally{ if(ta&&ta.parentNode) ta.parentNode.removeChild(ta); }
+    return ok;
+  }
+  doc.querySelectorAll('main section[id]').forEach(function(sec){
+    var h3=sec.querySelector('h3.sec'); if(!h3) return;
+    var b=doc.createElement('button'); b.className='cpy'; b.type='button'; b.title='复制本节链接'; b.textContent='🔗';
+    b.addEventListener('click',function(){
+      var url=location.href.split('#')[0]+'#'+sec.id;
+      copyText(url,function(ok){
+        if(ok) showToast('已复制本节链接，发给同学吧');
+        else showToast('复制失败，请手动复制本节链接：'+url);
+      });
+    });
+    h3.appendChild(b);
+  });
+
+  /* ---------- 综测计算器 ---------- */
+  (function(){
+    var zc=doc.getElementById('zcCalc'); if(!zc) return;
+    var boxes=[].slice.call(zc.querySelectorAll('#zcA input'));
+    var b1=zc.querySelector('#zcB1'), b2=zc.querySelector('#zcB2'), b3=zc.querySelector('#zcB3'), cf=zc.querySelector('#zcCF');
+    var out=zc.querySelector('#zcOut');
+    function calc(){
+      var A=0; boxes.forEach(function(c){ if(c.checked) A+=+c.dataset.v; });
+      var B=Math.min(50, Math.min(50,+b1.value||0)+Math.min(50,+b2.value||0)+(+b3.value||0));
+      var cfv=+cf.value||0;
+      var total=Math.min(100, A+B-cfv);
+      var coreOK=A>=50;
+      out.innerHTML='<span><b>'+A+'</b><span class="lb">核心 /60</span></span>'
+        +'<span><b>'+B+'</b><span class="lb">额外 /50</span></span>'
+        +(cfv?'<span><b>-'+cfv+'</b><span class="lb">违纪</span></span>':'')
+        +'<span><b>'+total+'</b><span class="lb">总分 /100</span></span>'
+        +'<span class="st '+(coreOK?'good':'bad')+'">'+(coreOK?'✓ 核心过线（≥50），账面合格':'✗ 核心 '+A+' 分未过 50 基本线，B 口袋补不上，先抓规定动作')+'</span>';
+    }
+    zc.addEventListener('input',calc); zc.addEventListener('change',calc); calc();
+  })();
+
+  /* ---------- GPA / 加权双算器 ---------- */
+  (function(){
+    var gc=doc.getElementById('gpaCalc'); if(!gc) return;
+    var rows=[].slice.call(gc.querySelectorAll('.gr')).filter(function(r){return r.querySelector('input')&&!r.querySelector('.hd');});
+    var DEMO=[['高等数学','6','92'],['大学英语','3','84'],['大学物理','4','78'],['电路原理','4','85'],['体育','1','90'],['','']];
+    var out=gc.querySelector('#gpaOut');
+    function gradeToGP(s){
+      if(s>=95)return 4.5; if(s>=90)return 4.0; if(s>=85)return 3.5; if(s>=80)return 3.0;
+      if(s>=75)return 2.5; if(s>=70)return 2.0; if(s>=61)return 1.5; if(s===60)return 1.0; return 0;
+    }
+    function calc(){
+      var sumC=0,sumG=0,sumW=0,n=0;
+      rows.forEach(function(r){
+        var ins=r.querySelectorAll('input');
+        var c=parseFloat(ins[1].value), s=parseFloat(ins[2].value);
+        if(c>0&&!isNaN(s)&&s>=0&&s<=100){ sumC+=c; sumG+=gradeToGP(s)*c; sumW+=s*c; n++; }
+      });
+      if(!n){ out.innerHTML='<span class="st bad">填入学分和分数即可实时计算</span>'; return; }
+      var gpa=sumG/sumC, w=sumW/sumC;
+      out.innerHTML='<span><b>'+gpa.toFixed(2)+'</b><span class="lb">GPA /4.5（学位线≥1.80）</span></span>'
+        +'<span><b>'+w.toFixed(1)+'</b><span class="lb">加权成绩 /100（分流90%）</span></span>'
+        +'<span class="st">同一组分，两条赛道：GPA 有档位保护，加权一分是一分</span>';
+      out.dataset.gpa=gpa.toFixed(2); out.dataset.weighted=w.toFixed(1);
+    }
+    gc.addEventListener('input',calc);
+    gc.querySelector('#gpaReset').addEventListener('click',function(){
+      rows.forEach(function(r,i){ var ins=r.querySelectorAll('input');
+        ins[0].value=DEMO[i][0]; ins[1].value=DEMO[i][1]; ins[2].value=DEMO[i][2]; });
+      calc();
+    });
+    calc();
+  })();
+
+  /* ---------- 位次线登记表（localStorage，KEY=usst_fsx_lines） ---------- */
+  (function(){
+    var fsx=doc.getElementById('fsxStore'); if(!fsx) return;
+    var KEY='usst_fsx_lines';
+    var tbl=fsx.querySelector('.ranktbl table');
+    if(!tbl) return;
+    var tbody=tbl;                                       // 无 tbody 时行直接挂在 table 上
+    function editableTds(scope){ return [].slice.call(scope.querySelectorAll('td[contenteditable]')); }
+    function bind(td){ td.addEventListener('input',save); }
+    function newRow(){
+      var tr=doc.createElement('tr');
+      for(var i=0;i<4;i++){ var td=doc.createElement('td'); td.setAttribute('contenteditable',''); tr.appendChild(td); }
+      return tr;
+    }
+    /* 读：所有可编辑单元格按行扁平排列；行数一并记录 */
+    function snapshot(){
+      var tds=editableTds(tbl);
+      return {rows:Math.max(1, Math.round(tds.length/4)), cells:tds.map(function(td){return td.textContent;})};
+    }
+    var timer;
+    function save(){ clearTimeout(timer); timer=setTimeout(function(){
+      try{ localStorage.setItem(KEY,JSON.stringify(snapshot())); }catch(e){} },400); }
+    /* 兼容旧格式：旧版是纯字符串数组；新版带 {rows,cells}。恢复行数与内容。 */
+    function restore(){
+      var raw=null; try{ raw=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){}
+      if(raw){
+        var cells = Array.isArray(raw) ? raw : (raw.cells||[]);
+        var rows  = Array.isArray(raw) ? Math.max(1,Math.ceil(cells.length/4)) : (raw.rows||Math.max(1,Math.ceil(cells.length/4)));
+        var dataRows=[].slice.call(tbl.querySelectorAll('tr')).filter(function(r){return r.querySelector('td[contenteditable]');});
+        var have=dataRows.length, base=dataRows[0];
+        while(have<rows && base){ var tr=newRow(); base.parentNode.appendChild(tr); dataRows.push(tr); have++; }
+        while(have>rows && base){ var last=dataRows[dataRows.length-1]; if(last&&last!==base){ last.parentNode.removeChild(last); dataRows.pop(); have--; } else break; }
+        var tds=editableTds(tbl);
+        tds.forEach(function(td,i){ td.textContent = (cells[i]!=null?cells[i]:''); });
+      }
+      /* 无论如何：给当前所有可编辑单元格绑定保存监听（否则无存储时新增/编辑不落盘） */
+      editableTds(tbl).forEach(bind);
+    }
+    restore();
+    fsx.querySelector('#fsxAdd').addEventListener('click',function(){
+      var ref=editableTds(tbl)[0]; if(!ref) return;
+      var tr=newRow(); ref.parentNode.appendChild(tr);
+      [].forEach.call(tr.querySelectorAll('td[contenteditable]'),bind);
+      save();
+    });
+    fsx.querySelector('#fsxClear').addEventListener('click',function(){
+      if(!confirm('清空全部登记内容？')) return;
+      editableTds(tbl).forEach(function(td){ td.textContent=''; });
+      try{ localStorage.removeItem(KEY); }catch(e){}
+    });
+  })();
+
+  /* ---------- 反馈 / 纠错入口 ---------- */
+  (function(){
+    var btn=doc.getElementById('fbBtn'); if(!btn) return;
+    btn.addEventListener('click',function(){
+      var url=location.href.split('#')[0];
+      copyText(url,function(ok){
+        if(ok) showToast('已复制本页链接，请把纠错内容发到手册整理者邮箱');
+        else showToast('复制失败，请手动复制地址栏链接反馈给整理者');
+      });
+    });
+  })();
+
+  /* ---------- ?chapter=中文文件名 入口（先规则后数字，最后兜底页首） ---------- */
+  (function(){
+    var q=new URLSearchParams(location.search).get('chapter');
+    if(!q) return;
+    var f=q; try{ f=decodeURIComponent(q); }catch(e){}
+    var target=null;
+    var rules=[[/^00b/,'sec-map'],[/^00-/,'sec-toc'],[/^27/,'sec-act'],[/^28/,'sec-src'],[/^29/,'sec-disclaimer']];
+    for(var i=0;i<rules.length;i++){ if(rules[i][0].test(f)){ target=rules[i][1]; break; } }
+    if(!target){ var m=f.match(/^(\d{1,2})/); if(m){ var n=+m[1]; if(n>=1&&n<=26) target='sec'+n; } }
+    function go(){
+      if(!target){ scrollTo(0,0); return; }
+      var sec=doc.getElementById(target); if(!sec) return;
+      jumpToSection(sec,{hash:false,offset:syncTopbar()+70});
+      window.hbRevealNow&&window.hbRevealNow(sec);
+      try{ history.replaceState(null,'',location.pathname); }catch(e){}
+    }
+    if(doc.readyState==='complete') go(); else addEventListener('load',go);
+  })();
+
+  /* ---------- 浏览器前进/后退：hashchange/popstate 时统一定位（不追加新记录） ---------- */
+  function onHistoryNav(){
+    var id=location.hash.slice(1);
+    if(!id){ scrollTo({top:0,behavior:'auto'}); return; }
+    var sec=doc.getElementById(id); if(!sec) return;
+    jumpToSection(sec,{hash:false});                  // hash:false 确保回放不重复 pushState
+    window.hbRevealNow&&window.hbRevealNow(sec);
+  }
+  addEventListener('hashchange',onHistoryNav);
+  addEventListener('popstate',onHistoryNav);
+
+  /* ---------- 初次载入若有 hash，也统一处理（不追加历史记录） ---------- */
+  if(location.hash.length>1){ setTimeout(function(){ onHistoryNav(); },0); }
+})();
 </script>
 </body>
 </html>
