@@ -17,7 +17,6 @@
   #mapLayer{position:absolute;top:0;left:0;transform-origin:0 0;}
   #mapLayer picture{display:block;}
   #groundImg{display:block;width:1452px;height:1083px;user-select:none;-webkit-user-drag:none;}
-  #groundFallback{display:none;}
   #overlay{position:absolute;inset:0;z-index:2;pointer-events:none;}
   .marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;z-index:3;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
   .marker .dot{width:8px;height:8px;border-radius:50%;background:#2f7bff;box-shadow:0 0 0 1.5px rgba(255,255,255,.8),0 1px 2px rgba(0,0,0,.4);}
@@ -34,32 +33,44 @@
   #meMarkerEl .dot{width:16px;height:16px;border-radius:50%;background:#2f7bff;border:3px solid #fff;box-shadow:0 0 8px rgba(47,123,255,.6);}
   #routeSvg{position:absolute;inset:0;z-index:4;pointer-events:none;}
   #banner{position:absolute;top:0;left:0;right:0;z-index:20;background:rgba(20,24,32,.88);color:#e8eaed;
-    padding:10px 16px;font-size:13px;line-height:1.5;border-bottom:1px solid rgba(255,255,255,.08);}
+    padding:6px 16px;font-size:13px;line-height:1.4;border-bottom:1px solid rgba(255,255,255,.08);
+    display:flex;align-items:baseline;gap:8px;}
   #banner b{color:#ffd166;font-size:14px;}
-  #banner .note{color:#9aa0a6;}
-  #panel{position:absolute;top:74px;right:12px;z-index:20;width:300px;max-height:70vh;overflow:auto;
+  #infoBtn{margin-left:auto;cursor:pointer;color:#8ab4f8;font-size:12px;white-space:nowrap;}
+  #panel{position:absolute;top:60px;right:12px;z-index:20;width:300px;max-height:70vh;overflow:auto;
     background:rgba(25,28,36,.94);color:#e8eaed;border-radius:10px;padding:14px 16px;display:none;
     box-shadow:0 8px 30px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);font-size:13px;line-height:1.7;}
   #panel h3{margin:0 0 8px;font-size:16px;color:#fff;}
-  #panel .src{color:#8ab4f8;}
-  #panel .conf{color:#fdd663;}
+
   #panel .close{position:absolute;top:8px;right:12px;cursor:pointer;color:#9aa0a6;font-size:16px;}
   #tip{position:absolute;bottom:12px;left:12px;z-index:20;color:#d5d9de;font-size:12px;
     background:rgba(20,24,32,.7);padding:6px 10px;border-radius:6px;}
-  #search{position:absolute;top:74px;left:12px;z-index:20;}
-  #search input{width:180px;padding:7px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);
+  #search{position:absolute;top:60px;left:12px;z-index:20;width:250px;display:flex;flex-direction:column;gap:6px;}
+  #search .fld{display:flex;flex-direction:column;gap:2px;}
+  #search .fld>label{color:#cfd6df;font-size:11px;line-height:1.3;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+  #search .inrow{display:flex;gap:6px;}
+  #search input{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);
     background:rgba(25,28,36,.9);color:#fff;font-size:13px;outline:none;}
-  #search .hint{color:#eef;font-size:11px;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.6);}
-  #search select{padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(25,28,36,.9);color:#fff;font-size:12px;outline:none;}
-  #search .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-  #search .row select{flex:1;min-width:0}
-  #noResult{color:#f28b82;font-size:11px;margin-top:4px;display:none}
+  #search .inrow input{flex:1;min-width:0;}
+  #search button#searchBtn{padding:8px 12px;border:0;border-radius:8px;background:#8ab4f8;color:#12203a;font-size:13px;cursor:pointer;flex:none;}
+  #search .hint{color:#eef;font-size:11px;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+  #search select{width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(25,28,36,.9);color:#fff;font-size:12px;outline:none;}
+  #noResult{color:#f28b82;font-size:11px;display:none}
+  #searchResults{list-style:none;margin:0;padding:0;background:rgba(25,28,36,.96);border:1px solid rgba(255,255,255,.14);
+    border-radius:8px;max-height:240px;overflow:auto;display:none;}
+  #searchResults li{padding:8px 10px;color:#e8eaed;font-size:13px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.07);}
+  #searchResults li:last-child{border-bottom:0;}
+  #searchResults li:hover{background:rgba(138,180,248,.18);}
+  #searchResults li .rsub{color:#9aa0a6;font-size:11px;margin-left:6px;}
   @media (max-width:640px){
     html,body{background:#eef0f3}
-    #banner{font-size:11px;padding:6px 8px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    #banner .note{display:none}
-    #search{top:44px;left:8px;right:8px;width:auto}
-    #search input{width:100%;box-sizing:border-box}
+    #banner{font-size:12px;padding:4px 10px;line-height:1.35;white-space:nowrap;overflow:visible;gap:6px}
+    #banner b{font-size:13px}
+    #infoBtn{font-size:11px}
+    #search{top:36px;left:8px;right:8px;width:auto}
+    #search input,#search select,#search button#searchBtn{min-height:44px;font-size:14px}
+    #search .fld>label{font-size:12px}
+    #searchResults{max-height:44vh;}
     #panel{top:auto;left:8px;right:8px;width:auto;max-height:42vh;bottom:96px}
     #tip{display:none}
     #routeInfo{left:8px !important;right:8px !important;max-width:none !important;max-height:36vh}
@@ -78,14 +89,25 @@
     <div id="overlay"></div>
     <div id="meMarkerEl" style="display:none"><div class="dot"></div></div>
   </div>
-  <div id="banner"><b id="stTitle">加载中…</b><span id="stNote" class="note"></span></div>
+  <div id="banner"><b id="stTitle">加载中…</b><span id="infoBtn">ℹ️ 数据说明</span></div>
   <div id="search">
-    <input id="q" placeholder="搜楼名，如：弘毅苑 / 申三">
-    <div class="row">
-      <select id="catFilter"><option value="">全部分类</option></select>
-      <select id="startPick"><option value="__ph__">请选择起点</option></select>
+    <div class="fld">
+      <label for="q">搜索地点</label>
+      <div class="inrow">
+        <input id="q" placeholder="搜楼名，如：弘毅苑 / 申三" aria-label="搜索地点">
+        <button id="searchBtn" type="button">搜索</button>
+      </div>
     </div>
-    <div class="hint">回车定位；点标记看信息；拖动平移</div>
+    <ul id="searchResults" aria-label="搜索结果"></ul>
+    <div class="fld">
+      <label for="catFilter">地点分类</label>
+      <select id="catFilter" aria-label="地点分类"><option value="">全部分类</option></select>
+    </div>
+    <div class="fld">
+      <label for="startPick">导航起点</label>
+      <select id="startPick" aria-label="导航起点"><option value="__ph__">请选择起点</option></select>
+    </div>
+    <div class="hint">回车或点搜索定位；点结果看信息；拖动平移</div>
     <div id="noResult">未找到该地点</div>
   </div>
   <div id="panel"><span class="close" onclick="closePanel()">✕</span><div id="panelBody"></div></div>
@@ -122,8 +144,7 @@ const CAT_LABEL = {dorm:'宿舍', teaching:'教学楼', food:'餐饮', sport:'�
     const o=document.createElement('option'); o.value=f.id; o.textContent=f.name; sp.appendChild(o);});
 })();
 
-document.getElementById('stTitle').textContent = meta.campus + ' · 2026级本科新生 · ' + meta.dataStatus;
-document.getElementById('stNote').textContent = ' — ' + meta.statusNote;
+document.getElementById('stTitle').textContent = '上海理工大学基础学院 · 校园导览';
 
 // ---------- 坐标转换（localMeters → 底图像素） ----------
 // transform: sxMPerPx=0.6408, syMPerPx=1.043, cropOffsetPx=[-868.31,-193.86], anchorPx=[0,0]
@@ -373,14 +394,8 @@ function showPanel(f) {
   if (!f) { closePanel(); return; }
   for (const m of markerList) m.el.classList.toggle('highlight', m.f === f);
   let html = `<h3>${f.name}</h3>`;
-  const catName = {dorm:'宿舍', teaching:'教学楼', food:'餐饮', sport:'体育', service:'服务'}[f.category] || '';
+  const catName = {dorm:'宿舍', teaching:'教学楼', food:'餐饮', sport:'体育', service:'服务', gate:'校门'}[f.category] || '';
   if (catName) html += `<div>类型：${catName}</div>`;
-  if (f.nameSource) html += `<div class="src">楼名来源：${f.nameSource}</div>`;
-  if (f.footprintSource) html += `<div class="src">位置来源：${f.footprintSource}</div>`;
-  if (f.confidence) html += `<div class="conf">可信度：${JSON.stringify(f.confidence).replace(/["{}]/g,' ').trim()}</div>`;
-  if (f.status) html += `<div class="conf">状态：${f.status}</div>`;
-  if (PENDING.has(f.id)) html += `<div class="conf">⚠ 位置待核实（基于旧坐标换算，未与底图精确对齐）</div>`;
-  html += `<div style="color:#9aa0a6;margin-top:6px">编号 ${f.id}</div>`;
   if (phm.place_to_handbook[f.id] && phm.place_to_handbook[f.id].length) {
     html += '<div style="margin-top:8px;border-top:1px dashed rgba(255,255,255,.2);padding-top:8px"><div style="color:#8ab4f8;font-size:12px;margin-bottom:4px">📖 相关手册章节</div>';
     phm.place_to_handbook[f.id].forEach(file => {
@@ -391,10 +406,27 @@ function showPanel(f) {
   }
   if (f.kind === 'building') html += '<div id="photoSlot" style="margin:8px 0"></div>';
   if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') {
-    html += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
-      '<button onclick=\'setRouteStartById("' + f.id + '")\' style="background:#8ab4f8;border:0;color:#12203a;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px">🚶 从这里出发</button>' +
-      '<button onclick=\'setRouteEndById("' + f.id + '")\' style="background:#ffb020;border:0;color:#222;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px">🧭 到这里去</button>' +
-      '</div>';
+    // 起点/终点操作区：按「用户是否已主动选起点」和「本地点是否为当前起点」分三态
+    // 用地点 ID（routeStartId）判定是否同一地点，不用名称/坐标猜测
+    const btnBase = 'border:0;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px';
+    const isCurrentStart = userPickedStart && routeStartId === f.id;
+    if (isCurrentStart) {
+      // 三态一：本地点就是当前起点 → 只标注，不提供同点导航（不生成同点路线/「已到达」）
+      html += '<div style="margin-top:8px;color:#8ab4f8;font-size:13px">📍 当前起点</div>';
+    } else if (userPickedStart) {
+      // 三态二：已选起点且本地点不是起点 → 主入口「到这里去」，起点以简短小字呈现，改起点走次级入口
+      html += '<div style="margin-top:8px;color:#9aa0a6;font-size:12px">起点：' + routeStartName + '</div>';
+      html += '<div style="margin-top:6px">' +
+        '<button onclick=\'setRouteEndById("' + f.id + '")\' style="background:#ffb020;color:#222;' + btnBase + '">🧭 到这里去</button>' +
+        '<span role="button" onclick=\'setRouteStartById("' + f.id + '")\' style="color:#8ab4f8;cursor:pointer;font-size:12px;text-decoration:underline;margin-left:12px">设为新起点</span>' +
+        '</div>';
+    } else {
+      // 三态三：尚未主动选起点（含页面默认大门）→ 保留原始双按钮
+      html += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button onclick=\'setRouteStartById("' + f.id + '")\' style="background:#8ab4f8;color:#12203a;' + btnBase + '">🚶 从这里出发</button>' +
+        '<button onclick=\'setRouteEndById("' + f.id + '")\' style="background:#ffb020;color:#222;' + btnBase + '">🧭 到这里去</button>' +
+        '</div>';
+    }
   }
   panelBody.innerHTML = html;
   panel.style.display = 'block';
@@ -496,8 +528,30 @@ let baseAdj = rAdj.map(list => list.map(e => [e[0], e[1], e[2]]));
 let baseNodes = rNodes.map(n => ({x: n.x, z: n.z}));
 // 仅使用坐标文件中明确连接的路段；删除“相距小于40自动步行衔接”。
 // 端点吸附：返回最近基础边上的投影（u,v 为原节点，t 为边上参数，proj 为投影坐标）
+// 主连通分量（最大分量）节点集合：正常点位吸附到主路网；仅“贴边”的点位才允许吸附孤立支线。
+// 孤立支线是刻意保留的封闭通道，贴边接入可正确显示不可达；否则回退主分量，避免跨草地吸附。
+const mainCompNodes = (function () {
+  const n = baseAdj.length;
+  const comp = new Array(n).fill(-1);
+  let cid = 0, bestCid = -1, bestSize = -1;
+  for (let i = 0; i < n; i++) {
+    if (comp[i] !== -1) continue;
+    const stack = [i]; comp[i] = cid; let size = 0;
+    while (stack.length) {
+      const u = stack.pop(); size++;
+      for (const [v] of baseAdj[u]) if (comp[v] === -1) { comp[v] = cid; stack.push(v); }
+    }
+    if (size > bestSize) { bestSize = size; bestCid = cid; }
+    cid++;
+  }
+  const s = new Set();
+  for (let i = 0; i < n; i++) if (comp[i] === bestCid) s.add(i);
+  return s;
+})();
+// 贴边阈值（米）：点位到孤立支线距离在此以内视为“就在通道口”，接受孤立段吸附
+const ISO_SNAP_M = 8;
 function nearestEdgeOnBase(P) {
-  let best = null;
+  let bestMain = null, best = null;
   for (let u = 0; u < baseAdj.length; u++)
     for (const [v] of baseAdj[u]) {
       if (v < u) continue;
@@ -509,7 +563,13 @@ function nearestEdgeOnBase(P) {
       const px = a.x + abx*t, pz = a.z + abz*t;
       const d = Math.hypot(P.x-px, P.z-pz);
       if (!best || d < best.d) best = {d, u, v, t, proj: {x: px, z: pz}};
+      const inMain = mainCompNodes.has(u) || mainCompNodes.has(v);
+      if (inMain && (!bestMain || d < bestMain.d)) bestMain = {d, u, v, t, proj: {x: px, z: pz}};
     }
+  // 最近边属于孤立支线：仅当贴边（很近）才接受；否则回退主分量
+  if (best && bestMain && !(mainCompNodes.has(best.u) || mainCompNodes.has(best.v)) && best.d > ISO_SNAP_M) {
+    return bestMain;
+  }
   return best;
 }
 function nearestNodeOnBase(p) {
@@ -598,9 +658,12 @@ function keyOf(a, b) { return a < b ? a+'_'+b : b+'_'+a; }
 let routeStart = null, routeStartName = '大门', routeEndPt = null, routeEndName = '';
 let lastRoute = null, traveledM = -1, offRouteM = 0;
 let navState = null, routeEndId = null;
+// routeStartId：起点地点 ID，用于「同地点」判定（替代名称/坐标猜测）
+// userPickedStart：是否已由用户主动选过起点；页面默认「大门」只预填起点，不置此标志
+let routeStartId = null, userPickedStart = false;
 let routePts = [], routePair = null;
 const routeInfo = document.createElement('div');
-routeInfo.style.cssText = 'position:absolute;bottom:44px;left:12px;z-index:20;background:rgba(25,28,36,.94);color:#e8eaed;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.7;display:none;border:1px solid rgba(255,255,255,.1);max-width:360px;max-height:60vh;overflow:auto';
+routeInfo.style.cssText = 'position:absolute;bottom:44px;left:12px;z-index:20;background:rgba(25,28,36,.94);color:#e8eaed;border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.5;display:none;border:1px solid rgba(255,255,255,.1);max-width:360px;max-height:60vh;overflow:auto';
 routeInfo.id = 'routeInfo';
 document.getElementById('app').appendChild(routeInfo);
 
@@ -700,39 +763,23 @@ function tryRoute() {
   renderRoute();
   updateTransform();
 }
-function entryNoteLine(kind) {
-  if (kind === 'gate') return '<span style="color:#9aa0a6">出入口，路线接入对应门岗道路节点。</span><br>';
-  return '<span style="color:#9aa0a6">已到达附近<b>道路接入点</b>（最近投影）；建筑<b>入口待确认</b>，尚未声称到达建筑本体。</span><br>';
-}
 function renderRoute() {
   const st = navState || {};
   const head = '<b style="color:#ffd166">路线：' + routeStartName + ' → ' + routeEndName + '</b><br>';
   const clr = '<span style="color:#9aa0a6;cursor:pointer" onclick="clearRoute()">✕ 清除路线</span>';
   if (st.kind === 'arrived') {
-    routeInfo.innerHTML = head +
-      '<b style="color:#81c995">已到达</b>（起点与终点相同，0 米，不生成路径）<br>' + clr;
+    // 同地点：清掉旧路线，隐藏无用结果面板，不生成绕圈路线
+    routeInfo.style.display = 'none';
+    relayoutBelow();
+    return;
   } else if (st.kind === 'unreachable') {
     routeInfo.innerHTML = head +
       '<b style="color:#f28b82">没有可用路线</b>（两地在当前路网上不连通）<br>' + clr;
   } else if (!lastRoute) {
     routeInfo.style.display = 'none'; return;
   } else {
-    const dstKind = (byId[routeEndId] && byId[routeEndId].kind) || 'building';
-    let html = head + '沿道路约 <b>' + Math.round(lastRoute.dist) + '</b> 米（估算）';
-    if (traveledM >= 0) html += ' · 剩余约 <b>' + Math.max(0, Math.round(lastRoute.dist - traveledM)) + '</b> 米';
-    html += '<div style="margin-top:6px">';
-    lastRoute.steps.forEach((s, i) => {
-      const cur = traveledM >= 0 && traveledM >= s.startM && traveledM < s.endM;
-      html += '<div style="' + (cur ? 'color:#ffd166;font-weight:bold' : 'color:#d5d9de') + '">' +
-        (i + 1) + '. ' + s.turn + '，沿校园道路约' + s.meters + ' 米</div>';
-    });
-    html += '<div style="color:#81c995;font-weight:bold">' + (lastRoute.steps.length + 1) + '. 到达终点</div>';
-    html += '</div>';
-    if (traveledM >= 0 && offRouteM > 60)
-      html += '<span style="color:#f28b82">⚠ 你似乎已偏离路线（最近约 ' + Math.round(offRouteM) + ' 米）。</span><br>';
-    html += entryNoteLine(dstKind);
-    html += '<span style="color:#f28b82">⚠ 路线沿给定道路网络自动计算，距离为<b>估算</b>（底图无精确比例尺），<b>尚未现场验证通行</b>；施工围挡与实际开口以现场为准。</span><br>' + clr;
-    routeInfo.innerHTML = html;
+    routeInfo.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+      '<b style="color:#ffd166">路线：' + routeStartName + ' → ' + routeEndName + '</b>' + clr + '</div>';
   }
   if (window.innerWidth <= 640 && panel.style.display !== 'none') return;
   routeInfo.style.display = 'block';
@@ -747,6 +794,8 @@ function clearRoute() {
   routeInfo.style.display = 'none';
   relayoutBelow();
   updateTransform();
+  // 反馈：起点被保留（无论默认大门还是用户选的），明确告诉用户不必重选起点
+  if (routeStart) showStatus('路线已清除，起点仍为' + routeStartName + '，请选择新终点');
 }
 window.clearRoute = clearRoute;
 window.setRouteEndById = function(id) {
@@ -777,11 +826,30 @@ window.setRouteStartById = function(id){
   const [x, z] = px2xz(px[0], px[1]);
   routeStart = {x, z};
   routeStartName = f.kind === 'checkin' ? f.name.replace('报到点-','') : f.name;
-  setPickValue(id);
-  if (routeEndPt) tryRoute();   // 若已有终点，改起点立即重算
-  if (window.innerWidth <= 640) closePanel();   // 手机：与“到这里去”一致，关闭面板并反馈结果
+  routeStartId = id;                      // 同地点判定用（ID 而非名称/坐标）
+  userPickedStart = true;                 // 记录用户已主动选起点（唯一不置位的是默认「大门」预填）
+  setPickValue(id);                       // 1) 同步起点选择框
+  if (routeEndPt) {
+    tryRoute();                           // 2) 已有终点：立即重算并显示路线
+  } else {
+    // 3) 无终点：清掉可能残留的旧路线/状态，提示稍后自动消失
+    removeRoutePath(); routePts = [];
+    lastRoute = null; traveledM = -1; offRouteM = 0; navState = null;
+    routeInfo.style.display = 'none';
+  }
+  // 4) 无论屏幕尺寸，先关弹窗，再给出反馈（不重置地图缩放/平移，交互连贯）
+  closePanel();
+  if (!routeEndPt) showStatus('起点已设为' + routeStartName + '，请选择终点');
 };
-document.getElementById('startPick').onchange = e => { if (e.target.value !== '__ph__') setRouteStartById(e.target.value); };
+document.getElementById('startPick').onchange = e => {
+  const v = e.target.value;
+  if (v === '__ph__') {
+    // 已有有效起点时不允许选回占位项：回退显示到当前起点，保持界面与内部状态一致
+    if (routeStart && routeStartId) { setPickValue(routeStartId); return; }
+    return;
+  }
+  setRouteStartById(v);
+};
 function setPickValue(id) {
   const sp = document.getElementById('startPick');
   if (sp.querySelector('option[value="' + id + '"]')) sp.value = id;
@@ -790,12 +858,12 @@ function setPickPlaceholder() {
   const sp = document.getElementById('startPick');
   if (sp.querySelector('option[value="__ph__"]')) sp.value = '__ph__';
 }
-// 默认起点：大门（用户可在任意地点弹窗或下拉里改）
+// 默认起点：大门（仅预填起点坐标与 ID，userPickedStart 保持 false，不视为用户已选点）
 {
   const gateFeat = feats.find(f => f.kind === 'gate' && f.name === '大门');
   if (gateFeat) {
     const px = featPx(gateFeat);
-    if (px) { const [x, z] = px2xz(px[0], px[1]); routeStart = {x, z}; routeStartName = gateFeat.name; setPickValue(gateFeat.id); }
+    if (px) { const [x, z] = px2xz(px[0], px[1]); routeStart = {x, z}; routeStartName = gateFeat.name; routeStartId = gateFeat.id; setPickValue(gateFeat.id); }
   }
 }
 
@@ -989,39 +1057,100 @@ function focusFeature(f){
   updateTransform();
   showPanel(f);
 }
-q.addEventListener('keydown', e => {
-  if (e.key !== 'Enter') return;
+const resultsEl = document.getElementById('searchResults');
+const catSel = document.getElementById('catFilter');
+// 当前搜索池：仅受分类筛选影响（分类只影响展示，不改 feats/路网）
+function searchPool() {
+  const cat = catSel.value;
+  return feats.filter(x => x.name && (x.kind === 'building' || x.kind === 'gate') && (!cat || x.category === cat));
+}
+function clearResults() { resultsEl.innerHTML = ''; resultsEl.style.display = 'none'; }
+// 输入即匹配：多匹配时展示列表，不直接跳到第一处
+function renderSearchResults() {
   const kw = q.value.trim();
-  if (!kw){ noResult.style.display='none'; return; }
-  const cat = document.getElementById('catFilter').value;
-  const pool = feats.filter(x => x.name && (!cat || x.category === cat));
-  const f = pool.find(x => x.name.includes(kw)) || pool.find(x => x.name.replace(/（.*$/,'').includes(kw));
-  if (!f){ noResult.textContent = '未找到「' + kw + '」' + (cat ? '（当前分类：'+(CAT_LABEL[cat]||cat)+'）' : ''); noResult.style.display='block'; return; }
-  noResult.style.display='none';
+  if (!kw) { clearResults(); noResult.style.display = 'none'; return; }
+  noResult.style.display = 'none';
+  const pool = searchPool();
+  const matches = pool.filter(x => x.name.includes(kw) || x.name.replace(/（.*$/,'').includes(kw));
+  if (!matches.length) { clearResults(); return; }
+  resultsEl.innerHTML = '';
+  matches.forEach(x => {
+    const li = document.createElement('li');
+    const sub = (x.kind === 'gate' ? '校门' : (CAT_LABEL[x.category] || ''));
+    li.innerHTML = x.name + (sub ? '<span class="rsub">' + sub + '</span>' : '');
+    li.onclick = () => pickSearchResult(x);
+    resultsEl.appendChild(li);
+  });
+  resultsEl.style.display = 'block';
+}
+function pickSearchResult(f) {
+  if (!f) return;
+  clearResults();
+  noResult.style.display = 'none';
   focusFeature(f);
+}
+// 回车或搜索按钮：唯一匹配直接定位，多匹配列出让用户点选，无匹配给出提示
+function runSearch() {
+  const kw = q.value.trim();
+  if (!kw) { clearResults(); noResult.style.display = 'none'; return; }
+  const pool = searchPool();
+  const matches = pool.filter(x => x.name.includes(kw) || x.name.replace(/（.*$/,'').includes(kw));
+  if (!matches.length) {
+    clearResults();
+    closePanel(); // 搜索失败不再残留上次地点详情
+    const cat = catSel.value;
+    noResult.textContent = '未找到「' + kw + '」' + (cat ? '（当前分类：'+(CAT_LABEL[cat]||cat)+'）' : '');
+    noResult.style.display = 'block';
+    return;
+  }
+  noResult.style.display = 'none';
+  if (matches.length === 1) { pickSearchResult(matches[0]); return; }
+  resultsEl.innerHTML = '';
+  matches.forEach(x => {
+    const li = document.createElement('li');
+    const sub = (x.kind === 'gate' ? '校门' : (CAT_LABEL[x.category] || ''));
+    li.innerHTML = x.name + (sub ? '<span class="rsub">' + sub + '</span>' : '');
+    li.onclick = () => pickSearchResult(x);
+    resultsEl.appendChild(li);
+  });
+  resultsEl.style.display = 'block';
+}
+q.addEventListener('input', () => {
+  noResult.style.display = 'none';
+  renderSearchResults();
 });
-document.getElementById('catFilter').onchange = () => { noResult.style.display='none'; };
+q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } });
+document.getElementById('searchBtn').onclick = () => runSearch();
+// 分类切换：真正筛选地图标记与搜索结果；恢复全部分类恢复全部显示
+function applyCategoryFilter() {
+  const cat = catSel.value;
+  for (const m of markerList) {
+    const f = m.f;
+    const inCat = !cat || f.kind !== 'building' || f.category === cat;
+    m.el.style.display = inCat ? '' : 'none';
+  }
+  noResult.style.display = 'none';
+  if (q.value.trim()) renderSearchResults(); else clearResults();
+}
+catSel.onchange = () => { noResult.style.display = 'none'; applyCategoryFilter(); };
 {
   const params=new URLSearchParams(location.search);
   const placeParam=params.get('place');
   if(placeParam&&byId[placeParam])focusFeature(byId[placeParam]);
 }
 
-// ---------- 数据说明面板 ----------
-const infoBtn = document.createElement('span');
-infoBtn.textContent = 'ℹ️ 数据说明';
-infoBtn.style.cssText = 'float:right;cursor:pointer;color:#8ab4f8;font-size:12px';
+// ---------- 数据说明面板（独立入口，默认收起） ----------
+const infoBtn = document.getElementById('infoBtn');
 infoBtn.onclick = () => dataInfo.style.display = dataInfo.style.display === 'block' ? 'none' : 'block';
-document.getElementById('banner').appendChild(infoBtn);
 const dataInfo = document.createElement('div');
-dataInfo.style.cssText = 'position:absolute;top:86px;right:12px;z-index:30;width:320px;max-height:70vh;overflow:auto;' +
+dataInfo.style.cssText = 'position:absolute;top:60px;right:12px;z-index:30;width:320px;max-height:70vh;overflow:auto;' +
   'background:rgba(25,28,36,.96);color:#e8eaed;border-radius:10px;padding:14px 16px;font-size:13px;line-height:1.8;display:none;' +
   'border:1px solid rgba(255,255,255,.1)';
 dataInfo.innerHTML = '<b style="color:#ffd166">这份数据是怎么来的</b><div style="margin-top:8px">' +
   '🏢 楼名来源：以底图标注为准，正在逐个核对中<br>' +
-  '📐 楼栋位置：29个地标均待逐一核实，尚未与底图精确对齐：28个黄色待核实圆点 + b13申七宿舍纯文字标签<br>' +
+  '📐 楼栋位置：地标均待逐一核实，尚未与底图精确对齐<br>' +
   '🚫 垃圾房(b03)、后勤物业用房(b14)未显示；报到点标记(c01-c03)已移除<br>' +
-  '🛣 路网：按用户确认的导向参考图 29 条折线重建（主路+入口支线），路线距离为估算<br>' +
+  '🛣 路网：按用户确认的导向参考图重建（主路+入口支线），路线距离为估算<br>' +
   '🗺 底图：校区平面图插画（treefree，WebP 265KB / PNG 兜底）<br>' +
   '⚠ 整体为草案级，实地校对进行中，不作为精确测量依据</div>' +
   '<div style="margin-top:10px;color:#9aa0a6" id="dataCounts"></div>' +
@@ -1033,8 +1162,7 @@ window.dataInfo = dataInfo;
   for (const f of feats) k[f.kind] = (k[f.kind] || 0) + 1;
   document.getElementById('dataCounts').textContent =
     '当前数据：' + (k.building || 0) + ' 栋楼 · ' + roadPolys.length + ' 条道路折线 · ' +
-    (k.gate || 0) + ' 个出入口 · ' + (k.checkin || 0) + ' 个报到点 · ' +
-    '状态 ' + meta.dataStatus;
+    (k.gate || 0) + ' 个出入口 · ' + (k.checkin || 0) + ' 个报到点';
 }
 
 // ---------- 初始化 ----------
@@ -1045,8 +1173,24 @@ window.__nav = {
   get baseEdgeCount() { return baseAdj.reduce((s, l) => s + l.length, 0); },
   get navState() { return navState; },
   get routeStartName() { return routeStartName; },
+  get routeStartId() { return routeStartId; },
+  get userPickedStart() { return userPickedStart; },
   get routeEndName() { return routeEndName; },
+  get routeDistMeters() { return lastRoute ? Math.round(lastRoute.dist) : null; },
+  get routePtsPx() { return routePts.map(p => [Math.round(p[0]), Math.round(p[1])]); },
   startOptionCount() { const sp = document.getElementById('startPick'); let n = 0; for (const o of sp.options) if (o.value && o.value !== '__ph__') n++; return n; },
+  get startPickValue() { return document.getElementById('startPick').value; },
+  get markerVisibleCount() { return markerList.filter(m => m.el.style.display !== 'none').length; },
+  get markerTotalCount() { return markerList.length; },
+  get searchResultsVisible() { return resultsEl.style.display !== 'none'; },
+  get searchResultCount() { return resultsEl.querySelectorAll('li').length; },
+  get noResultVisible() { return noResult.style.display === 'block' || noResult.style.display === '' && getComputedStyle(noResult).display !== 'none'; },
+  get panelVisible() { return panel.style.display !== 'none' && getComputedStyle(panel).display !== 'none'; },
+  get panelTitle() { const h = panelBody.querySelector('h3'); return h ? h.textContent : ''; },
+  setSearch: kw => { q.value = kw; q.dispatchEvent(new Event('input')); },
+  runSearch: () => runSearch(),
+  clickResult: i => { const li = resultsEl.querySelectorAll('li')[i]; if (li) li.click(); },
+  setCategory: c => { catSel.value = c; applyCategoryFilter(); },
   setStart: id => setRouteStartById(id),
   setEnd: id => setRouteEndById(id),
   routeEndpointsPx() {
@@ -1093,7 +1237,7 @@ window.__nav.debug = {
   if (dbg && dbg !== '0') {
     window.__nav.debug.on = true;
     window.__nav.debug.network(true);
-    if (document.getElementById('stNote')) document.getElementById('stNote').textContent = ' — 调试模式：路网已显示，可用 __nav.debug.* 控制';
+    if (document.getElementById('stTitle')) document.getElementById('stTitle').textContent = '上海理工大学基础学院 · 校园导览 — 调试模式：路网已显示，可用 __nav.debug.* 控制';
   }
 }
 fitMap();
