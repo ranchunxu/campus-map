@@ -3,125 +3,674 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>本科培养计划查询 · 上理工2026级</title>
+<title>本科培养计划查询 · 上海理工大学 2026 级</title>
 <style>
-:root{--bg:#f7f8fa;--card:#fff;--border:#e3e6eb;--primary:#1a73e8;--text:#1f2329;--muted:#6b7280;--warn:#b54708;--warnbg:#fff7ed}
+/* ---------- 设计令牌：与新生手册同一套（藏青 / 暖纸 / 金） ---------- */
+:root{
+  --ink:#1b2231; --ink-strong:#10141f;
+  --paper:#f6f4ef; --paper-2:#efede6;
+  --navy:#0d1220; --navy-2:#161e33; --navy-3:#1f2942;
+  --gold:#b8912e; --gold-deep:#8a6d1a; --gold-bright:#e3c56b; --gold-soft:#f4ecd4;
+  --line:#e2ddd0; --line-2:#d5cfc0; --muted:#6e7382;
+  --warn:#b3401f; --ok:#2e7d4f;
+  --r-lg:14px; --r-md:12px; --r-sm:8px;
+  --shadow-1:0 1px 2px rgba(18,23,38,.05),0 2px 10px rgba(18,23,38,.05);
+  --shadow-2:0 2px 6px rgba(18,23,38,.07),0 12px 32px rgba(18,23,38,.09);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --tb-h:0px;
+  --sans:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  --mono:"Cascadia Code",Consolas,"JetBrains Mono","Microsoft YaHei",monospace;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
-header{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;position:sticky;top:0;z-index:10}
-header h1{font-size:18px;font-weight:600}
-header .back{float:right;color:var(--primary);text-decoration:none;font-size:14px}
-.notice{background:var(--warnbg);color:var(--warn);padding:8px 20px;font-size:13px;border-bottom:1px solid #fde68a}
-.container{max-width:1100px;margin:0 auto;padding:16px}
-.filters{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.filters label{font-size:13px;color:var(--muted)}
-.filters select,.filters input{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px}
-.filters select{min-width:180px}
-.filters input{flex:1;min-width:160px}
-.filters .count{margin-left:auto;font-size:13px;color:var(--muted)}
-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:13px}
-th,td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:left}
-th{background:#f1f3f4;font-weight:500;position:sticky;top:60px}
-tr:hover{background:#f8faff}
-td.code{font-family:Consolas,monospace;color:var(--muted);font-size:12px}
-td.credit{text-align:center}
-td.exam{font-size:12px}
-td.term{font-size:12px;color:var(--primary)}
-td.cat{font-size:12px;color:var(--muted)}
-.no-result{padding:40px 20px;text-align:center;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:8px}
-.no-result h3{color:var(--warn);margin-bottom:8px}
-.source-info{font-size:12px;color:var(--muted);margin-top:12px;padding:8px 12px;background:#f8faff;border-radius:6px}
-.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px}
-@media(max-width:768px){.filters{flex-direction:column;align-items:stretch}.filters select,.filters input{width:100%}.filters .count{margin-left:0}th,td{padding:6px 4px;font-size:12px}th{position:static !important;top:auto !important}td.code{display:none}th.code{display:none}table{min-width:600px}}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.7;
+  font-feature-settings:"tnum";-webkit-font-smoothing:antialiased}
+::selection{background:var(--gold-bright);color:var(--ink-strong)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+a{color:inherit}
+
+/* ---------- 1. 紧凑品牌页头 ---------- */
+.hchead{position:relative;color:#f2f1ea;overflow:hidden;
+  background:radial-gradient(1100px 420px at 84% -20%,#26304f 0%,transparent 62%),
+             linear-gradient(160deg,var(--navy) 0%,#131a2c 58%,#0d1220 100%);
+  border-bottom:1px solid rgba(227,197,107,.22)}
+.hchead::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(0deg,transparent 0 47px,rgba(255,255,255,.022) 47px 48px)}
+.hhwrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:16px 22px 20px}
+.toprow{display:flex;align-items:center;gap:10px;margin-bottom:15px;flex-wrap:wrap}
+.backpill,.handbook{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#cfd4e0;
+  text-decoration:none;border:1px solid rgba(227,197,107,.35);border-radius:999px;padding:6px 15px;
+  background:rgba(255,255,255,.05);transition:.25s var(--ease);letter-spacing:.4px}
+.backpill:hover,.handbook:hover{color:var(--gold-bright);border-color:var(--gold-bright);background:rgba(255,255,255,.1)}
+.handbook{margin-left:auto}
+.mast{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.crest{height:46px;width:auto;flex:none;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
+.titles{min-width:0}
+.titles h1{font-size:clamp(21px,2.6vw,30px);font-weight:800;letter-spacing:.5px;line-height:1.24}
+.titles h1 b{color:var(--gold-bright)}
+.titles .sub{color:#b9bfd0;font-size:13px;margin-top:6px;letter-spacing:.6px}
+.titles .sub b{color:var(--gold-bright);font-weight:600}
+/* 120 周年纪念识别：使用学校官方原稿，原比例、原配色 */
+.anniv{margin-left:auto;display:flex;align-items:center;gap:12px;
+  padding:8px 14px 8px 10px;border:1px solid rgba(227,197,107,.28);border-radius:var(--r-md);
+  background:rgba(255,255,255,.045)}
+.anniv .a120{height:64px;width:auto;display:block}
+.anniv .atxt{font-size:12px;letter-spacing:1.2px;color:#d7dbe6;line-height:1.5;white-space:nowrap}
+.anniv .atxt b{display:block;color:var(--gold-bright);font-size:12.5px;letter-spacing:2px;font-weight:700}
+.anniv .atxt span{color:#8b92a6;letter-spacing:1.5px;font-family:var(--mono);font-size:11.5px}
+
+/* ---------- 2. 查询区（吸顶工具条） ---------- */
+.toolbar{position:sticky;top:0;z-index:40;background:rgba(246,244,239,.94);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line-2)}
+.toolwrap{max-width:1180px;margin:0 auto;padding:12px 22px}
+.filtercard{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;
+  background:#fff;border:1px solid var(--line);border-radius:var(--r-md);padding:13px 16px;box-shadow:var(--shadow-1)}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld>span{font-size:12px;color:var(--muted);letter-spacing:.4px;font-weight:600}
+.fld select,.fld input{font-family:var(--sans);font-size:14px;color:var(--ink);background:#fff;
+  border:1px solid var(--line-2);border-radius:var(--r-sm);padding:10px 12px;min-height:44px;
+  transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
+.fld select{cursor:pointer;min-width:150px;max-width:340px}
+.fld-prof{flex:0 1 auto;min-width:230px}
+.fld-prof select{width:100%;min-width:230px}
+.fld-search{flex:1 1 220px}
+.fld-search input{width:100%}
+.fld select:focus,.fld input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,145,46,.14);outline:none}
+.fld select:hover,.fld input:hover{border-color:var(--gold)}
+.count{margin-left:auto;font-size:13px;color:var(--ink-strong);font-weight:600;letter-spacing:.3px;
+  padding-bottom:11px;white-space:nowrap}
+.count b{color:var(--gold-deep);font-family:var(--mono)}
+
+/* ---------- 来源说明：单行紧凑摘要（折叠细节并入本行，不再单独占行） ---------- */
+.srcnote{max-width:1180px;margin:14px auto 0;padding:0 22px}
+.srcbox{background:#fff;border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow-1);overflow:hidden}
+.srcsum{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:11px 16px;font-size:12.5px;color:var(--muted)}
+.srcsum .k{flex:none;font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold-deep);
+  border:1px solid var(--line-2);border-radius:999px;padding:2px 10px;background:var(--gold-soft)}
+.srcsum b{color:var(--ink-strong);font-weight:700}
+.srcsum .sump{min-width:0}
+.srcsum .src-long{display:inline}
+.srcsum .src-short{display:none}
+details.srcdetail{margin-left:auto}
+details.srcdetail[open]{flex:1 1 100%}
+details.srcdetail>summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:600;color:var(--gold-deep);letter-spacing:.3px;user-select:none}
+details.srcdetail>summary::-webkit-details-marker{display:none}
+details.srcdetail>summary::before{content:"▸";font-size:11px;transition:transform .3s var(--ease)}
+details.srcdetail[open]>summary::before{transform:rotate(90deg)}
+details.srcdetail>summary:hover{color:var(--gold)}
+details.srcdetail .body{display:none;flex:1 1 100%;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);
+  font-size:12.5px;line-height:1.95;color:var(--muted);max-width:1000px}
+details.srcdetail[open] .body{display:block}
+details.srcdetail .body b{color:var(--ink-strong)}
+
+/* ---------- 3. 课程表 ---------- */
+.container{max-width:1180px;margin:0 auto;padding:20px 22px 0}
+.resulthead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:2px 2px 10px;flex-wrap:wrap}
+.resulthead .prof{font-size:15px;font-weight:700;color:var(--ink-strong)}
+.resulthead .prof small{display:block;font-size:12px;color:var(--muted);font-weight:400;letter-spacing:.3px;margin-top:2px}
+/* 详细来源：折叠，不占首屏高度（与顶部来源摘要合并去重） */
+.resulthead .srchold{font-size:11.5px;color:var(--muted);max-width:60%;margin-left:auto}
+.resulthead .srchold[hidden]{display:none}
+.resulthead .srchold>summary{cursor:pointer;list-style:none;font-size:12px;color:var(--gold-deep);
+  font-weight:600;letter-spacing:.3px;text-align:right;user-select:none}
+.resulthead .srchold>summary::-webkit-details-marker{display:none}
+.resulthead .srchold>summary::before{content:"▸ ";font-size:10px}
+.resulthead .srchold[open]>summary::before{content:"▾ "}
+.resulthead .srchold .srcbody{display:none;padding:6px 0 0;line-height:1.75;text-align:right}
+.resulthead .srchold[open] .srcbody{display:block}
+.scroll-hint{display:none;font-size:11.5px;color:var(--muted);margin:0 2px 8px;letter-spacing:.3px}
+.tw{background:#fff;border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow-1)}
+/* 桌面不启用横向滚动容器：避免 overflow 变成滚动容器而让 thead 的 position:sticky 失效 */
+.scroller{}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px}
+caption{text-align:left}
+thead th{position:sticky;top:var(--tb-h);z-index:20;background:var(--navy-2);color:#e8eaf0;
+  font-weight:600;font-size:12.5px;letter-spacing:.6px;text-align:left;padding:11px 12px;white-space:nowrap;
+  border-bottom:1px solid rgba(0,0,0,.35)}
+thead th:first-child{padding-left:16px;border-top-left-radius:calc(var(--r-md) - 1px)}
+thead th:last-child{border-top-right-radius:calc(var(--r-md) - 1px)}
+tbody tr:last-child td:first-child{border-bottom-left-radius:calc(var(--r-md) - 1px)}
+tbody tr:last-child td:last-child{border-bottom-right-radius:calc(var(--r-md) - 1px)}
+tbody td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even){background:#fbfaf7}
+tbody tr:hover{background:var(--gold-soft)}
+tbody tr:last-child td{border-bottom:none}
+td.code{font-family:var(--mono);font-size:11.5px;color:#4a5162;white-space:nowrap;letter-spacing:.2px}
+th.name{color:#fff;font-weight:700}
+td.name{font-weight:600;color:var(--ink-strong)}
+td.credit,td.hours{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+td.credit{color:var(--ink-strong);font-weight:600}
+td.hours{color:var(--muted);font-size:12.5px}
+td.exam{font-size:12.5px;color:var(--muted);white-space:nowrap}
+td.term{font-size:12.5px;color:var(--navy-3);white-space:nowrap;font-weight:600}
+td.cat{font-size:12.5px;color:var(--muted)}
+.tag{display:inline-block;font-size:11.5px;line-height:1.5;padding:1px 9px;border-radius:999px;
+  border:1px solid currentColor;white-space:nowrap;font-weight:600;letter-spacing:.3px}
+.tag.req{color:var(--ok);background:rgba(46,125,79,.08)}
+.tag.opt{color:var(--warn);background:rgba(179,64,31,.07)}
+.tag.lim{color:var(--gold-deep);background:rgba(184,145,46,.1)}
+.tag.oth{color:var(--muted);background:rgba(110,115,130,.07)}
+td.name{min-width:180px}
+/* 必修选修列内的行内说明（体育修读要求 / 通识模块规则） */
+.tnote{display:block;margin-top:4px;font-size:11px;color:var(--muted);line-height:1.6;font-weight:400;max-width:260px;white-space:normal}
+/* 待核 / 原文未标明 / 原文冲突 行内标记（异常学期提示，不占整列） */
+.mark{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:600;line-height:1.5;
+  padding:0 7px;border-radius:999px;border:1px solid currentColor;white-space:nowrap;vertical-align:1px}
+.mark.check{color:var(--warn);background:rgba(179,64,31,.07)}
+.mark.none{color:var(--muted);background:rgba(110,115,130,.07)}
+.mark.conf{color:#9a6b00;background:rgba(184,145,46,.12)}
+
+/* ---------- 状态：加载中 / 无结果 / 加载失败 ---------- */
+.state{margin:6px 0 4px;padding:38px 22px;text-align:center;background:#fff;border:1px dashed var(--line-2);
+  border-radius:var(--r-md);color:var(--muted)}
+.state .ico{font-size:26px;line-height:1;display:block;margin-bottom:10px;opacity:.85}
+.state h3{font-size:16px;color:var(--ink-strong);margin-bottom:8px;font-weight:700}
+.state p{font-size:13px;max-width:620px;margin:0 auto;line-height:1.85}
+.state .hint{margin-top:6px;font-size:12.5px}
+.state .acts{margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.state button{cursor:pointer;font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--ink);
+  background:#fff;border:1px solid var(--line-2);border-radius:var(--r-sm);padding:9px 18px;min-height:44px;
+  transition:.2s var(--ease)}
+.state button:hover{color:var(--gold-deep);border-color:var(--gold);background:var(--gold-soft)}
+.state .primary{background:var(--navy-2);color:#fff;border-color:var(--navy-2)}
+.state .primary:hover{background:var(--navy);color:var(--gold-bright);border-color:var(--navy)}
+.state.loading{border-style:solid}
+.state.fail{border-color:#e6c9c0;background:#fdf7f4}
+.state.fail h3{color:var(--warn)}
+.spin{width:26px;height:26px;margin:0 auto 12px;border:3px solid var(--line-2);border-top-color:var(--gold);
+  border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.state.prompt{border-style:dashed}
+#sourceInfo{font-size:12px;color:var(--muted);margin:14px 2px 0;padding:9px 13px;background:var(--paper-2);
+  border-radius:var(--r-sm);border:1px solid var(--line)}
+
+/* ---------- 4. 页脚开发工具署名区 ---------- */
+.foot{max-width:1180px;margin:52px auto 0;padding:26px 22px 10px;border-top:1px solid var(--line-2);
+  text-align:center;color:var(--muted);font-size:12.5px}
+.devline{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+  padding:16px;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow-1)}
+.devline .hw{height:24px;width:auto;flex:none;opacity:.92}
+.devline .ca{height:34px;width:auto;flex:none}
+.devline .dvtxt{font-size:12.5px;color:var(--ink);letter-spacing:.4px;font-weight:600}
+.devline .dvtxt small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;letter-spacing:.6px;margin-top:2px}
+.devline .vsep{width:1px;height:30px;background:var(--line-2)}
+.footbar{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.fbtn{display:inline-flex;align-items:center;gap:6px;font-size:13px;letter-spacing:.5px;color:var(--ink);
+  text-decoration:none;background:#fff;border:1px solid var(--line-2);border-radius:999px;padding:9px 18px;
+  transition:.2s var(--ease);min-height:44px}
+.fbtn:hover{color:var(--gold-deep);border-color:var(--gold);background:var(--gold-soft)}
+.footnote{margin-top:16px;font-size:11.5px;color:#9aa0ae;letter-spacing:.4px;line-height:1.85}
+.footnote b{color:var(--gold-deep)}
+
+/* ---------- 体育项目目录 / 通识规则 折叠区 ---------- */
+.pecat{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow-1);overflow:hidden}
+.pecat>summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding:14px 18px;font-size:14.5px;font-weight:700;color:var(--ink-strong);letter-spacing:.4px;user-select:none;
+  background:linear-gradient(0deg,rgba(184,145,46,.06),rgba(184,145,46,.06))}
+.pecat>summary::-webkit-details-marker{display:none}
+.pecat>summary::before{content:"▸";font-size:12px;color:var(--gold-deep);transition:transform .3s var(--ease)}
+.pecat[open]>summary::before{transform:rotate(90deg)}
+.pecat>summary:hover{color:var(--gold-deep)}
+.pecat>summary small{margin-left:auto;font-size:11.5px;font-weight:400;color:var(--muted);letter-spacing:.4px}
+.pecat .pbody{padding:0 18px 16px}
+.pecat .pnote{font-size:12.5px;line-height:1.95;color:var(--muted);background:var(--paper-2);
+  border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 14px;margin-bottom:14px}
+.pecat .pnote b{color:var(--ink-strong)}
+.pecat .pscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pecat table{font-size:13px}
+.pecat thead th{position:static;background:var(--navy-2)}
+
+/* ---------- 响应式 ---------- */
+@media(max-width:900px){
+  .toolbar{position:static}
+  thead th{top:0}
+  .anniv{margin-left:0;width:100%}
+  .hhwrap{padding:9px 16px 10px}
+  .mast{gap:10px}
+  .toolwrap,.srcnote,.container,.foot{padding-left:16px;padding-right:16px}
+  .toolbar .toolwrap{padding-top:7px;padding-bottom:7px}
+  .filtercard{gap:8px;padding:9px 12px}
+  .fld-prof{min-width:100%;flex:1 1 100%}
+  .fld-prof select{min-width:0;width:100%}
+  .fld select{min-width:0}
+  .filtercard>.fld:not(.fld-prof):not(.fld-search){flex:1 1 42%}
+  .count{margin-left:0;padding-bottom:0;flex:1 1 100%;text-align:right}
+  .srcnote{margin-top:8px}
+  .srcsum{padding:7px 13px;gap:8px;align-items:center;flex-wrap:nowrap}
+  .srcsum .sump{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+  .srcsum .src-long{display:none}
+  .srcsum .src-short{display:inline}
+  details.srcdetail{margin-left:0;flex:none}
+  details.srcdetail>summary{white-space:nowrap}
+  /* 展开时独占整行、正文换行并用完整宽度；关闭后回到紧凑单行摘要 */
+  .srcsum:has(details.srcdetail[open]){flex-wrap:wrap}
+  details.srcdetail[open]{flex:1 1 100%}
+  .resulthead{flex-direction:column;align-items:flex-start;gap:3px;margin-bottom:5px}
+  .resulthead .srchold{max-width:100%;margin-left:0;width:100%}
+  .resulthead .srchold>summary{text-align:left}
+  .resulthead .srchold .srcbody{text-align:left}
+  .container{padding-top:9px}
+  .scroll-hint{margin-bottom:4px}
+}
+@media(max-width:768px){
+  body{font-size:14.5px}
+  .crest{height:36px}
+  /* 120 周年：横向紧凑组合（图标 + 单行文字并排），压缩页头高度 */
+  .anniv{flex-direction:row;align-items:center;gap:9px;padding:5px 11px 5px 7px}
+  .anniv .a120{height:34px}
+  .anniv .atxt{font-size:11.5px;letter-spacing:.6px;white-space:nowrap}
+  .anniv .atxt span{display:none}
+  .anniv .atxt b{display:inline;font-size:11.5px;letter-spacing:.8px}
+  .titles h1{font-size:20px}
+  .titles .sub{font-size:11.5px;margin-top:2px}
+  .toprow{margin-bottom:6px}
+  .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:760px}
+  .scroll-hint{display:block}
+  /* 横向滚动容器内纵向吸顶无效：表头改为静态，仅课程名列横向固定 */
+  thead th{position:static}
+  th.name,td.name{position:sticky;left:0;top:auto}
+  th.name{background:var(--navy-2);z-index:22}
+  td.name{background:#fff;z-index:10;box-shadow:6px 0 8px -6px rgba(18,23,38,.16)}
+  tbody tr:nth-child(even) td.name{background:#fbfaf7}
+  tbody tr:hover td.name{background:var(--gold-soft)}
+  td.code,th.code{font-size:11px}
+  thead th,tbody td{padding:8px 10px}
+  .devline .vsep{display:none}
+}
+@media(max-width:480px){
+  .devline{gap:10px}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
-<header>
-<a class="back" href="index.html">← 返回地图</a>
-<h1>本科培养计划查询</h1>
+
+<!-- 品牌页头 -->
+<header class="hchead">
+  <div class="hhwrap">
+    <div class="toprow">
+      <a class="backpill" href="index.html">← 返回校园地图</a>
+      <a class="handbook" href="handbook.html">📘 新生手册</a>
+    </div>
+    <div class="mast">
+      <img class="crest" src="brand/usst_logo_white.svg" alt="上海理工大学校徽与校名">
+      <div class="titles">
+        <h1>本科培养计划<b>查询</b></h1>
+        <div class="sub">校训：信义勤爱 · 思学志远 ｜ 2026 级 · <b>6 大类 47 个专业</b></div>
+      </div>
+      <div class="anniv" title="上海理工大学建校 120 周年（1906—2026）">
+        <img class="a120" src="brand/usst120_emblem.png" alt="上海理工大学建校120周年标识（官方原稿）">
+        <div class="atxt"><b>USST · 建校120周年</b><span>1906 — 2026</span></div>
+      </div>
+    </div>
+  </div>
 </header>
-<div class="notice">⚠️ 数据来源：2026级本科培养计划（上册440页+下册448页+通识附表4页+学科基础附表4页）。课程字段（代码/名称/学分/学时/考核/学期/必修选修/方向模块）逐项来自PDF文本抽取。短学期(短N)已保留。学时=总/理论/实验（实习以周计）。必修选修按子模块标题/通识附表原文标注，PDF未标明者记"原文未标明"不推断。方向模块为任选其一。动态安排以教务系统为准。覆盖电子与信息类13个分流专业。</div>
+
+<!-- 查询区（桌面吸顶） -->
+<div class="toolbar" id="toolbar">
+  <div class="toolwrap">
+    <div class="filtercard">
+      <label class="fld fld-prof"><span>专业（先选专业）</span><select id="prof"><option value="">请选择专业…</option></select></label>
+      <label class="fld"><span>学期</span>
+        <select id="term">
+          <option value="">全部学期</option>
+          <optgroup label="长学期">
+            <option value="一/1">大一上 一/1</option>
+            <option value="一/2">大一下 一/2</option>
+            <option value="二/1">大二上 二/1</option>
+            <option value="二/2">大二下 二/2</option>
+            <option value="三/1">大三上 三/1</option>
+            <option value="三/2">大三下 三/2</option>
+            <option value="四/1">大四上 四/1</option>
+            <option value="四/2">大四下 四/2</option>
+          </optgroup>
+          <optgroup label="短学期（随对应长学期）">
+            <option value="短1">短1（一/2 末，春季学期末）</option>
+            <option value="短2">短2（二/1 前，开学初·长学期前）</option>
+            <option value="短3">短3（二/2 末，春季学期末）</option>
+            <option value="短4">短4（三/1 前，开学初·长学期前）</option>
+            <option value="短5">短5（三/2 末，春季学期末）</option>
+            <option value="短6">短6（四/1 前，开学初·长学期前）</option>
+          </optgroup>>
+        </select>
+      </label>
+      <label class="fld"><span>类别</span>
+        <select id="cat">
+          <option value="">全部类别</option>
+          <option value="学科基础专业课">学科基础专业课</option>
+          <option value="通识课">通识课</option>
+          <option value="体育课">体育课</option>
+        </select>
+      </label>
+      <label class="fld fld-search"><span>课程名称（关键词）</span><input id="search" type="search" placeholder="输入课程名称关键字…"></label>
+      <span class="count" id="count" aria-live="polite"></span>
+    </div>
+  </div>
+</div>
+
+<!-- 来源说明：紧凑摘要 + 可展开原文 -->
+<div class="srcnote">
+  <div class="srcbox">
+    <div class="srcsum">
+      <span class="k">数据来源</span>
+      <span class="sump">
+        <span class="src-long"><b>2026 级本科培养计划</b>（上册 + 下册 + 通识附表 + 学科基础附表）· PDF 文本抽取 · 字段逐项来自原文</span>
+        <span class="src-short"><b>2026 级本科培养计划</b> · PDF 抽取 · 字段逐项来自原文</span>
+      </span>
+      <details class="srcdetail">
+        <summary>数据口径</summary>
+        <div class="body">
+          课程字段（代码 / 名称 / 学分 / 学时 / 考核 / 建议学期 / 必修选修）<b>逐项来自 PDF 文本抽取</b>，未做推算；短学期（短N）已保留；学时 = 总 / 理论 / 实验（实习以周计）。
+          学期筛选按 8 长学期 + 6 短学期，长学期可含关联短学期（行内仍显示「短N」），单独选短学期只显示该短学期课程；跨学期原样（如「三/1、四/1」「一/1-二/2」）已结构化。
+          必修选修按模块标题、通识附表与「修读办法」原文标注：思政 / 军体类必修，四史、英语、数字化模块为「限选」（模块内限定），国际生课程组仅面向国际学生，理工农医类专业必修人工智能通识导论A、其他专业必修人工智能通识B；<b>不笼统标成「选修」</b>。
+          体育类课程为 4 学分模块（一、二学年每学期 1 学分），另附 97 门体育项目目录（1 学分 / 32 学时）；第三、四学年单开 8 学时体测（另 0.5 学分）。
+          本页按《2026 级本科专业大类与对应专业一览表》收录全部 <b>6 大类 47 个专业</b>：工科试验班（智能化制造类）22、工科试验班（电子与信息类）13、理科试验班 3、经济管理试验班 3、新闻传播学类 2、设计学类 4；中外合作、外语类等单招专业未纳入。
+          本数据为 PDF 抽取草稿，可能存在遗漏；<b>动态安排以教务系统为准</b>（jwc.usst.edu.cn）。本页为查询工具，不代表任何官方发布或认证。
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
 <div class="container">
-<div class="filters">
-<label>专业</label>
-<select id="prof"></select>
-<label>学期</label>
-<select id="term">
-<option value="">全部学期</option>
-<option value="一/1">大一上 一/1</option>
-<option value="一/2">大一下 一/2</option>
-<option value="二/1">大二上 二/1</option>
-<option value="二/2">大二下 二/2</option>
-<option value="三/1">大三上 三/1</option>
-<option value="三/2">大三下 三/2</option>
-<option value="四/1">大四上 四/1</option>
-<option value="四/2">大四下 四/2</option>
-<option value="短">含短学期</option>
-</select>
-<label>类别</label>
-<select id="cat">
-<option value="">全部类别</option>
-<option value="通识教育课程">通识教育课程</option>
-<option value="学科基础课程">学科基础课程</option>
-<option value="专业课程">专业课程</option>
-<option value="任选课程">任选课程</option>
-<option value="集中性实践环节">集中性实践环节</option>
-</select>
-<input id="search" placeholder="按课程名称搜索…">
-<span class="count" id="count"></span>
+  <div class="resulthead">
+    <div class="prof" id="resultTitle" style="display:none"><span id="resultProf"></span><small id="resultSub"></small></div>
+    <details class="srchold" id="srcHold" hidden>
+      <summary>本专业数据来源</summary>
+      <div class="srcbody" id="sourceInfo"></div>
+    </details>
+  </div>
+  <div class="scroll-hint" id="scrollHint">← 左右滑动查看全部 8 列（课程名称列固定）→</div>
+  <div id="result"></div>
 </div>
-<div id="result"></div>
-<div class="source-info" id="sourceInfo"></div>
-</div>
+
+<!-- 页脚：开发工具署名区 -->
+<footer class="foot">
+  <div class="devline">
+    <img class="hw" src="brand/huawei_logo.png" alt="华为">
+    <span class="vsep"></span>
+    <img class="ca" src="brand/codearts_icon.png" alt="华为云码道 CodeArts">
+    <div class="dvtxt">华为云码道 CodeArts · 开发实践<small>页面结构 / 样式 / 交互实现</small></div>
+  </div>
+  <div class="footbar">
+    <a class="fbtn" href="handbook.html">📘 新生手册</a>
+    <a class="fbtn" href="index.html">🗺️ 返回校园地图</a>
+    <a class="fbtn" href="https://jwc.usst.edu.cn/" target="_blank" rel="noopener">🔗 教务处（动态以官方为准）</a>
+  </div>
+  <div class="footnote">信义勤爱 · 思学志远 ｜ <b>上海理工大学</b> ｜ 课程数据来源：2026 级本科培养计划（PDF 文本抽取草稿）· 动态安排以教务系统为准</div>
+</footer>
+
 <script>
-let DATA={};
-const profEl=document.getElementById('prof');
-const termEl=document.getElementById('term');
-const catEl=document.getElementById('cat');
-const searchEl=document.getElementById('search');
-const resultEl=document.getElementById('result');
-const countEl=document.getElementById('count');
-const sourceInfoEl=document.getElementById('sourceInfo');
-fetch('data/curriculum_eit.json').then(r=>r.json()).then(d=>{
-  DATA=d;
-  const profs=Object.keys(d);
-  profs.forEach(p=>{
-    const o=document.createElement('option');
-    o.value=p;o.textContent=p;
-    profEl.appendChild(o);
-  });
-  profEl.onchange=termEl.onchange=catEl.onchange=searchEl.oninput=render;
-  render();
-});
-function render(){
-  const prof=profEl.value;
-  if(!prof){resultEl.innerHTML='<div class="no-result"><p>请选择一个专业查看培养计划。</p></div>';countEl.textContent='';return;}
-  const info=DATA[prof];
-  let courses=info.courses||[];
-  const term=termEl.value,cat=catEl.value,kw=searchEl.value.trim().toLowerCase();
-  if(term){
-    if(term==='短') courses=courses.filter(c=>/\(短\d+\)/.test(c.term||''));
-    else courses=courses.filter(c=>c.term===term || (c.term||'').startsWith(term+'('));
+/* =====================================================================
+   培养计划查询 · 数据与交互逻辑（保留原有过滤口径与数据边界，仅重构视觉）
+   ===================================================================== */
+(function(){
+  "use strict";
+  var DATA={};
+  var profEl=document.getElementById('prof');
+  var termEl=document.getElementById('term');
+  var catEl=document.getElementById('cat');
+  var searchEl=document.getElementById('search');
+  var resultEl=document.getElementById('result');
+  var countEl=document.getElementById('count');
+  var sourceInfoEl=document.getElementById('sourceInfo');
+  var toolbarEl=document.getElementById('toolbar');
+  var resultTitleEl=document.getElementById('resultTitle');
+  var resultProfEl=document.getElementById('resultProf');
+  var resultSubEl=document.getElementById('resultSub');
+  var srcHoldEl=document.getElementById('srcHold');
+  var scrollHintEl=document.getElementById('scrollHint');
+
+  /* ---------- 吸顶高度按真实布局计算（不使用写死的 top 值） ---------- */
+  function isDesktop(){return window.matchMedia('(min-width:901px)').matches;}
+  function syncSticky(){
+    var h=isDesktop()?toolbarEl.offsetHeight:0;
+    document.documentElement.style.setProperty('--tb-h',h+'px');
   }
-  if(cat)courses=courses.filter(c=>c.category===cat);
-  if(kw)courses=courses.filter(c=>c.name.toLowerCase().includes(kw));
-  countEl.textContent='共 '+courses.length+' 门';
-  sourceInfoEl.textContent='来源：2026级本科培养计划 '+info.vol+' 第'+info.pages+'页 · PDF文本抽取 · 学时=总/理论/实验（实习以周计）· 短学期(短N)已保留 · 必修选修按子模块标题/通识附表原文，未标明者记"原文未标明" · 方向模块任选其一';
-  if(!courses.length){
-    resultEl.innerHTML='<div class="no-result"><h3>现有资料未查到</h3><p>没有匹配「'+prof+'」'+(term?' '+term:'')+(cat?' '+cat:'')+(kw?' 含「'+searchEl.value+'」':'')+' 的课程。</p><p style="margin-top:8px">本数据为PDF抽取草稿，可能存在遗漏。请以教务系统为准：<a href="https://jwc.usst.edu.cn/" target="_blank">jwc.usst.edu.cn</a></p></div>';
-    return;
+  /* 横向滚动提示：仅当「当前」表格确实横向溢出时显示。resize 只注册一次，避免残留旧表引用 */
+  function updateHint(){
+    var sc=document.getElementById('scroller');
+    scrollHintEl.style.display=(sc && sc.scrollWidth>sc.clientWidth+2)?'block':'none';
   }
-  let html='<div class="table-wrap"><table><thead><tr><th class="code">代码</th><th>课程名称</th><th>学分</th><th>学时(总/理/实)</th><th>考核</th><th>建议学期</th><th>类别</th><th>必修选修</th><th>方向模块</th></tr></thead><tbody>';
-  courses.forEach(c=>{
-    const hours=(c.total_hours||c.theory_hours||c.lab_hours)?(c.total_hours||'-')+'/'+(c.theory_hours||'-')+'/'+(c.lab_hours||'-'):'-';
-    const mod=c.module?('【'+c.module+'】'):'';
-    const rq=c.required||'';
-    const rqStyle=rq==='必修'?'color:#1a7f37':rq==='选修'?'color:#b54708':rq==='限选'?'color:#1a73e8':'color:var(--muted)';
-    html+='<tr><td class="code">'+c.code+'</td><td>'+c.name+(mod?'<div style="font-size:11px;color:var(--warn);margin-top:2px">'+mod+'任选其一</div>':'')+'</td><td class="credit">'+c.credit+'</td><td class="code">'+hours+'</td><td class="exam">'+(c.exam||'')+'</td><td class="term">'+(c.term||'')+'</td><td class="cat">'+(c.category||'')+'</td><td class="cat" style="'+rqStyle+'">'+rq+'</td><td class="cat">'+(c.module||'')+'</td></tr>';
+  window.addEventListener('resize',function(){syncSticky();updateHint();});
+  window.addEventListener('load',function(){syncSticky();updateHint();});
+
+  /* 无结果 / 加载失败的临时占位（首屏即显示，避免误以为空白） */
+  resultEl.innerHTML='<div class="state loading"><div class="spin"></div><h3>正在加载课程数据…</h3><p>正在读取 2026 级本科培养计划，请稍候。</p></div>';
+
+  fetch('data/curriculum_eit.json').then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(d){
+    DATA=d;
+    var groups={};
+    Object.keys(d).forEach(function(p){
+      if(p.charAt(0)==='_') return;   // 跳过 _sports 等元数据键
+      var g=d[p].group||'其他';
+      (groups[g]=groups[g]||[]).push(p);
+    });
+    Object.keys(groups).forEach(function(g){
+      var og=document.createElement('optgroup');
+      og.label=g+'（'+groups[g].length+'）';
+      groups[g].forEach(function(p){
+        var o=document.createElement('option');
+        o.value=p; o.textContent=p;
+        og.appendChild(o);
+      });
+      profEl.appendChild(og);
+    });
+    profEl.onchange=termEl.onchange=catEl.onchange=searchEl.oninput=render;
+    syncSticky();
+    render();
+  }).catch(function(err){
+    countEl.textContent='';
+    resultTitleEl.style.display='none';
+    srcHoldEl.hidden=true; srcHoldEl.open=false;
+    resultEl.innerHTML='<div class="state fail"><span class="ico">⚠️</span><h3>课程数据暂时无法加载，请重试</h3>'+
+      '<p>未能读取课程数据，可能是网络或文件暂时不可用，请稍后重试。</p>'+
+      '<div class="acts"><button class="primary" id="retryBtn" type="button">重新加载</button></div></div>';
+    var rb=document.getElementById('retryBtn');
+    if(rb) rb.onclick=function(){location.reload();};
   });
-  html+='</tbody></table></div>';
-  resultEl.innerHTML=html;
-}
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  function render(){
+    var prof=profEl.value;
+    if(!prof){
+      resultTitleEl.style.display='none';
+      countEl.innerHTML='';
+      srcHoldEl.hidden=true; srcHoldEl.open=false;
+      resultEl.innerHTML='<div class="state prompt"><span class="ico">🎓</span><h3>请先选择一个专业</h3>'+
+        '<p>按「工科试验班 / 理科试验班 / 经济管理试验班 / 新闻传播学类 / 设计学类」等大类分组选择专业，即可查看该专业的全部课程。</p></div>';
+      syncSticky(); updateHint();
+      return;
+    }
+    var info=DATA[prof];
+    var allCourses=info.courses||[];
+    var term=termEl.value, cat=catEl.value, kw=searchEl.value.trim().toLowerCase();
+
+    /* ---- 主表：按专业课程过滤 ---- */
+    var courses=allCourses.slice();
+    if(term){
+      var isShort=term.indexOf('短')===0;
+      courses=courses.filter(function(c){
+        var longs=c.term_longs||[], shorts=c.term_shorts||[];
+        if(isShort){ return shorts.indexOf(term)>=0; }
+        if(longs.indexOf(term)>=0) return true;
+        return c.term===term || (c.term||'').indexOf(term+'(')===0;
+      });
+    }
+    if(cat) courses=courses.filter(function(c){return c.category===cat;});
+    if(kw) courses=courses.filter(function(c){return (c.name||'').toLowerCase().indexOf(kw)>=0;});
+
+    var filterBits=[];
+    if(term) filterBits.push('学期 '+term);
+    if(cat) filterBits.push('类别 '+cat);
+    if(kw) filterBits.push('关键词「'+searchEl.value.trim()+'」');
+
+    countEl.innerHTML=(cat==='体育课' && DATA._sports && (DATA._sports.items||[]).length)
+      ? '修读要求 <b>'+courses.length+'</b> 项 · 项目目录 <b>'+DATA._sports.items.length+'</b> 门'
+      : '共 <b>'+courses.length+'</b> 门';
+    resultTitleEl.style.display='';
+    resultProfEl.textContent=prof;
+    if(filterBits.length){ resultSubEl.style.display=''; resultSubEl.textContent='筛选：'+filterBits.join(' · '); }
+    else { resultSubEl.style.display='none'; resultSubEl.textContent=''; }
+    sourceInfoEl.textContent='来源：2026 级本科培养计划 '+(info.vol||'')+' 第'+(info.pages||'')+'页'+
+      (info.group?' · '+info.group:'')+' · PDF 文本抽取 · 学时 = 总/理论/实验（实习以周计） · 短学期（短N）已保留';
+
+    var html='';
+
+    /* ---- 主表渲染（无结果时显示主表自己的空态） ---- */
+    srcHoldEl.hidden=(!courses.length && !(cat==='体育课'||cat==='通识课'));
+    if(!courses.length){
+      html+='<div class="state"><span class="ico">🔍</span><h3>主表没有匹配课程</h3>'+
+        '<p>在当前筛选条件下，未找到「'+esc(prof)+'」'+
+        (term?' · '+esc(term):'')+(cat?' · '+esc(cat):'')+(kw?' · 含「'+esc(searchEl.value.trim())+'」':'')+' 的课程。</p>'+
+        '<p class="hint">可清空关键词或恢复筛选后重试；本数据为 PDF 抽取草稿，可能存在遗漏，动态以教务系统为准。</p>'+
+        '<div class="acts"><button class="primary" id="clearBtn" type="button">清空搜索 / 恢复筛选</button>'+
+        '<a class="fbtn" href="https://jwc.usst.edu.cn/" target="_blank" rel="noopener">前往教务系统</a></div></div>';
+    } else {
+      html+='<div class="tw"><div class="scroller" id="scroller"><table><thead><tr>'+
+        '<th class="code">代码</th><th class="name">课程名称</th><th class="credit">学分</th>'+
+        '<th class="hours">学时(总/理/实)</th><th class="exam">考核</th><th class="term">建议学期</th>'+
+        '<th class="cat">类别</th><th class="req">必修选修</th></tr></thead><tbody>';
+      courses.forEach(function(c){
+        var hours=(c.total_hours||c.theory_hours||c.lab_hours)
+          ? (c.total_hours||'-')+'/'+(c.theory_hours||'-')+'/'+(c.lab_hours||'-') : '-';
+        var rq=c.required||'';
+        var cls=rq==='必修'?'req':rq==='选修'?'opt':rq==='限选'?'lim':'oth';
+        var rqHtml=rq?'<span class="tag '+cls+'">'+esc(rq)+'</span>':'<span class="tag oth">原文未标明</span>';
+        var rn=c.req_note||'';
+        if(c.category==='体育课'&&!c.code){
+          rn='修读要求（1 项，非单一课程）：共 4 学分 · 一、二学年每学期 1 学分（32 学时）；'+
+             '大一上对应「体育（一）」、大一下对应「体育（二）」（原文未提供项目代码，此处不冒用专项代码）；'+
+             '第三、四学年单开 8 学时《学生体质健康标准测试》，四学年总评合格后一次给予 0.5 学分';
+        }
+        var rnHtml=rn?'<span class="tnote">'+esc(rn)+'</span>':'';
+        html+='<tr><td class="code">'+esc(c.code)+'</td><td class="name">'+esc(c.name)+'</td>'+
+          '<td class="credit">'+esc(c.credit)+'</td><td class="hours">'+esc(hours)+'</td>'+
+          '<td class="exam">'+esc(c.exam||'')+'</td><td class="term">'+termCell(c)+'</td>'+
+          '<td class="cat">'+esc(c.category||'')+'</td><td class="req">'+rqHtml+rnHtml+'</td></tr>';
+      });
+      html+='</tbody></table></div></div>';
+    }
+
+    /* ---- 体育项目目录：独立检索 / 独立计数 / 独立空态（不受主表学期筛选影响） ---- */
+    if(cat==='体育课' && DATA._sports && (DATA._sports.items||[]).length){
+      var sp=DATA._sports;
+      var sItems=sp.items;
+      var sAll=sItems.length;
+      var sMatched=sItems;
+      if(kw) sMatched=sItems.filter(function(s){return (s.name||'').toLowerCase().indexOf(kw)>=0 || (s.code||'').indexOf(kw)>=0;});
+      var ph='<details class="pecat" open><summary>体育项目目录（共 '+sAll+' 门'+
+        (kw?' · 关键词「'+esc(searchEl.value.trim())+'」匹配 <b>'+sMatched.length+'</b> 门':'')+
+        '）<small>点击展开/收起</small></summary>'+
+        '<div class="pbody"><div class="pnote"><b>修读口径：</b>'+esc(sp.note||'')+
+        '<br><b>学期对应：</b>大一上修读「体育（一）」、大一下修读「体育（二）」（每学期 1 学分 / 32 学时）；'+
+        '具体项目代码由各学期实际开设决定，'+
+        '<b>培养计划原文未提供项目与学期的对应代码，此处不作推断</b>。'+
+        '<br><b>考核方式来源：</b>项目目录原件（上册）仅列代码 / 项目名称 / 学分 / 总学时四列，'+
+        '未列考核方式；本表「考查」为按《体育课程管理办法》统一考核规则的补充标注，非目录原行字段。</div>';
+      if(!sMatched.length){
+        ph+='<div class="state" style="padding:26px 18px"><span class="ico">🔍</span><h3>目录内没有匹配项目</h3>'+
+          '<p>体育项目目录 '+sAll+' 门中，没有项目名称或代码含「'+esc(searchEl.value.trim())+'」。</p>'+
+          '<p class="hint">目录始终显示完整，不受上方学期筛选影响。</p></div>';
+      } else {
+        ph+='<div class="pscroll"><table><thead><tr><th class="code">代码</th><th class="name">项目名称</th>'+
+          '<th class="credit">学分</th><th class="hours">总学时</th><th class="exam">考核</th></tr></thead><tbody>';
+        sMatched.forEach(function(s){
+          ph+='<tr><td class="code">'+esc(s.code)+'</td><td class="name">'+esc(s.name)+'</td>'+
+            '<td class="credit">'+esc(s.credit)+'</td><td class="hours">'+esc(s.total_hours)+'</td>'+
+            '<td class="exam">'+esc(s.exam||'')+'</td></tr>';
+        });
+        ph+='</tbody></table></div>';
+      }
+      ph+='</div></details>';
+      html+=ph;
+    }
+
+    /* ---- 通识课：独立折叠区（修读规则 + 综合素养目录 357 门，独立检索/计数/空态） ---- */
+    if(cat==='通识课'){
+      var gd=DATA._general||{};
+      var gr=gd.rules||{};
+      html+='<details class="pecat gn" open><summary>通识教育修读规则<small>点击展开/收起</small></summary>'+
+        '<div class="pbody"><div class="pnote">'+
+        '<b>总学分：</b>'+esc(gr.total||'')+
+        '<br><b>综合素养 7 学分：</b>'+esc(gr.zongsu_7||'')+
+        '<br><b>综合素养-选修 3 学分：</b>'+esc(gr.xuanxiu_3||'')+
+        '<br><b>创新模块：</b>'+esc(gr.innovation||'')+
+        '<br><b>艺术模块：</b>'+esc(gr.art||'')+
+        '<br><b>语言类（英语分级路径）：</b>'+esc(gr.language||'')+
+        '<br><b>国际生课程组：</b>'+esc(gr.intl||'')+
+        '<br><b>数智基础类：</b>'+esc(gr.shuzhi||'')+
+        '<br><b>新生修读说明（08 新生指南）：</b>'+esc(gr.freshman||'')+
+        '<br><b>「限选」为模块内限定选择</b>（四史最低 1 学分、英语最低 8 学分、数字化最低 2 学分），非全开放选修。'+
+        '<br><b>具体以教务处及所选专业培养方案为准。</b>'+
+        '</div>';
+      if(gd.items && gd.items.length){
+        var gi=gd.items;
+        var gAll=gi.length;
+        var gMatched=gi;
+        if(kw) gMatched=gi.filter(function(s){return (s.name||'').toLowerCase().indexOf(kw)>=0 || (s.code||'').indexOf(kw)>=0;});
+        html+='<div class="pnote"><b>综合素养类课程目录（共 '+gAll+' 门'+
+          (kw?' · 关键词「'+esc(searchEl.value.trim())+'」匹配 <b>'+gMatched.length+'</b> 门':'')+'）：</b>'+esc(gd.note||'')+'</div>';
+        if(!gMatched.length){
+          html+='<div class="state" style="padding:26px 18px"><span class="ico">🔍</span><h3>目录内没有匹配课程</h3>'+
+            '<p>综合素养类目录 '+gAll+' 门中，没有课程名称或代码含「'+esc(searchEl.value.trim())+'」。</p>'+
+            '<p class="hint">目录始终显示完整，不受上方学期筛选影响。</p></div>';
+        } else {
+          html+='<div class="pscroll"><table><thead><tr><th class="code">代码</th><th class="name">课程名称</th>'+
+            '<th class="credit">学分</th><th class="hours">总学时</th><th class="cat">模块</th></tr></thead><tbody>';
+          gMatched.forEach(function(s){
+            html+='<tr><td class="code">'+esc(s.code)+'</td><td class="name">'+esc(s.name)+'</td>'+
+              '<td class="credit">'+esc(s.credit)+'</td><td class="hours">'+esc(s.total_hours)+'</td>'+
+              '<td class="cat">'+esc(s.group_label||s.group||'')+'</td></tr>';
+          });
+          html+='</tbody></table></div>';
+        }
+      }
+      html+='</div></details>';
+    }
+
+    resultEl.innerHTML=html;
+
+    if(!courses.length){
+      var cb=document.getElementById('clearBtn');
+      if(cb) cb.onclick=function(){
+        searchEl.value=''; termEl.value=''; catEl.value='';
+        render(); searchEl.focus();
+      };
+    }
+
+    /* 移动端滚动提示：仅当确有表格且确实横向溢出时显示（读取当前表格） */
+    updateHint();
+    syncSticky();
+  }
+
+  /* 建议学期单元格：原文异常行内标注（待核 / 原文未标明 / 原文冲突 + 来源），不占整列 */
+  function termCell(c){
+    var t=esc(c.term||'');
+    if(!(c.term||'').trim()) t='<span style="color:var(--muted)">—</span>';
+    var flags=c.term_flags||[];
+    var mark='';
+    if(flags.length){
+      /* 仅对真正的异常标注；「范围 / 列表简写 / 原文带星号」为原文正常形态，不加标记 */
+      var hasConf=flags.some(function(f){return f.indexOf('冲突')>=0||f.indexOf('不对应')>=0;});
+      var hasCheck=flags.some(function(f){return f.indexOf('无法解析')>=0;});
+      var hasNone=flags.some(function(f){return f.indexOf('未标明')>=0||f.indexOf('未标')>=0;});
+      var tip=esc(flags.join('；'))+'（来源：2026 级培养计划原文，未作推断更正）';
+      if(hasConf) mark='<span class="mark conf" title="'+tip+'">原文冲突</span>';
+      else if(hasCheck) mark='<span class="mark check" title="'+tip+'">待核</span>';
+      else if(hasNone) mark='<span class="mark none" title="'+tip+'">原文未标明</span>';
+      else if(!(c.term||'').trim()) mark='<span class="mark none" title="'+tip+'">原文未标明</span>';
+    }
+    return t+mark;
+  }
+})();
 </script>
 </body>
 </html>
