@@ -4,13 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>上海理工大学基础学院 · 校园导览</title>
+<meta name="description" content="上海理工大学基础学院军工路1100号校区导览：楼栋定位、出入口、步行路径规划与新生手册。">
+<link rel="preload" as="image" href="./data/treefree.webp" fetchpriority="high">
+<link rel="preload" as="fetch" href="./data/campus.json" crossorigin="anonymous">
 <style>
+  /* 首屏就位前铺一层底色，避免白闪（与 body 同色，图到位后被覆盖） */
+  html::before{content:'';position:fixed;inset:0;z-index:0;background:#a9c4dd;}
   html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:"Microsoft YaHei",sans-serif;background:#a9c4dd;}
   #app{position:relative;width:100%;height:100%;}
   #mapViewport{position:absolute;inset:0;z-index:1;overflow:hidden;cursor:grab;touch-action:none;}
   #mapViewport.dragging{cursor:grabbing;}
   #mapLayer{position:absolute;top:0;left:0;transform-origin:0 0;}
+  #mapLayer picture{display:block;}
   #groundImg{display:block;width:1452px;height:1083px;user-select:none;-webkit-user-drag:none;}
+  #groundFallback{display:none;}
   #overlay{position:absolute;inset:0;z-index:2;pointer-events:none;}
   .marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;z-index:3;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
   .marker .dot{width:8px;height:8px;border-radius:50%;background:#2f7bff;box-shadow:0 0 0 1.5px rgba(255,255,255,.8),0 1px 2px rgba(0,0,0,.4);}
@@ -66,7 +73,7 @@
 <body>
 <div id="app">
   <div id="mapViewport">
-    <div id="mapLayer"><img id="groundImg" src="./data/campus-plan-base-v3-clean-dorm-3d.png" alt="校区平面图"></div>
+    <div id="mapLayer"><picture><source srcset="./data/treefree.webp" type="image/webp"><img id="groundImg" src="./data/treefree.png" alt="校区平面图" fetchpriority="high" decoding="async"></picture></div>
     <svg id="routeSvg"></svg>
     <div id="overlay"></div>
     <div id="meMarkerEl" style="display:none"><div class="dot"></div></div>
@@ -76,7 +83,7 @@
     <input id="q" placeholder="搜楼名，如：弘毅苑 / 申三">
     <div class="row">
       <select id="catFilter"><option value="">全部分类</option></select>
-      <select id="startPick"><option value="g01">起点：大门</option></select>
+      <select id="startPick"><option value="__ph__">请选择起点</option></select>
     </div>
     <div class="hint">回车定位；点标记看信息；拖动平移</div>
     <div id="noResult">未找到该地点</div>
@@ -86,10 +93,15 @@
 </div>
 <script type="module">
 // ---------- 数据 ----------
-const resp = await fetch('./data/campus.json');
+// 底图 265KB 走 <picture> 先渲染，JSON 三件并行拉；全部就位再初始化交互
+const [resp, phmResp, roadNetResp] = await Promise.all([
+  fetch('./data/campus.json'),
+  fetch('./data/place_handbook_map.json'),
+  fetch('./data/road_network.json'),
+]);
 const data = await resp.json();
-const phmResp = await fetch('./data/place_handbook_map.json');
 const phm = await phmResp.json();
+const roadNet = await roadNetResp.json();
 const meta = data.meta;
 const HIDDEN = new Set(['b03','b14','c01','c02','c03']);
 const feats = data.features.filter(f => f.kind === 'road' || !HIDDEN.has(f.id));
@@ -103,9 +115,11 @@ const CAT_LABEL = {dorm:'宿舍', teaching:'教学楼', food:'餐饮', sport:'�
   const cf = document.getElementById('catFilter');
   [...new Set(feats.filter(f=>f.kind==='building'&&f.category).map(f=>f.category))].forEach(c=>{
     const o=document.createElement('option'); o.value=c; o.textContent=CAT_LABEL[c]||c; cf.appendChild(o);});
+  // 起点下拉：包含所有可导航地点（楼栋 + 出入口），ID 与名称永久一一对应
   const sp = document.getElementById('startPick');
-  feats.filter(f=>f.kind==='checkin').forEach(f=>{
-    const o=document.createElement('option'); o.value=f.id; o.textContent='起点：'+f.name.replace('报到点-',''); sp.appendChild(o);});
+  const NAV_KINDS = new Set(['building', 'gate']);
+  feats.filter(f => NAV_KINDS.has(f.kind)).forEach(f=>{
+    const o=document.createElement('option'); o.value=f.id; o.textContent=f.name; sp.appendChild(o);});
 })();
 
 document.getElementById('stTitle').textContent = meta.campus + ' · 2026级本科新生 · ' + meta.dataStatus;
@@ -159,6 +173,50 @@ const mapLayer = document.getElementById('mapLayer');
 const overlay = document.getElementById('overlay');
 const routeSvg = document.getElementById('routeSvg');
 const meMarkerEl = document.getElementById('meMarkerEl');
+// 矢量路线层：路网预览层（默认隐藏）+ 导航路线层
+const SVGNS = 'http://www.w3.org/2000/svg';
+const netLayer = document.createElementNS(SVGNS, 'g');
+netLayer.setAttribute('id', 'netLayer');
+netLayer.style.display = 'none';
+routeSvg.appendChild(netLayer);
+const routeLayer = document.createElementNS(SVGNS, 'g');
+routeLayer.setAttribute('id', 'routeLayer');
+routeSvg.appendChild(routeLayer);
+// 折线 → 带小圆角的 SVG path（直线保持直，圆角只作用于转弯显示，不改变图节点/连通关系）
+function roundPath(pts, r) {
+  if (!pts || pts.length < 2) return '';
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const p0 = pts[i-1], p1 = pts[i], p2 = pts[i+1];
+    const v1x = p0[0]-p1[0], v1y = p0[1]-p1[1], v2x = p2[0]-p1[0], v2y = p2[1]-p1[1];
+    const l1 = Math.hypot(v1x, v1y), l2 = Math.hypot(v2x, v2y);
+    const rr = Math.min(r, l1/2, l2/2);
+    if (rr < 0.5 || l1 < 1e-6 || l2 < 1e-6) { d += ` L ${p1[0]} ${p1[1]}`; continue; }
+    const ax = p1[0] + v1x/l1*rr, ay = p1[1] + v1y/l1*rr;
+    const bx = p1[0] + v2x/l2*rr, by = p1[1] + v2y/l2*rr;
+    d += ` L ${ax} ${ay} Q ${p1[0]} ${p1[1]} ${bx} ${by}`;
+  }
+  const last = pts[pts.length-1];
+  return d + ` L ${last[0]} ${last[1]}`;
+}
+// 按 style 统一：白描边 + 红芯、圆头圆角
+function drawStyledPath(parent, pts, r) {
+  const d = roundPath(pts, r);
+  if (!d) return null;
+  const st = roadNet.style || {};
+  const outer = document.createElementNS(SVGNS, 'path');
+  outer.setAttribute('d', d); outer.setAttribute('fill', 'none');
+  outer.setAttribute('stroke', st.outerColor || '#ffffff');
+  outer.setAttribute('stroke-width', st.outerWidth || 14);
+  outer.setAttribute('stroke-linecap', 'round'); outer.setAttribute('stroke-linejoin', 'round');
+  const inner = document.createElementNS(SVGNS, 'path');
+  inner.setAttribute('d', d); inner.setAttribute('fill', 'none');
+  inner.setAttribute('stroke', st.innerColor || '#ff1c26');
+  inner.setAttribute('stroke-width', st.innerWidth || 7);
+  inner.setAttribute('stroke-linecap', 'round'); inner.setAttribute('stroke-linejoin', 'round');
+  parent.appendChild(outer); parent.appendChild(inner);
+  return {outer, inner};
+}
 let scale = 0.5, offsetX = 0, offsetY = 0;
 
 function fitMap() {
@@ -222,11 +280,11 @@ function updateTransform() {
     m.el.style.left = (m.px * scale + offsetX) + 'px';
     m.el.style.top = (m.py * scale + offsetY) + 'px';
   }
-  if (routePts.length > 1) {
-    routeSvg.setAttribute('width', mapViewport.clientWidth);
-    routeSvg.setAttribute('height', mapViewport.clientHeight);
-    routeLine.setAttribute('points', routePts.map(p => `${p[0]*scale+offsetX},${p[1]*scale+offsetY}`).join(' '));
-  }
+  routeSvg.setAttribute('width', mapViewport.clientWidth);
+  routeSvg.setAttribute('height', mapViewport.clientHeight);
+  const tf = `translate(${offsetX},${offsetY}) scale(${scale})`;
+  if (routeLayer) routeLayer.setAttribute('transform', tf);
+  netLayer.setAttribute('transform', tf);
   if (mePx) {
     meMarkerEl.style.left = (mePx[0] * scale + offsetX) + 'px';
     meMarkerEl.style.top = (mePx[1] * scale + offsetY) + 'px';
@@ -333,7 +391,10 @@ function showPanel(f) {
   }
   if (f.kind === 'building') html += '<div id="photoSlot" style="margin:8px 0"></div>';
   if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') {
-    html += `<div style="margin-top:8px"><button onclick='setRouteEndById("${f.id}")' style="background:#ffb020;border:0;color:#222;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px">🧭 规划从${routeStartName}到这里的路线</button></div>`;
+    html += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button onclick=\'setRouteStartById("' + f.id + '")\' style="background:#8ab4f8;border:0;color:#12203a;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px">🚶 从这里出发</button>' +
+      '<button onclick=\'setRouteEndById("' + f.id + '")\' style="background:#ffb020;border:0;color:#222;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px">🧭 到这里去</button>' +
+      '</div>';
   }
   panelBody.innerHTML = html;
   panel.style.display = 'block';
@@ -360,7 +421,7 @@ let pendingStatus = null;
 function closePanel() {
   panel.style.display = 'none';
   if (window.innerWidth <= 640) {
-    if (lastRoute) renderRoute();
+    if (navState || lastRoute) renderRoute();   // 恢复已保存的导航状态（正常/已到达/不可达）
     const footer = document.getElementById('footer');
     if (footer) footer.style.display = 'block';
     relayoutBelow();
@@ -369,75 +430,161 @@ function closePanel() {
 }
 window.closePanel = closePanel;
 
-// ---------- 路网图 + 寻路 ----------
-const roadFeats = feats.filter(f => f.kind === 'road');
+// ---------- 路网图（按坐标文件 29 条折线重建）+ 寻路 ----------
+// 坐标文件：参考图 1451×1084 像素（原点左上，x右 y下）；落到 1452×1083 底图按比例换算后复用 px2xz
+const REF_SX = 1452 / 1451, REF_SY = 1083 / 1084;
+function ref2xz(rx, ry) { const [x, z] = px2xz(rx * REF_SX, ry * REF_SY); return {x, z}; }
+const roadPolys = roadNet.polylines.map(p => p.points.map(q => ref2xz(q[0], q[1])));
+// 1) 遍历全部相邻点，收集所有线段
+const rawSegs = [];
+for (const P of roadPolys)
+  for (let i = 0; i < P.length - 1; i++) {
+    const a = P[i], b = P[i+1];
+    if (Math.hypot(a.x-b.x, a.z-b.z) > 1e-6) rawSegs.push([a, b]);
+  }
+// 2) 线段两两求交（十字交点、T形交点、内部落点），在交点处切分
+const segParam = rawSegs.map(() => [0, 1]);
+function segIntersect(a, b, c, d) {
+  const d1x = b.x-a.x, d1z = b.z-a.z, d2x = d.x-c.x, d2z = d.z-c.z;
+  const den = d1x*d2z - d1z*d2x;
+  if (Math.abs(den) < 1e-12) return null;   // 平行/共线不在此处理
+  const t = ((c.x-a.x)*d2z - (c.z-a.z)*d2x) / den;
+  const u = ((c.x-a.x)*d1z - (c.z-a.z)*d1x) / den;
+  if (t < -1e-6 || t > 1+1e-6 || u < -1e-6 || u > 1+1e-6) return null;
+  return [Math.min(1, Math.max(0, t)), Math.min(1, Math.max(0, u))];
+}
+for (let i = 0; i < rawSegs.length; i++)
+  for (let j = i+1; j < rawSegs.length; j++) {
+    const hit = segIntersect(rawSegs[i][0], rawSegs[i][1], rawSegs[j][0], rawSegs[j][1]);
+    if (hit) { segParam[i].push(hit[0]); segParam[j].push(hit[1]); }
+  }
+// 3) 建图：同一节点只允许极小误差合并
+const NODE_TOL = 1.0;   // 米
 const rNodes = [];
 function addRNode(x, z) {
   for (let i = 0; i < rNodes.length; i++)
-    if (Math.hypot(rNodes[i].x - x, rNodes[i].z - z) < 4) return i;
+    if (Math.hypot(rNodes[i].x - x, rNodes[i].z - z) < NODE_TOL) return i;
   rNodes.push({x, z});
   return rNodes.length - 1;
 }
-function segX(p1, p2, p3, p4) {
-  const d1x = p2.x-p1.x, d1z = p2.z-p1.z, d2x = p4.x-p3.x, d2z = p4.z-p3.z;
-  const den = d1x*d2z - d1z*d2x;
-  if (Math.abs(den) < 1e-9) return null;
-  const t = ((p3.x-p1.x)*d2z - (p3.z-p1.z)*d2x) / den;
-  const u = ((p3.x-p1.x)*d1z - (p3.z-p1.z)*d1x) / den;
-  if (t < -0.001 || t > 1.001 || u < -0.001 || u > 1.001) return null;
-  return {t: Math.max(0, Math.min(1, t))};
+let rAdj = [];
+const edgeSeen = new Set();
+function addREdge(a, b) {
+  if (a === b) return;
+  const key = a < b ? a+'_'+b : b+'_'+a;
+  if (edgeSeen.has(key)) return;
+  const d = Math.hypot(rNodes[a].x-rNodes[b].x, rNodes[a].z-rNodes[b].z);
+  if (d < 1e-6) return;
+  edgeSeen.add(key);
+  if (!rAdj[a]) rAdj[a] = [];
+  if (!rAdj[b]) rAdj[b] = [];
+  rAdj[a].push([b, d, '校园道路']);
+  rAdj[b].push([a, d, '校园道路']);
 }
-const roadChains = [];
-for (const r of roadFeats) {
-  const a = r.path.localMeters[0], b = r.path.localMeters[1];
-  const p1 = {x: a[0], z: -a[1]}, p2 = {x: b[0], z: -b[1]};
-  const ts = [0, 1];
-  for (const o of roadFeats) {
-    if (o.id === r.id) continue;
-    const c = o.path.localMeters[0], d = o.path.localMeters[1];
-    const hit = segX(p1, p2, {x:c[0],z:-c[1]}, {x:d[0],z:-d[1]});
-    if (hit) ts.push(hit.t);
+rawSegs.forEach(([a, b], i) => {
+  const ts = [...new Set(segParam[i].map(t => Math.round(t*1e6)/1e6))].sort((p, q) => p - q);
+  let prev = -1;
+  for (const t of ts) {
+    const ni = addRNode(a.x + (b.x-a.x)*t, a.z + (b.z-a.z)*t);
+    if (prev >= 0) addREdge(prev, ni);
+    prev = ni;
   }
-  ts.sort((p, q) => p - q);
-  roadChains.push({name: r.name, chain: ts.map(t => addRNode(p1.x + (p2.x-p1.x)*t, p1.z + (p2.z-p1.z)*t))});
-}
-const rAdj = rNodes.map(() => []);
-const edgeName = new Map();
-for (const rc of roadChains)
-  for (let i = 0; i < rc.chain.length-1; i++) {
-    const a = rc.chain[i], b = rc.chain[i+1];
-    const len = Math.hypot(rNodes[a].x-rNodes[b].x, rNodes[a].z-rNodes[b].z);
-    if (len < 0.5) continue;
-    rAdj[a].push([b, len, rc.name]);
-    rAdj[b].push([a, len, rc.name]);
-    edgeName.set(a < b ? a+'_'+b : b+'_'+a, rc.name);
-  }
-for (let i = 0; i < rNodes.length; i++)
-  for (let j = i+1; j < rNodes.length; j++) {
-    const d = Math.hypot(rNodes[i].x-rNodes[j].x, rNodes[i].z-rNodes[j].z);
-    if (d > 0.5 && d < 40 && !rAdj[i].some(e => e[0] === j)) {
-      rAdj[i].push([j, d, '步行衔接']);
-      rAdj[j].push([i, d, '步行衔接']);
+});
+rAdj = rNodes.map((_, i) => rAdj[i] || []);   // 补齐孤立点
+// 不可变基础图：一经建好不再修改，供每次查询复制（let 便于隔离测试临时替换后恢复）
+let baseAdj = rAdj.map(list => list.map(e => [e[0], e[1], e[2]]));
+let baseNodes = rNodes.map(n => ({x: n.x, z: n.z}));
+// 仅使用坐标文件中明确连接的路段；删除“相距小于40自动步行衔接”。
+// 端点吸附：返回最近基础边上的投影（u,v 为原节点，t 为边上参数，proj 为投影坐标）
+function nearestEdgeOnBase(P) {
+  let best = null;
+  for (let u = 0; u < baseAdj.length; u++)
+    for (const [v] of baseAdj[u]) {
+      if (v < u) continue;
+      const a = baseNodes[u], b = baseNodes[v];
+      const abx = b.x-a.x, abz = b.z-a.z, L2 = abx*abx + abz*abz;
+      if (L2 < 1e-9) continue;
+      let t = ((P.x-a.x)*abx + (P.z-a.z)*abz) / L2;
+      t = Math.max(0, Math.min(1, t));
+      const px = a.x + abx*t, pz = a.z + abz*t;
+      const d = Math.hypot(P.x-px, P.z-pz);
+      if (!best || d < best.d) best = {d, u, v, t, proj: {x: px, z: pz}};
     }
-  }
-function nearestNode(p) {
+  return best;
+}
+function nearestNodeOnBase(p) {
   let bi = 0, bd = 1e18;
-  for (let i = 0; i < rNodes.length; i++) {
-    const d = Math.hypot(rNodes[i].x-p.x, rNodes[i].z-p.z);
+  for (let i = 0; i < baseNodes.length; i++) {
+    const d = Math.hypot(baseNodes[i].x-p.x, baseNodes[i].z-p.z);
     if (d < bd) { bd = d; bi = i; }
   }
   return bi;
 }
-function dijkstra(s, e) {
-  const dist = rNodes.map(() => 1e18), prev = rNodes.map(() => -1), done = rNodes.map(() => false);
+// 临时图查询：复制基础图，把起终点投影点按其在同一边上的顺序插入，并替换被切分的原边。
+// 不修改基础图；基础图节点数恒定。
+function buildTempGraph(S, T) {
+  const nodes = baseNodes.map(n => ({x: n.x, z: n.z}));
+  const adj = baseAdj.map(list => list.map(e => [e[0], e[1], e[2]]));
+  const ensure = i => { while (adj.length <= i) adj.push([]); };
+  const sE = nearestEdgeOnBase(S), tE = nearestEdgeOnBase(T);
+  const ins = new Map();   // key 'u_v' → {u,v,items:[{t,proj,tag}]}
+  const add = (e, P, tag) => {
+    if (!e) return;
+    const [u, v] = e.u < e.v ? [e.u, e.v] : [e.v, e.u];
+    const key = u + '_' + v;
+    if (!ins.has(key)) ins.set(key, {u, v, items: []});
+    ins.get(key).items.push({t: e.t, proj: e.proj, tag});
+  };
+  add(sE, S, 's'); add(tE, T, 't');
+  let sIdx = null, tIdx = null;
+  for (const {u, v, items} of ins.values()) {
+    items.sort((a, b) => a.t - b.t);
+    adj[u] = adj[u].filter(e => e[0] !== v);
+    adj[v] = adj[v].filter(e => e[0] !== u);
+    const idxs = [u];
+    // 同边相同 t / 几乎相同坐标的投影必须合并为一个节点：起终点都指向它 → 同地点不绕圈
+    let lastT = null, lastNode = null;
+    for (const it of items) {
+      let ni;
+      if (it.t <= 1e-9) ni = u;
+      else if (it.t >= 1-1e-9) ni = v;
+      else if (lastNode !== null && (Math.abs(it.t - lastT) < 1e-6 ||
+               Math.hypot(it.proj.x - nodes[lastNode].x, it.proj.z - nodes[lastNode].z) < 1e-6)) ni = lastNode;
+      else { ni = nodes.length; nodes.push({x: it.proj.x, z: it.proj.z}); ensure(ni); }
+      it.node = ni;
+      lastT = it.t; lastNode = ni;
+      idxs.push(ni);
+    }
+    idxs.push(v);
+    for (let i = 0; i < idxs.length - 1; i++) {
+      const a = idxs[i], b = idxs[i+1];
+      if (a === b) continue;
+      const w = Math.hypot(nodes[a].x-nodes[b].x, nodes[a].z-nodes[b].z);
+      if (w < 1e-9) continue;
+      ensure(a); ensure(b);
+      adj[a].push([b, w, '校园道路']);
+      adj[b].push([a, w, '校园道路']);
+    }
+    items.forEach((it) => { if (it.tag === 's') sIdx = it.node; else tIdx = it.node; });
+  }
+  if (sIdx === null) sIdx = nearestNodeOnBase(S);
+  if (tIdx === null) tIdx = nearestNodeOnBase(T);
+  // 起终点在米坐标里几乎重合（同一建筑的同一投影点）→ 明确 0 米/同地点
+  const same = sIdx === tIdx ||
+    Math.hypot(nodes[sIdx].x - nodes[tIdx].x, nodes[sIdx].z - nodes[tIdx].z) < 1e-6;
+  return {nodes, adj, sIdx, tIdx, same, sDist: sE ? sE.d : 0, tDist: tE ? tE.d : 0};
+}
+function dijkstra(graph, s, e) {
+  const {nodes, adj} = graph;
+  const dist = nodes.map(() => 1e18), prev = nodes.map(() => -1), done = nodes.map(() => false);
   dist[s] = 0;
   for (;;) {
     let u = -1, ud = 1e18;
-    for (let i = 0; i < rNodes.length; i++)
+    for (let i = 0; i < nodes.length; i++)
       if (!done[i] && dist[i] < ud) { ud = dist[i]; u = i; }
     if (u === -1 || u === e) break;
     done[u] = true;
-    for (const [v, w] of rAdj[u])
+    for (const [v, w] of adj[u])
       if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; prev[v] = u; }
   }
   if (dist[e] >= 1e18) return null;
@@ -450,81 +597,153 @@ function keyOf(a, b) { return a < b ? a+'_'+b : b+'_'+a; }
 // ---------- 路线 ----------
 let routeStart = null, routeStartName = '大门', routeEndPt = null, routeEndName = '';
 let lastRoute = null, traveledM = -1, offRouteM = 0;
-let routePts = [], routeLine = null;
+let navState = null, routeEndId = null;
+let routePts = [], routePair = null;
 const routeInfo = document.createElement('div');
 routeInfo.style.cssText = 'position:absolute;bottom:44px;left:12px;z-index:20;background:rgba(25,28,36,.94);color:#e8eaed;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.7;display:none;border:1px solid rgba(255,255,255,.1);max-width:360px;max-height:60vh;overflow:auto';
 routeInfo.id = 'routeInfo';
 document.getElementById('app').appendChild(routeInfo);
 
+function removeRoutePath() {
+  if (routePair) {
+    if (routePair.outer.parentNode) routePair.outer.parentNode.removeChild(routePair.outer);
+    if (routePair.inner.parentNode) routePair.inner.parentNode.removeChild(routePair.inner);
+    routePair = null;
+  }
+}
+// 去除重复点、合并同向共线点（直线保持直，只在真实转弯处保留拐点）
+function simplifyPx(pts) {
+  const out = [];
+  for (const p of pts) {
+    const last = out[out.length-1];
+    if (last && Math.hypot(p[0]-last[0], p[1]-last[1]) < 0.5) continue;
+    out.push(p);
+  }
+  if (out.length < 3) return out;
+  const res = [out[0]];
+  for (let i = 1; i < out.length - 1; i++) {
+    const a = res[res.length-1], b = out[i], c = out[i+1];
+    const v1x = b[0]-a[0], v1y = b[1]-a[1], v2x = c[0]-b[0], v2y = c[1]-b[1];
+    const l1 = Math.hypot(v1x, v1y), l2 = Math.hypot(v2x, v2y);
+    if (l1 < 1e-6 || l2 < 1e-6) continue;
+    const cross = (v1x/l1)*(v2y/l2) - (v1y/l1)*(v2x/l2);
+    const sameDir = (v1x*v2x + v1y*v2y) > 0;   // 必须同向共线才可合并，反向折返点保留
+    if (Math.abs(cross) < 1e-3 && sameDir) continue;
+    res.push(b);
+  }
+  res.push(out[out.length-1]);
+  return res;
+}
+// 同上去重/合并共线，但作用于米坐标（{x,z}），供步骤距离计算
+function simplifyXZ(pts) {
+  const out = [];
+  for (const p of pts) {
+    const last = out[out.length-1];
+    if (last && Math.hypot(p.x-last.x, p.z-last.z) < 1e-6) continue;
+    out.push(p);
+  }
+  if (out.length < 3) return out;
+  const res = [out[0]];
+  for (let i = 1; i < out.length - 1; i++) {
+    const a = res[res.length-1], b = out[i], c = out[i+1];
+    const v1x = b.x-a.x, v1z = b.z-a.z, v2x = c.x-b.x, v2z = c.z-b.z;
+    const l1 = Math.hypot(v1x, v1z), l2 = Math.hypot(v2x, v2z);
+    if (l1 < 1e-6 || l2 < 1e-6) continue;
+    const cross = (v1x/l1)*(v2z/l2) - (v1z/l1)*(v2x/l2);
+    const sameDir = (v1x*v2x + v1z*v2z) > 0;   // 必须同向共线才可合并，反向折返点保留
+    if (Math.abs(cross) < 1e-3 && sameDir) continue;
+    res.push(b);
+  }
+  res.push(out[out.length-1]);
+  return res;
+}
 function tryRoute() {
-  if (!routeStart || !routeEndPt) return;
-  const r = dijkstra(nearestNode(routeStart), nearestNode(routeEndPt));
-  if (!r || r.path.length < 2) return;
-  const nodePts = r.path.map(i => { const px = xz2px(rNodes[i].x, rNodes[i].z); return px; });
-  const startPx = xz2px(routeStart.x, routeStart.z);
-  const endPx = xz2px(routeEndPt.x, routeEndPt.z);
-  routePts = [startPx, ...nodePts, endPx];
-  if (!routeLine) {
-    routeLine = document.createElementNS('http://www.w3.org/2000/svg','polyline');
-    routeLine.setAttribute('fill','none');
-    routeLine.setAttribute('stroke','#ffb020');
-    routeLine.setAttribute('stroke-width','4');
-    routeLine.setAttribute('stroke-linecap','round');
-    routeLine.setAttribute('stroke-linejoin','round');
-    routeLine.setAttribute('opacity','0.85');
-    routeSvg.appendChild(routeLine);
+  // 新请求先清理上一条结果，避免残留旧路线冒充新结果
+  removeRoutePath();
+  lastRoute = null; routePts = [];
+  if (!routeStart || !routeEndPt) { routeInfo.style.display = 'none'; relayoutBelow(); return; }
+  const graph = buildTempGraph(routeStart, routeEndPt);
+  // 起终点相同 / 映射到同一接入点 → 已到达（0 米，不生成路径）
+  if (graph.same) {
+    navState = {kind: 'arrived'};
+    renderRoute();
+    updateTransform();
+    return;
   }
-  const heading = d => Math.abs(d.x) > Math.abs(d.z) ? (d.x > 0 ? '向东' : '向西') : (d.z > 0 ? '向南' : '向北');
+  const r = dijkstra(graph, graph.sIdx, graph.tIdx);
+  if (!r || r.path.length < 2) { navState = {kind: 'unreachable'}; renderRoute(); updateTransform(); return; }
+  // 路径点（米，xz）：仅取道路节点（起终点已作为投影点插入临时图，不再拼接建筑中心，避免穿楼）
+  const nodeXZ = r.path.map(i => ({x: graph.nodes[i].x, z: graph.nodes[i].z}));
+  const routeXZ = simplifyXZ(nodeXZ);
+  routePts = routeXZ.map(p => xz2px(p.x, p.z));
+  routePair = drawStyledPath(routeLayer, routePts, (roadNet.style && roadNet.style.cornerRadius) || 8);
+  // 行走步骤：按最终路径（米）生成，方向变化处断段；末段不再被“到达”覆盖
+  const heading = (dx, dz) => Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? '向东' : '向西') : (dz > 0 ? '向南' : '向北');
   const steps = [];
-  let curName = edgeName.get(keyOf(r.path[0], r.path[1])) || '步行衔接';
-  let acc = 0, prevDir = null, cum = 0;
-  for (let i = 1; i < r.path.length; i++) {
-    const a = rNodes[r.path[i-1]], b = rNodes[r.path[i]];
+  let cum = 0;
+  for (let i = 1; i < routeXZ.length; i++) {
+    const a = routeXZ[i-1], b = routeXZ[i];
     const len = Math.hypot(a.x-b.x, a.z-b.z);
-    const dir = {x: (b.x-a.x)/len, z: (b.z-a.z)/len};
-    const nm = edgeName.get(keyOf(r.path[i-1], r.path[i])) || '步行衔接';
-    if (prevDir && nm !== curName) {
-      const cross = prevDir.z*dir.x - prevDir.x*dir.z;
-      steps.push({turn: cross < -0.3 ? '右转' : cross > 0.3 ? '左转' : '继续',
-                  road: curName, dir: heading(prevDir), meters: Math.round(acc),
-                  startM: cum, endM: cum + acc});
-      cum += acc; acc = 0;
-    }
-    curName = nm; acc += len; prevDir = dir;
+    if (len < 1e-6) continue;
+    const startM = cum; cum += len;
+    steps.push({dir: heading(b.x-a.x, b.z-a.z), meters: Math.round(len), startM, endM: cum});
   }
-  steps.push({turn: '到达终点', road: curName, dir: heading(prevDir), meters: Math.round(acc),
-              startM: cum, endM: cum + acc});
-  lastRoute = {path: r.path, dist: r.dist, steps};
+  // 按真实转向给明确转弯（第一个路段按绝对方位，之后按左右转）
+  const turnOf = (prev, cur) => {
+    const MODE = {向东:0, 向北:1, 向西:2, 向南:3};
+    let d = (MODE[cur] - MODE[prev] + 4) % 4;
+    return d === 0 ? '直行' : d === 1 ? '左转' : d === 2 ? '掉头' : '右转';
+  };
+  steps.forEach((s, i) => { s.turn = i === 0 ? '起步（' + s.dir + '）' : turnOf(steps[i-1].dir, s.dir); });
+  lastRoute = {path: r.path, dist: cum, steps};
+  navState = {kind: 'normal'};
   renderRoute();
   updateTransform();
 }
+function entryNoteLine(kind) {
+  if (kind === 'gate') return '<span style="color:#9aa0a6">出入口，路线接入对应门岗道路节点。</span><br>';
+  return '<span style="color:#9aa0a6">已到达附近<b>道路接入点</b>（最近投影）；建筑<b>入口待确认</b>，尚未声称到达建筑本体。</span><br>';
+}
 function renderRoute() {
-  if (!lastRoute) return;
-  let html = '<b style="color:#ffd166">路线：' + routeStartName + ' → ' + routeEndName + '</b><br>' +
-    '沿道路约 <b>' + Math.round(lastRoute.dist) + '</b> 米（估算）';
-  if (traveledM >= 0) html += ' · 剩余约 <b>' + Math.max(0, Math.round(lastRoute.dist - traveledM)) + '</b> 米';
-  html += '<div style="margin-top:6px">';
-  lastRoute.steps.forEach((s, i) => {
-    const cur = traveledM >= s.startM && traveledM < s.endM;
-    html += '<div style="' + (cur ? 'color:#ffd166;font-weight:bold' : 'color:#d5d9de') + '">' +
-      (i + 1) + '. ' + (s.turn === '到达终点' ? '沿' : s.turn + '进入') + s.road +
-      '（' + s.dir + ' 约' + s.meters + ' 米）</div>';
-  });
-  html += '</div>';
-  if (traveledM >= 0 && offRouteM > 60)
-    html += '<span style="color:#f28b82">⚠ 你似乎已偏离路线（最近约 ' + Math.round(offRouteM) + ' 米）。</span><br>';
-  html += '<span style="color:#f28b82">⚠ 路线沿道路网络自动计算，距离为<b>估算</b>（底图无精确比例尺），<b>尚未现场验证通行</b>；施工围挡与实际开口以现场为准。</span><br>' +
-    '<span style="color:#9aa0a6;cursor:pointer" onclick="clearRoute()">✕ 清除路线</span>';
-  routeInfo.innerHTML = html;
+  const st = navState || {};
+  const head = '<b style="color:#ffd166">路线：' + routeStartName + ' → ' + routeEndName + '</b><br>';
+  const clr = '<span style="color:#9aa0a6;cursor:pointer" onclick="clearRoute()">✕ 清除路线</span>';
+  if (st.kind === 'arrived') {
+    routeInfo.innerHTML = head +
+      '<b style="color:#81c995">已到达</b>（起点与终点相同，0 米，不生成路径）<br>' + clr;
+  } else if (st.kind === 'unreachable') {
+    routeInfo.innerHTML = head +
+      '<b style="color:#f28b82">没有可用路线</b>（两地在当前路网上不连通）<br>' + clr;
+  } else if (!lastRoute) {
+    routeInfo.style.display = 'none'; return;
+  } else {
+    const dstKind = (byId[routeEndId] && byId[routeEndId].kind) || 'building';
+    let html = head + '沿道路约 <b>' + Math.round(lastRoute.dist) + '</b> 米（估算）';
+    if (traveledM >= 0) html += ' · 剩余约 <b>' + Math.max(0, Math.round(lastRoute.dist - traveledM)) + '</b> 米';
+    html += '<div style="margin-top:6px">';
+    lastRoute.steps.forEach((s, i) => {
+      const cur = traveledM >= 0 && traveledM >= s.startM && traveledM < s.endM;
+      html += '<div style="' + (cur ? 'color:#ffd166;font-weight:bold' : 'color:#d5d9de') + '">' +
+        (i + 1) + '. ' + s.turn + '，沿校园道路约' + s.meters + ' 米</div>';
+    });
+    html += '<div style="color:#81c995;font-weight:bold">' + (lastRoute.steps.length + 1) + '. 到达终点</div>';
+    html += '</div>';
+    if (traveledM >= 0 && offRouteM > 60)
+      html += '<span style="color:#f28b82">⚠ 你似乎已偏离路线（最近约 ' + Math.round(offRouteM) + ' 米）。</span><br>';
+    html += entryNoteLine(dstKind);
+    html += '<span style="color:#f28b82">⚠ 路线沿给定道路网络自动计算，距离为<b>估算</b>（底图无精确比例尺），<b>尚未现场验证通行</b>；施工围挡与实际开口以现场为准。</span><br>' + clr;
+    routeInfo.innerHTML = html;
+  }
   if (window.innerWidth <= 640 && panel.style.display !== 'none') return;
   routeInfo.style.display = 'block';
   relayoutBelow();
 }
 function clearRoute() {
+  // 清除只移除当前路线与终点：保留有效起点，界面与内部状态一致
+  removeRoutePath();
   routePts = [];
-  if (routeLine) { routeSvg.removeChild(routeLine); routeLine = null; }
-  routeStart = routeEndPt = null; routeEndName = '';
-  lastRoute = null; traveledM = -1;
+  routeEndPt = null; routeEndName = ''; routeEndId = null;
+  lastRoute = null; traveledM = -1; offRouteM = 0; navState = null;
   routeInfo.style.display = 'none';
   relayoutBelow();
   updateTransform();
@@ -537,24 +756,48 @@ window.setRouteEndById = function(id) {
   if (!px) return;
   const [x, z] = px2xz(px[0], px[1]);
   routeEndPt = {x, z};
+  routeEndId = id;
   routeEndName = f.kind === 'checkin' ? f.name.replace('报到点-','') : f.name;
-  tryRoute();
+  traveledM = -1; offRouteM = 0;
+  if (!routeStart) {
+    // 没有有效起点：界面与状态统一为待选起点并要求先选起点，不再静默
+    setPickPlaceholder();
+    navState = null; lastRoute = null; removeRoutePath(); routePts = [];
+    routeInfo.innerHTML = '<b style="color:#f28b82">请先选择起点</b>' +
+      '<br><span style="color:#9aa0a6;cursor:pointer" onclick="clearRoute()">✕ 清除路线</span>';
+    routeInfo.style.display = 'block'; relayoutBelow();
+  } else {
+    tryRoute();
+  }
   closePanel();
 };
-const gateFeat = feats.find(f => f.kind === 'gate' && f.name === '大门');
-if (gateFeat) {
-  const px = featPx(gateFeat);
-  if (px) { const [x, z] = px2xz(px[0], px[1]); routeStart = {x, z}; routeStartName = gateFeat.name; }
-}
 window.setRouteStartById = function(id){
   const f = byId[id]; if (!f) return;
   const px = featPx(f); if (!px) return;
   const [x, z] = px2xz(px[0], px[1]);
   routeStart = {x, z};
   routeStartName = f.kind === 'checkin' ? f.name.replace('报到点-','') : f.name;
-  tryRoute();
+  setPickValue(id);
+  if (routeEndPt) tryRoute();   // 若已有终点，改起点立即重算
+  if (window.innerWidth <= 640) closePanel();   // 手机：与“到这里去”一致，关闭面板并反馈结果
 };
-document.getElementById('startPick').onchange = e => { if (e.target.value) setRouteStartById(e.target.value); };
+document.getElementById('startPick').onchange = e => { if (e.target.value !== '__ph__') setRouteStartById(e.target.value); };
+function setPickValue(id) {
+  const sp = document.getElementById('startPick');
+  if (sp.querySelector('option[value="' + id + '"]')) sp.value = id;
+}
+function setPickPlaceholder() {
+  const sp = document.getElementById('startPick');
+  if (sp.querySelector('option[value="__ph__"]')) sp.value = '__ph__';
+}
+// 默认起点：大门（用户可在任意地点弹窗或下拉里改）
+{
+  const gateFeat = feats.find(f => f.kind === 'gate' && f.name === '大门');
+  if (gateFeat) {
+    const px = featPx(gateFeat);
+    if (px) { const [x, z] = px2xz(px[0], px[1]); routeStart = {x, z}; routeStartName = gateFeat.name; setPickValue(gateFeat.id); }
+  }
+}
 
 // ---------- 定位（GPS WGS84→GCJ02 / 点选模拟）+ 跟随 ----------
 function wgs2gcj(lon, lat) {
@@ -579,7 +822,7 @@ function wgs2gcj(lon, lat) {
   return [lon + dlon*180/(a/sq*Math.cos(rad)*Math.PI),
           lat + dlat*180/((a*(1-ee))/(magic*sq)*Math.PI)];
 }
-let mePx = null, followMode = false, pickMode = false, locWatchId = null;
+let mePx = null, followMode = false, pickMode = false;
 function setMyLocal(e, n, source) {
   mePx = [(e - TF_B) / TF_A, (TF_D - n) / (-TF_C)];
   meMarkerEl.style.display = 'block';
@@ -641,31 +884,69 @@ function mkBtn(label, fn) {
   toolBar.appendChild(b);
   return b;
 }
-const btnGps = mkBtn('📍 定位', () => {
-  if (locWatchId !== null) {
-    navigator.geolocation.clearWatch(locWatchId); locWatchId = null;
-    btnGps.textContent = '📍 定位'; btnGps.style.color = '#e8eaed';
-    return;
+// 路网核对预览：按 style 画出全部 29 条折线（默认隐藏）
+function buildNetworkPreview() {
+  const st = roadNet.style || {};
+  const group = document.createElementNS(SVGNS, 'g');
+  group.setAttribute('opacity', '0.9');
+  for (const P of roadPolys) {
+    const pts = P.map(p => { const px = xz2px(p.x, p.z); return px; });
+    const d = roundPath(pts, st.cornerRadius || 8);
+    if (!d) continue;
+    const outer = document.createElementNS(SVGNS, 'path');
+    outer.setAttribute('d', d); outer.setAttribute('fill', 'none');
+    outer.setAttribute('stroke', st.outerColor || '#ffffff');
+    outer.setAttribute('stroke-width', st.outerWidth || 14);
+    outer.setAttribute('stroke-linecap', 'round'); outer.setAttribute('stroke-linejoin', 'round');
+    const inner = document.createElementNS(SVGNS, 'path');
+    inner.setAttribute('d', d); inner.setAttribute('fill', 'none');
+    inner.setAttribute('stroke', st.innerColor || '#ff1c26');
+    inner.setAttribute('stroke-width', st.innerWidth || 7);
+    inner.setAttribute('stroke-linecap', 'round'); inner.setAttribute('stroke-linejoin', 'round');
+    group.appendChild(outer); group.appendChild(inner);
   }
-  if (!navigator.geolocation) { showStatus('此环境不支持定位；可用「点选位置」模拟'); return; }
+  netLayer.appendChild(group);
+}
+buildNetworkPreview();
+// 路网预览 / 模拟定位 / 跟随：仅保留为开发调试入口，不再放普通用户按钮。
+// 入口：URL 加 ?debug=1（或 #debug）；控制台可用 window.__nav.debug.*
+let netShown = false;
+function toggleNetwork(force) {
+  netShown = (force === undefined) ? !netShown : !!force;
+  netLayer.style.display = netShown ? 'block' : 'none';
+  showStatus(netShown ? '已显示全部路网（核对预览）：' + roadPolys.length + ' 条折线' : '已隐藏路网预览');
+  updateTransform();
+  return netShown;
+}
+let locWatchId = null;
+function toggleGps(force) {
+  const on = (force === undefined) ? locWatchId === null : !!force;
+  if (!on) {
+    if (locWatchId !== null) { navigator.geolocation.clearWatch(locWatchId); locWatchId = null; }
+    showStatus('已停止定位');
+    return false;
+  }
+  if (!navigator.geolocation) { showStatus('此环境不支持定位；可用 debug.pick() 模拟'); return false; }
   locWatchId = navigator.geolocation.watchPosition(
     pos => {
       const [glon, glat] = wgs2gcj(pos.coords.longitude, pos.coords.latitude);
       const [e, n] = proj(glon, glat);
       setMyLocal(e, n, 'GPS（精度约 ' + Math.round(pos.coords.accuracy) + ' 米）');
     },
-    err => showStatus('定位失败：' + err.message + '。手机浏览器要 HTTPS 才给定位，当前可用「点选位置」模拟。'),
+    err => showStatus('定位失败：' + err.message + '。手机浏览器要 HTTPS 才给定位，可用 debug.pick() 模拟。'),
     {enableHighAccuracy: true, maximumAge: 2000});
-});
-const btnPick = mkBtn('🖱 点选位置', () => {
-  pickMode = !pickMode;
-  btnPick.style.color = pickMode ? '#ffd166' : '#e8eaed';
+  return true;
+}
+function setPickMode(force) {
+  pickMode = (force === undefined) ? !pickMode : !!force;
   if (pickMode) showStatus('点选模式：在地图上点一下，把你的位置放过去（模拟行走用）');
-});
-const btnFollow = mkBtn('🎥 跟随', () => {
-  followMode = !followMode;
-  btnFollow.style.color = followMode ? '#ffd166' : '#e8eaed';
-});
+  return pickMode;
+}
+function setFollowMode(force) {
+  followMode = (force === undefined) ? !followMode : !!force;
+  return followMode;
+}
+// 普通用户按钮：只保留导览相关入口
 mkBtn('📖 新生手册', () => location.href = 'handbook.html');
 mkBtn('📋 培养计划', () => location.href = 'curriculum.html');
 document.getElementById('app').appendChild(toolBar);
@@ -678,12 +959,15 @@ function updateNavProgress() {
   if (!lastRoute || !mePx) return;
   const [x, z] = px2xz(mePx[0], mePx[1]);
   const me = {x, z};
+  // 用最终显示路径（像素）逐段求最近投影点，估算已走距离
   let acc = 0, bestD = 1e18, bestTraveled = 0;
-  for (let i = 1; i < lastRoute.path.length; i++) {
-    const a = rNodes[lastRoute.path[i-1]], b = rNodes[lastRoute.path[i]];
-    const abx = b.x-a.x, abz = b.z-a.z, abLen = Math.hypot(abx, abz);
-    const t = Math.max(0, Math.min(1, ((me.x-a.x)*abx + (me.z-a.z)*abz) / (abLen*abLen)));
-    const px = a.x + abx*t, pz = a.z + abz*t;
+  const pts = routePts.map(p => px2xz(p[0], p[1]));
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i-1], b = pts[i];
+    const abx = b[0]-a[0], abz = b[1]-a[1], abLen = Math.hypot(abx, abz);
+    if (abLen < 1e-9) continue;
+    const t = Math.max(0, Math.min(1, ((me.x-a[0])*abx + (me.z-a[1])*abz) / (abLen*abLen)));
+    const px = a[0] + abx*t, pz = a[1] + abz*t;
     const d = Math.hypot(me.x-px, me.z-pz);
     if (d < bestD) { bestD = d; bestTraveled = acc + abLen*t; }
     acc += abLen;
@@ -737,8 +1021,8 @@ dataInfo.innerHTML = '<b style="color:#ffd166">这份数据是怎么来的</b><d
   '🏢 楼名来源：以底图标注为准，正在逐个核对中<br>' +
   '📐 楼栋位置：29个地标均待逐一核实，尚未与底图精确对齐：28个黄色待核实圆点 + b13申七宿舍纯文字标签<br>' +
   '🚫 垃圾房(b03)、后勤物业用房(b14)未显示；报到点标记(c01-c03)已移除<br>' +
-  '🛣 9条道路由旧3D坐标换算，路线距离为估算<br>' +
-  '🗺 底图：校区平面图插画（campus-plan-base-v3-clean-dorm-3d.png）<br>' +
+  '🛣 路网：按用户确认的导向参考图 29 条折线重建（主路+入口支线），路线距离为估算<br>' +
+  '🗺 底图：校区平面图插画（treefree，WebP 265KB / PNG 兜底）<br>' +
   '⚠ 整体为草案级，实地校对进行中，不作为精确测量依据</div>' +
   '<div style="margin-top:10px;color:#9aa0a6" id="dataCounts"></div>' +
   '<span style="color:#9aa0a6;cursor:pointer" onclick="dataInfo.style.display=\'none\'">✕ 关闭</span>';
@@ -748,14 +1032,85 @@ window.dataInfo = dataInfo;
   const k = {};
   for (const f of feats) k[f.kind] = (k[f.kind] || 0) + 1;
   document.getElementById('dataCounts').textContent =
-    '当前数据：' + (k.building || 0) + ' 栋楼 · ' + (k.road || 0) + ' 条道路 · ' +
+    '当前数据：' + (k.building || 0) + ' 栋楼 · ' + roadPolys.length + ' 条道路折线 · ' +
     (k.gate || 0) + ' 个出入口 · ' + (k.checkin || 0) + ' 个报到点 · ' +
     '状态 ' + meta.dataStatus;
 }
 
 // ---------- 初始化 ----------
+// 测试/调试钩子（供自动化验收读取内部状态）
+window.__nav = {
+  byId, showPanel, closePanel, renderRoute, clearRoute,
+  get baseNodeCount() { return baseNodes.length; },
+  get baseEdgeCount() { return baseAdj.reduce((s, l) => s + l.length, 0); },
+  get navState() { return navState; },
+  get routeStartName() { return routeStartName; },
+  get routeEndName() { return routeEndName; },
+  startOptionCount() { const sp = document.getElementById('startPick'); let n = 0; for (const o of sp.options) if (o.value && o.value !== '__ph__') n++; return n; },
+  setStart: id => setRouteStartById(id),
+  setEnd: id => setRouteEndById(id),
+  routeEndpointsPx() {
+    if (!routePts.length) return null;
+    const f = routePts[0], l = routePts[routePts.length-1];
+    return {first: [Math.round(f[0]), Math.round(f[1])], last: [Math.round(l[0]), Math.round(l[1])]};
+  },
+  featPxById(id) { const f = byId[id]; if (!f) return null; const p = featPx(f); return p ? [Math.round(p[0]), Math.round(p[1])] : null; },
+  sameRoadTest() {
+    const r2 = (rx, ry) => { const [x, z] = px2xz(rx*1452/1451, ry*1083/1084); return {x, z}; };
+    const S = r2(450, 566), T = r2(500, 566);
+    const g = buildTempGraph(S, T);
+    const r = dijkstra(g, g.sIdx, g.tIdx);
+    if (!r) return {error: 'no route', sIdx: g.sIdx, tIdx: g.tIdx, n: g.nodes.length};
+    const xs = r.path.map(i => Math.round(xz2px(g.nodes[i].x, g.nodes[i].z)[0]));
+    return {meters: r.dist, xs};
+  },
+  // 隔离路网测试：只复制一条直线边，起终点在同一内部投影点 → 期望 same、距离 0；断开则不可达
+  isolatedSamePlaceTest() {
+    const saveN = baseNodes, saveA = baseAdj;
+    baseNodes = [{x: 0, z: 0}, {x: 100, z: 0}];
+    baseAdj = [[[1, 100, '校园道路']], [[0, 100, '校园道路']]];
+    const g = buildTempGraph({x: 50, z: 0}, {x: 50, z: 0});
+    const res = {same: g.same, dist: g.same ? 0 : null, sIdx: g.sIdx, tIdx: g.tIdx, nodeCount: g.nodes.length};
+    // 断开：移除起点所有出边 → 预期不可达
+    const g2 = buildTempGraph({x: 10, z: 0}, {x: 90, z: 0});
+    g2.adj = g2.adj.map((l, i) => i === g2.sIdx ? [] : l);
+    const r2 = dijkstra(g2, g2.sIdx, g2.tIdx);
+    res.unreachableWhenCut = !r2;
+    baseNodes = saveN; baseAdj = saveA;
+    return res;
+  },
+};
+// 开发调试入口：URL 加 ?debug=1（或 #debug）时才激活；普通用户不可见
+window.__nav.debug = {
+  on: false,
+  network: (f) => toggleNetwork(f),
+  gps: (f) => toggleGps(f),
+  pick: (f) => setPickMode(f),
+  follow: (f) => setFollowMode(f),
+};
+{
+  const dbg = new URLSearchParams(location.search).get('debug') || (location.hash.indexOf('debug') >= 0 ? '1' : '');
+  if (dbg && dbg !== '0') {
+    window.__nav.debug.on = true;
+    window.__nav.debug.network(true);
+    if (document.getElementById('stNote')) document.getElementById('stNote').textContent = ' — 调试模式：路网已显示，可用 __nav.debug.* 控制';
+  }
+}
 fitMap();
 addEventListener('resize', fitMap);
+
+// ---------- 非首屏资源延后加载（不挡交互） ----------
+// 手册与培养计划是两个独立页面，用户不点就不必现在下载
+(function(){
+  const idle = window.requestIdleCallback || (fn => setTimeout(fn, 1200));
+  idle(() => {
+    for (const href of ['handbook.html', 'curriculum.html']) {
+      const l = document.createElement('link');
+      l.rel = 'prefetch'; l.href = href;
+      document.head.appendChild(l);
+    }
+  }, { timeout: 3000 });
+})();
 </script>
 </body>
 </html>
