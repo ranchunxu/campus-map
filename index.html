@@ -358,11 +358,17 @@ mapViewport.addEventListener('touchend', e => {
   touchState = null;
 });
 
+// 分类是否放行该地点：分类只影响展示层，building 才受分类约束（校门/打卡点始终显示）
+function markerInCategory(f) {
+  const cat = document.getElementById('catFilter').value;
+  return !cat || f.kind !== 'building' || f.category === cat;
+}
 function handleMapClick(e) {
   const rect = mapViewport.getBoundingClientRect();
   const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-  // 检查是否点中标记
+  // 检查是否点中标记：鼠标与触摸都走这里，统一跳过被当前分类隐藏的标记
   for (const m of markerList) {
+    if (!markerInCategory(m.f)) continue;
     const mx = m.px * scale + offsetX, my = m.py * scale + offsetY;
     if (Math.hypot(sx - mx, sy - my) < 15) { showPanel(m.f); return; }
   }
@@ -392,6 +398,7 @@ const panelBody = document.getElementById('panelBody');
 window.panel = panel;
 function showPanel(f) {
   if (!f) { closePanel(); return; }
+  currentPanelFeature = f;
   for (const m of markerList) m.el.classList.toggle('highlight', m.f === f);
   let html = `<h3>${f.name}</h3>`;
   const catName = {dorm:'宿舍', teaching:'教学楼', food:'餐饮', sport:'体育', service:'服务', gate:'校门'}[f.category] || '';
@@ -450,8 +457,10 @@ function showPanel(f) {
   }
 }
 let pendingStatus = null;
+let currentPanelFeature = null;
 function closePanel() {
   panel.style.display = 'none';
+  currentPanelFeature = null;
   if (window.innerWidth <= 640) {
     if (navState || lastRoute) renderRoute();   // 恢复已保存的导航状态（正常/已到达/不可达）
     const footer = document.getElementById('footer');
@@ -1123,12 +1132,11 @@ q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault()
 document.getElementById('searchBtn').onclick = () => runSearch();
 // 分类切换：真正筛选地图标记与搜索结果；恢复全部分类恢复全部显示
 function applyCategoryFilter() {
-  const cat = catSel.value;
   for (const m of markerList) {
-    const f = m.f;
-    const inCat = !cat || f.kind !== 'building' || f.category === cat;
-    m.el.style.display = inCat ? '' : 'none';
+    m.el.style.display = markerInCategory(m.f) ? '' : 'none';
   }
+  // 当前详情已被分类排除 → 关闭弹窗，避免显示看不见的地点
+  if (currentPanelFeature && !markerInCategory(currentPanelFeature)) closePanel();
   noResult.style.display = 'none';
   if (q.value.trim()) renderSearchResults(); else clearResults();
 }
@@ -1187,6 +1195,14 @@ window.__nav = {
   get noResultVisible() { return noResult.style.display === 'block' || noResult.style.display === '' && getComputedStyle(noResult).display !== 'none'; },
   get panelVisible() { return panel.style.display !== 'none' && getComputedStyle(panel).display !== 'none'; },
   get panelTitle() { const h = panelBody.querySelector('h3'); return h ? h.textContent : ''; },
+  get panelFeatureId() { return currentPanelFeature ? currentPanelFeature.id : ''; },
+  markerInCategoryById: id => { const f = byId[id]; return f ? markerInCategory(f) : false; },
+  // 标记中心的视口坐标（供验收真实点击/触摸；几何与 handleMapClick 一致）
+  markerClientPoint(id, vpLeft, vpTop) {
+    const m = markerList.find(x => x.f.id === id);
+    if (!m) return null;
+    return {x: vpLeft + m.px * scale + offsetX, y: vpTop + m.py * scale + offsetY};
+  },
   setSearch: kw => { q.value = kw; q.dispatchEvent(new Event('input')); },
   runSearch: () => runSearch(),
   clickResult: i => { const li = resultsEl.querySelectorAll('li')[i]; if (li) li.click(); },
