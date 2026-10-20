@@ -442,7 +442,7 @@
       "id": "b08",
       "kind": "building",
       "category": "teaching",
-      "name": "第一阶梯教室",
+      "name": "申阶梯教室",
       "nameSource": "底图标注（第一阶梯教室）",
       "footprint": {
         "type": "polygon",
@@ -554,7 +554,7 @@
       "id": "b10",
       "kind": "building",
       "category": "sport",
-      "name": "兵操馆",
+      "name": "乒操馆",
       "nameSource": "wayfinding-map+plan-board (校方)",
       "footprint": {
         "type": "polygon",
