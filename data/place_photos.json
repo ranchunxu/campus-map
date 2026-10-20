@@ -1,0 +1,272 @@
+{
+ "g01": [
+  {
+   "no": 1,
+   "view": "大门（校名墙）",
+   "thumb": "01_g01_thumb.webp",
+   "full": "01_g01.webp",
+   "w": 1706,
+   "h": 1279
+  }
+ ],
+ "b21": [
+  {
+   "no": 2,
+   "view": "快递站",
+   "thumb": "02_b21_thumb.webp",
+   "full": "02_b21.webp",
+   "w": 1706,
+   "h": 1279
+  }
+ ],
+ "b26": [
+  {
+   "no": 3,
+   "view": "乐学楼",
+   "thumb": "03_b26_thumb.webp",
+   "full": "03_b26.webp",
+   "w": 1706,
+   "h": 1279
+  }
+ ],
+ "b25": [
+  {
+   "no": 4,
+   "view": "博学楼",
+   "thumb": "04_b25_thumb.webp",
+   "full": "04_b25.webp",
+   "w": 1706,
+   "h": 1279
+  }
+ ],
+ "b24": [
+  {
+   "no": 5,
+   "view": "勤学楼",
+   "thumb": "05_b24_thumb.webp",
+   "full": "05_b24.webp",
+   "w": 1279,
+   "h": 1706
+  }
+ ],
+ "b15": [
+  {
+   "no": 6,
+   "view": "弘毅苑（大门）",
+   "thumb": "06_b15_thumb.webp",
+   "full": "06_b15.webp",
+   "w": 1706,
+   "h": 1279
+  },
+  {
+   "no": 18,
+   "view": "弘毅苑（小门）",
+   "thumb": "18_b15_thumb.webp",
+   "full": "18_b15.webp",
+   "w": 2400,
+   "h": 1800
+  },
+  {
+   "no": 25,
+   "view": "弘毅苑（二楼）",
+   "thumb": "25_b15_thumb.webp",
+   "full": "25_b15.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b31": [
+  {
+   "no": 7,
+   "view": "操场（视角1）",
+   "thumb": "07_b31_thumb.webp",
+   "full": "07_b31.webp",
+   "w": 1706,
+   "h": 1279
+  }
+ ],
+ "b13": [
+  {
+   "no": 8,
+   "view": "申七宿舍（楼外全景）",
+   "thumb": "08_b13_thumb.webp",
+   "full": "08_b13.webp",
+   "w": 1706,
+   "h": 1279
+  },
+  {
+   "no": 22,
+   "view": "申七宿舍（入口）",
+   "thumb": "22_b13_thumb.webp",
+   "full": "22_b13.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b10": [
+  {
+   "no": 9,
+   "view": "乒操馆",
+   "thumb": "09_b10_thumb.webp",
+   "full": "09_b10.webp",
+   "w": 1706,
+   "h": 1279
+  }
+ ],
+ "b04": [
+  {
+   "no": 10,
+   "view": "拾光食集",
+   "thumb": "10_b04_thumb.webp",
+   "full": "10_b04.webp",
+   "w": 1706,
+   "h": 1279
+  }
+ ],
+ "b05": [
+  {
+   "no": 11,
+   "view": "学生活动中心",
+   "thumb": "11_b05_thumb.webp",
+   "full": "11_b05.webp",
+   "w": 1279,
+   "h": 1706
+  }
+ ],
+ "b06": [
+  {
+   "no": 12,
+   "view": "门诊部",
+   "thumb": "12_b06_thumb.webp",
+   "full": "12_b06.webp",
+   "w": 1706,
+   "h": 1279
+  }
+ ],
+ "b08": [
+  {
+   "no": 15,
+   "view": "申阶梯教室",
+   "thumb": "15_b08_thumb.webp",
+   "full": "15_b08.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b12": [
+  {
+   "no": 16,
+   "view": "申四宿舍",
+   "thumb": "16_b12_thumb.webp",
+   "full": "16_b12.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b16": [
+  {
+   "no": 17,
+   "view": "一站式社区",
+   "thumb": "17_b16_thumb.webp",
+   "full": "17_b16.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b02": [
+  {
+   "no": 19,
+   "view": "教育超市",
+   "thumb": "19_b02_thumb.webp",
+   "full": "19_b02.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "g03": [
+  {
+   "no": 21,
+   "view": "北门（内）",
+   "thumb": "21_g03_thumb.webp",
+   "full": "21_g03.webp",
+   "w": 2400,
+   "h": 1800
+  },
+  {
+   "no": 27,
+   "view": "北门（外）",
+   "thumb": "27_g03_thumb.webp",
+   "full": "27_g03.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b19": [
+  {
+   "no": 23,
+   "view": "申一宿舍（入口）",
+   "thumb": "23_b19_thumb.webp",
+   "full": "23_b19.webp",
+   "w": 2400,
+   "h": 1800
+  },
+  {
+   "no": 26,
+   "view": "申一宿舍（全景）",
+   "thumb": "26_b19_thumb.webp",
+   "full": "26_b19.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b23": [
+  {
+   "no": 24,
+   "view": "达理楼",
+   "thumb": "24_b23_thumb.webp",
+   "full": "24_b23.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b17": [
+  {
+   "no": 28,
+   "view": "申三宿舍",
+   "thumb": "28_b17_thumb.webp",
+   "full": "28_b17.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b30": [
+  {
+   "no": 29,
+   "view": "篮球场",
+   "thumb": "29_b30_thumb.webp",
+   "full": "29_b30.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b18": [
+  {
+   "no": 30,
+   "view": "申二宿舍",
+   "thumb": "30_b18_thumb.webp",
+   "full": "30_b18.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "b11": [
+  {
+   "no": 31,
+   "view": "申五宿舍（入口）",
+   "thumb": "31_b11_thumb.webp",
+   "full": "31_b11.webp",
+   "w": 2400,
+   "h": 1800
+  }
+ ]
+}
