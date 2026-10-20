@@ -79,6 +79,47 @@
     .marker.smallLbl .lbl{font-size:8px;padding:0 1px}
     .marker.lblAbove .lbl{top:auto;bottom:20px;transform:translateX(20px);}
   }
+  /* 校园照片：缩略图网格 + 点击放大 */
+  .phHead{color:#cfd6df;font-size:12px;margin:2px 0 6px;}
+  .phGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .phGrid.solo{grid-template-columns:1fr;}
+  .phItem{position:relative;padding:0;border:1px solid rgba(255,255,255,.14);border-radius:6px;overflow:hidden;
+    background:#000;cursor:zoom-in;line-height:0;aspect-ratio:4/3;}
+  .phGrid.solo .phItem{aspect-ratio:auto;}
+  .phItem img{width:100%;height:100%;object-fit:cover;display:block;}
+  .phGrid.solo .phItem img{height:auto;object-fit:contain;}
+  .phCap{position:absolute;left:0;right:0;bottom:0;padding:2px 4px;font-size:10px;line-height:1.3;color:#fff;
+    background:linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,0));text-align:left;}
+  #photoViewer{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.9);display:flex;flex-direction:column;opacity:1;}
+  #photoViewer .pvBar{display:flex;align-items:center;gap:8px;padding:10px 14px;color:#e8eaed;font-size:13px;}
+  #photoViewer .pvT{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #photoViewer .pvZ span,#photoViewer .pvX{display:inline-flex;align-items:center;justify-content:center;
+    min-width:36px;min-height:36px;cursor:pointer;border-radius:6px;background:rgba(255,255,255,.12);margin-left:6px;}
+  #photoViewer .pvStage{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:0 12px 12px;}
+  #photoViewer .pvStage img{max-width:100%;max-height:100%;overflow:hidden;transform-origin:center;transition:transform .12s;will-change:transform;touch-action:none;user-select:none;-webkit-user-drag:none;}
+  #photoViewer .pvMsg{width:100%;max-width:320px;margin:auto;padding:18px 16px;border-radius:10px;text-align:center;
+    color:#e8eaed;font-size:14px;line-height:1.7;background:rgba(255,255,255,.08);}
+  #photoViewer .pvMsg .pvIcon{font-size:22px;line-height:1.2;margin-bottom:6px;}
+  #photoViewer .pvMsg .pvSub{font-size:12px;color:#9aa0a6;word-break:break-all;}
+  #photoViewer.loading .pvStage img,#photoViewer.error .pvStage img{display:none;}
+  #photoViewer .pvLoad,#photoViewer .pvErr{display:none;}
+  #photoViewer.loading .pvLoad{display:block;}
+  #photoViewer.error .pvErr{display:block;}
+  #photoViewer.error .pvZ{display:none;}
+  /* 按钮内部容器不得被 .pvZ span 的 layout 规则抢走（曾导致 .pvBtns 宽度归零） */
+  #photoViewer .pvBtns{display:flex;gap:10px;justify-content:center;margin-top:12px;}
+  #photoViewer .pvBtn{display:flex;align-items:center;justify-content:center;min-height:40px;min-width:88px;padding:0 16px;
+    border-radius:8px;cursor:pointer;font-size:14px;font-weight:400;color:#e8eaed;background:rgba(255,255,255,.14);}
+  #photoViewer .pvBtn.primary{background:#2f6bff;color:#fff;}
+  #photoViewer .pvBtn:active{filter:brightness(.9);}
+  #photoViewer .pvSpin{width:24px;height:24px;margin:0 auto 8px;border:2px solid rgba(255,255,255,.25);
+    border-top-color:#fff;border-radius:50%;animation:pvSpin .8s linear infinite;}
+  @keyframes pvSpin{to{transform:rotate(360deg);}}
+  /* 手机端照片：3 列缩略图，一行放下同地点全部视角，减少弹窗滚动（须置于基础样式之后才生效） */
+  @media (max-width:640px){
+    .phGrid{grid-template-columns:repeat(3,1fr);gap:4px;}
+    .phGrid.solo{grid-template-columns:1fr;}
+  }
 </style>
 </head>
 <body>
@@ -115,15 +156,17 @@
 </div>
 <script type="module">
 // ---------- 数据 ----------
-// 底图 265KB 走 <picture> 先渲染，JSON 三件并行拉；全部就位再初始化交互
-const [resp, phmResp, roadNetResp] = await Promise.all([
-  fetch('./data/campus.json'),
-  fetch('./data/place_handbook_map.json'),
-  fetch('./data/road_network.json'),
+// 底图 265KB 走 <picture> 先渲染；四件 JSON 并行拉（照片清单 4KB，不拖首屏）
+const parseSafe = async (p) => { try { return await (await fetch(p)).json(); } catch (e) { return null; } };
+const [data, phm, roadNet, photosJson] = await Promise.all([
+  parseSafe('./data/campus.json'),
+  parseSafe('./data/place_handbook_map.json'),
+  parseSafe('./data/road_network.json'),
+  parseSafe('./data/place_photos.json'),
 ]);
-const data = await resp.json();
-const phm = await phmResp.json();
-const roadNet = await roadNetResp.json();
+if (!data) throw new Error('campus.json 加载失败');
+// 照片清单：只含文件名与尺寸，不含图片本体；缩略图随详情按需加载
+const placePhotos = photosJson || {};
 const meta = data.meta;
 const HIDDEN = new Set(['b03','b14','c01','c02','c03']);
 const feats = data.features.filter(f => f.kind === 'road' || !HIDDEN.has(f.id));
@@ -411,7 +454,7 @@ function showPanel(f) {
     });
     html += '</div>';
   }
-  if (f.kind === 'building') html += '<div id="photoSlot" style="margin:8px 0"></div>';
+  if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') html += '<div id="photoSlot" style="margin:8px 0"></div>';
   if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') {
     // 起点/终点操作区：按「用户是否已主动选起点」和「本地点是否为当前起点」分三态
     // 用地点 ID（routeStartId）判定是否同一地点，不用名称/坐标猜测
@@ -444,17 +487,126 @@ function showPanel(f) {
     if (footer) footer.style.display = 'none';
     relayoutBelow();
   }
-  if (f.kind === 'building') {
-    const slot = document.getElementById('photoSlot');
-    const img = new Image();
-    img.onload = () => {
-      img.style.cssText = 'width:100%;border-radius:8px;display:block';
-      slot.innerHTML = '<div style="color:#9aa0a6;font-size:11px;margin-bottom:2px">实拍照片</div>';
-      slot.appendChild(img);
-    };
-    img.onerror = () => { slot.innerHTML = '<div style="color:#9aa0a6">📷 暂无实拍照片 · 欢迎提供</div>'; };
-    img.src = './photos/' + encodeURIComponent(f.name) + '.jpg';
+  // 带照片的详情：手机端由 hasPhotos 加高弹窗（见移动端 CSS）
+  const phList = placePhotos[f.id] || [];
+  const hasPhotos = phList.length > 0;
+  panel.classList.toggle('hasPhotos', hasPhotos);
+  panel.style.display = 'block';
+  if (window.innerWidth <= 640) {
+    routeInfo.style.display = 'none';
+    locStatus.style.display = 'none';
+    const footer = document.getElementById('footer');
+    if (footer) footer.style.display = 'none';
+    relayoutBelow();
   }
+  if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') renderPlacePhotos(f);
+}
+// ---------- 地点照片（按地点 ID 关联，支持同地点多视角） ----------
+let photoPanelToken = 0;   // 每次打开详情递增，丢弃过期回调，防止上一处照片串入当前面板
+function renderPlacePhotos(f) {
+  const slot = document.getElementById('photoSlot');
+  if (!slot) return;
+  const token = ++photoPanelToken;
+  const list = (placePhotos[f.id] || []);
+  if (!list.length) { slot.innerHTML = '<div style="color:#9aa0a6">📷 暂无实拍照片</div>'; return; }
+  const grid = list.map((p, i) =>
+    '<button type="button" class="phItem" data-i="' + i + '" aria-label="查看' + p.view + '大图">' +
+    '<img src="./photos/' + p.thumb + '" alt="' + f.name + ' · ' + p.view + '" loading="lazy" decoding="async" style="object-fit:contain">' +
+    (list.length > 1 ? '<span class="phCap">' + p.view + '</span>' : '') +
+    '</button>').join('');
+  slot.innerHTML = '<div class="phHead">📷 校园照片（' + list.length + ' 张）</div>' +
+    '<div class="phGrid' + (list.length === 1 ? ' solo' : '') + '">' + grid + '</div>';
+  slot.querySelectorAll('.phItem').forEach(btn => {
+    btn.onclick = () => openPhotoViewer(list[+btn.dataset.i], f);
+  });
+}
+// 点缩略图才加载高清图；查看器挂在 body 上，不随面板重绘丢失
+function openPhotoViewer(p, f) {
+  closePhotoViewer();
+  const ov = document.createElement('div');
+  ov.id = 'photoViewer';
+  ov.innerHTML = '<div class="pvBar"><span class="pvT">' + f.name + (p.view && p.view !== f.name ? ' · ' + p.view : '') +
+    '</span><span class="pvZ"><span role="button" data-z="fit">适应</span><span role="button" data-z="in">＋</span><span role="button" data-z="out">－</span></span>' +
+    '<span class="pvX" role="button" aria-label="关闭">✕</span></div>' +
+    '<div class="pvStage"><div class="pvMsg pvLoad" role="status" aria-live="polite"><div class="pvSpin"></div>' +
+    '正在加载高清图…<div class="pvSub" style="margin-top:4px">点右上角 ✕ 可随时关闭</div>' +
+    '<div class="pvBtns"><span class="pvBtn" role="button" tabindex="0" data-act="close">关闭</span></div></div>' +
+    '<div class="pvMsg pvErr" role="alert"><div class="pvIcon">⚠️</div>高清图加载失败' +
+    '<div class="pvSub">' + p.full + '</div>' +
+    '<div class="pvBtns"><span class="pvBtn primary" role="button" tabindex="0" data-act="retry">重试</span>' +
+    '<span class="pvBtn" role="button" tabindex="0" data-act="close">关闭</span></div></div>' +
+    '<img alt="' + f.name + '"></div>';
+  document.body.appendChild(ov);
+  ov.classList.add('loading');
+  const img = ov.querySelector('img');
+  let scale = 1;
+  let tx = 0, ty = 0;
+  // 放大后保持比例、支持拖动查看门牌等细节（图片自身 overflow 裁切，不撑破弹窗）
+  const apply = () => { img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')'; img.style.cursor = scale > 1 ? 'grab' : 'zoom-in'; };
+  const load = () => {   // 首次与重试共用：保持同一路径，失败后可原样重试
+    ov.classList.remove('ready', 'error');
+    ov.classList.add('loading');
+    img.style.transform = '';
+    scale = 1; tx = 0; ty = 0; apply();
+    img.src = './photos/' + p.full;
+    img.decoding = 'async';   // 大图（200~370KB）解码不占主线程，弹窗先出来
+  };
+  img.onload = () => {
+    if (!ov.isConnected) return;
+    ov.classList.remove('loading', 'error');
+    ov.classList.add('ready');
+  };
+  img.onerror = () => {
+    if (!ov.isConnected) return;
+    ov.classList.remove('loading', 'ready');
+    ov.classList.add('error');
+  };
+  load();   // 高清仅在用户点击后加载
+  let drag = null;
+  img.onpointerdown = e => {
+    if (scale <= 1) {   // 未放大时点图即放大，等效于「＋」
+      scale = 1.5; apply(); return;
+    }
+    drag = { x: e.clientX, y: e.clientY, tx, ty };
+    img.setPointerCapture(e.pointerId);
+    img.style.cursor = 'grabbing';
+  };
+  img.onpointermove = e => {
+    if (!drag) return;
+    const st = ov.querySelector('.pvStage');
+    const maxX = Math.max(0, (img.offsetWidth * scale - st.clientWidth) / 2);
+    const maxY = Math.max(0, (img.offsetHeight * scale - st.clientHeight) / 2);
+    tx = Math.max(-maxX, Math.min(maxX, drag.tx + e.clientX - drag.x));
+    ty = Math.max(-maxY, Math.min(maxY, drag.ty + e.clientY - drag.y));
+    apply();
+  };
+  img.onpointerup = () => { drag = null; apply(); };
+  ov.querySelectorAll('[data-z]').forEach(el => {
+    el.onclick = e => {
+      e.stopPropagation();
+      const z = el.dataset.z;
+      scale = z === 'in' ? Math.min(4, scale * 1.5) : z === 'out' ? Math.max(1, scale / 1.5) : 1;
+      if (scale === 1) { tx = 0; ty = 0; }
+      apply();
+    };
+  });
+  ov.querySelector('.pvX').onclick = closePhotoViewer;
+  // 加载中/失败面板上的按钮：重试重新拉图，关闭移除节点（与 ✕ 等价）
+  ov.querySelectorAll('[data-act]').forEach(el => {
+    el.onclick = e => {
+      e.stopPropagation();
+      if (el.dataset.act === 'retry') load();
+      else closePhotoViewer();
+    };
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } };
+  });
+  ov.querySelector('.pvStage').onclick = e => { if (e.target === ov.querySelector('.pvStage')) closePhotoViewer(); };
+  const onKey = e => { if (e.key === 'Escape') { closePhotoViewer(); document.removeEventListener('keydown', onKey); } };
+  document.addEventListener('keydown', onKey);
+}
+function closePhotoViewer() {
+  const ov = document.getElementById('photoViewer');
+  if (ov) { ov.remove(); }
 }
 let pendingStatus = null;
 let currentPanelFeature = null;
@@ -942,7 +1094,10 @@ function relayoutBelow() {
   if (panel) {
     panel.style.top = belowTb + 'px';
     panel.style.bottom = 'auto';
-    panel.style.maxHeight = Math.max(60, window.innerHeight - belowTb - 4) + 'px';
+    // 带照片详情允许多用下方空间（照片区在弹窗内滚动），无照片详情高度不变
+    const avail = window.innerHeight - belowTb - 4;
+    const limit = panel.classList.contains('hasPhotos') ? Math.round(window.innerHeight * 0.62) : avail;
+    panel.style.maxHeight = Math.max(60, Math.min(avail, limit)) + 'px';
   }
 }
 function showStatus(t) {
@@ -1177,6 +1332,10 @@ window.dataInfo = dataInfo;
 // 测试/调试钩子（供自动化验收读取内部状态）
 window.__nav = {
   byId, showPanel, closePanel, renderRoute, clearRoute,
+  features: feats,   // 供验收脚本按名称定位地点
+  get placePhotoKeys() { return Object.keys(placePhotos); },
+  photoOf(id) { return placePhotos[id] || []; },
+  get photoOpenToken() { return photoPanelToken; },
   get baseNodeCount() { return baseNodes.length; },
   get baseEdgeCount() { return baseAdj.reduce((s, l) => s + l.length, 0); },
   get navState() { return navState; },
