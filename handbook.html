@@ -78,7 +78,7 @@ main{margin-left:300px;padding:0 0 90px}
   backdrop-filter:blur(10px);border-bottom:1px solid var(--line-2)}
 #searchBar .sbwrap{max-width:1140px;margin:0 auto;padding:12px 44px;display:flex;flex-direction:column;gap:6px}
 #searchBar .sbrow{display:flex;align-items:center;gap:12px}
-#searchBox{position:relative;flex:1;max-width:560px}
+#searchBox{position:relative;flex:1;max-width:720px}
 #searchBox input{width:100%;padding:10px 40px 10px 38px;border-radius:999px;border:1px solid var(--line-2);
   background:#fff;color:var(--ink);font-size:13.5px;outline:none;box-shadow:var(--shadow-1);
   transition:border .25s,box-shadow .25s}
@@ -87,7 +87,6 @@ main{margin-left:300px;padding:0 0 90px}
 #searchBox .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none}
 #searchBox .kbd{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);
   border:1px solid var(--line-2);border-radius:6px;padding:1px 6px;pointer-events:none;background:var(--paper-2)}
-#searchHint{font-size:11px;color:var(--muted);white-space:nowrap;letter-spacing:.3px}
 #searchResults{display:none;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);
   box-shadow:var(--shadow-2);overflow:hidden}
 #searchResults.show{display:block}
@@ -285,7 +284,6 @@ footer.foot .footnote{margin-top:14px;font-size:11.5px;color:#9aa0ae;letter-spac
   cursor:pointer;transition:background .2s}
 #topbar .burger:hover{background:var(--navy-2)}
 #topbar .tt{font-size:13.5px;font-weight:700;letter-spacing:1px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#topbar .vv{font-size:10.5px;color:#7e8598;white-space:nowrap}
 #backdrop{position:fixed;inset:0;background:rgba(8,12,22,.55);opacity:0;pointer-events:none;transition:opacity .3s;z-index:94}
 #backdrop.show{opacity:1;pointer-events:auto}
 
@@ -310,7 +308,6 @@ footer.foot .footnote{margin-top:14px;font-size:11.5px;color:#9aa0ae;letter-spac
   .wrap{padding:0 18px}
   #searchBar .sbwrap{padding:10px 18px}
   #searchBar .sbrow{flex-wrap:wrap}
-  #searchHint{font-size:10.5px}
   body{font-size:14.5px}
   .mast{gap:16px}
   .sch{font-size:11px;letter-spacing:2px}
@@ -335,7 +332,6 @@ footer.foot .footnote{margin-top:14px;font-size:11.5px;color:#9aa0ae;letter-spac
 <div id="topbar">
   <button class="burger" id="burger" aria-label="打开目录">☰</button>
   <span class="tt">大学信息差大白话手册</span>
-  <span class="vv">2026级 · 电信类</span>
 </div>
 <div id="backdrop"></div>
 
@@ -400,7 +396,6 @@ footer.foot .footnote{margin-top:14px;font-size:11.5px;color:#9aa0ae;letter-spac
         <input id="searchInput" type="text" placeholder="搜索手册…（标题 / 正文 / 拼音首字母，如 dlfl）" autocomplete="off" aria-label="搜索手册">
         <span class="kbd">Ctrl K</span>
       </div>
-      <span id="searchHint">Esc 关闭 · ↑↓ 选择 · 回车跳转</span>
     </div>
     <div id="searchResults"></div>
   </div>
