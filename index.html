@@ -2,26 +2,33 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>上海理工大学基础学院 · 校园导览</title>
 <meta name="description" content="上海理工大学基础学院军工路1100号校区导览：楼栋定位、出入口、步行路径规划与新生手册。">
 <link rel="preload" as="image" href="./data/treefree.webp" fetchpriority="high">
 <link rel="preload" as="fetch" href="./data/campus.json" crossorigin="anonymous">
 <style>
+  /* 安全区与动态视口：--sTop/--sBot 由 JS 依据设备安全区写入，--appH/--appTop 依据 visualViewport 写入 */
+  :root{--sTop:0px;--sBot:0px;--appH:100vh;--appTop:0px;}
   /* 首屏就位前铺一层底色，避免白闪（与 body 同色，图到位后被覆盖） */
   html::before{content:'';position:fixed;inset:0;z-index:0;background:#a9c4dd;}
   html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:"Microsoft YaHei",sans-serif;background:#a9c4dd;}
-  #app{position:relative;width:100%;height:100%;}
+  /* 高度由 JS 按 visualViewport 写入（--appH / --appTop），地址栏收起/展开时不再依赖固定 100% */
+  #app{position:relative;left:0;width:100%;height:100%;top:0;}
+  /* 地图视口：overflow 裁切；底图/标记/路线统一由 offset+scale 变换，缩放时锚点处内容保持不动 */
   #mapViewport{position:absolute;inset:0;z-index:1;overflow:hidden;cursor:grab;touch-action:none;}
   #mapViewport.dragging{cursor:grabbing;}
   #mapLayer{position:absolute;top:0;left:0;transform-origin:0 0;}
   #mapLayer picture{display:block;}
   #groundImg{display:block;width:1452px;height:1083px;user-select:none;-webkit-user-drag:none;}
   #overlay{position:absolute;inset:0;z-index:2;pointer-events:none;}
+  /* 标记外层只做像素定位（固定 28px 透明触控区），不随地图 scale 变形 */
   .marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;z-index:3;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
-  .marker .dot{width:8px;height:8px;border-radius:50%;background:#2f7bff;box-shadow:0 0 0 1.5px rgba(255,255,255,.8),0 1px 2px rgba(0,0,0,.4);}
+  .marker .dot{box-sizing:border-box;width:8px;height:8px;border:0;border-radius:50%;background:#2f7bff;box-shadow:0 0 0 1.5px rgba(255,255,255,.8),0 1px 2px rgba(0,0,0,.4);}
   .marker .lbl{position:absolute;left:50%;top:11px;transform:translateX(-50%);color:rgba(255,255,255,.95);font-size:10px;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.9);padding:0 3px;background:rgba(0,0,0,.42);border-radius:2px;pointer-events:none;}
   .marker.smallLbl .lbl{font-size:9px;padding:0 2px;}
+  /* 公共浴室 b07：文字置于圆点正上方并水平居中（原 translateX(20px) 会压住门诊部标签） */
+  .marker.lblAbove .lbl{top:auto;bottom:22px;transform:translateX(-50%);}
   .marker.pending .dot{background:#fdd663;border-style:dashed;}
   .marker.gate .dot{background:#4aa3ff;}
   .marker.checkin .dot{background:#ff6b6b;}
@@ -29,20 +36,37 @@
   .marker.labelOnly .lbl{font-size:11px;padding:1px 4px;background:rgba(0,0,0,.55);}
   .marker.highlight .dot{background:#ffb020;box-shadow:0 0 10px rgba(255,176,32,.7);}
   .marker.highlight .lbl{color:#ffd166;font-weight:bold;}
+  /* 定位点固定像素尺寸（边框计入 box-sizing），只跟随坐标、不随缩放变形 */
   #meMarkerEl{position:absolute;transform:translate(-50%,-50%);z-index:6;pointer-events:none;}
-  #meMarkerEl .dot{width:16px;height:16px;border-radius:50%;background:#2f7bff;border:3px solid #fff;box-shadow:0 0 8px rgba(47,123,255,.6);}
-  #routeSvg{position:absolute;inset:0;z-index:4;pointer-events:none;}
+  #meMarkerEl .dot{box-sizing:border-box;width:16px;height:16px;border:3px solid #fff;border-radius:50%;
+    background:#2f7bff;box-shadow:0 0 8px rgba(47,123,255,.6);}
+  /* 缩放控件：吸附在地图视口右下角，电脑/手机同一套，手机 44x44 触控 */
+  #zoomCtl{position:absolute;right:12px;bottom:56px;z-index:8;filter:drop-shadow(0 2px 5px rgba(0,0,0,.28));display:flex;flex-direction:column;gap:8px;}
+  #zoomCtl button{box-sizing:border-box;width:40px;height:40px;padding:0;border-radius:10px;cursor:pointer;
+    border:1px solid rgba(255,255,255,.5);background:rgba(25,28,36,.95);color:#fff;
+    font-size:16px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+  #zoomCtl #zoomReset{font-size:12px;font-weight:400;}
+  #zoomCtl button:active{background:rgba(138,180,248,.35);}
+  #routeSvg{position:absolute;top:0;left:0;z-index:4;pointer-events:none;overflow:visible;transform-origin:0 0;}
   #banner{position:absolute;top:0;left:0;right:0;z-index:20;background:rgba(20,24,32,.88);color:#e8eaed;
-    padding:6px 16px;font-size:13px;line-height:1.4;border-bottom:1px solid rgba(255,255,255,.08);
+    padding:calc(6px + var(--sTop,0px)) 16px 6px;font-size:13px;line-height:1.4;border-bottom:1px solid rgba(255,255,255,.08);
     display:flex;align-items:baseline;gap:8px;}
   #banner b{color:#ffd166;font-size:14px;}
   #infoBtn{margin-left:auto;cursor:pointer;color:#8ab4f8;font-size:12px;white-space:nowrap;}
-  #panel{position:absolute;top:60px;right:12px;z-index:20;width:300px;max-height:70vh;overflow:auto;
+  #helpBtn{margin-left:auto;cursor:pointer;color:#8ab4f8;font-size:12px;white-space:nowrap;}
+  #helpBtn + #infoBtn{margin-left:8px;}
+  /* 详情面板：手机为可展开的底部面板（标题/操作固定，正文独立滚动），桌面保持右上浮窗 */
+  #panel{position:absolute;top:60px;right:12px;z-index:20;width:300px;max-height:70vh;overflow:auto;box-sizing:border-box;
     background:rgba(25,28,36,.94);color:#e8eaed;border-radius:10px;padding:14px 16px;display:none;
     box-shadow:0 8px 30px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);font-size:13px;line-height:1.7;}
   #panel h3{margin:0 0 8px;font-size:16px;color:#fff;}
-
-  #panel .close{position:absolute;top:8px;right:12px;cursor:pointer;color:#9aa0a6;font-size:16px;}
+  #panel .pHd{display:flex;align-items:flex-start;gap:8px;}
+  #panel .pHd h3{margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  #panel .pActs{display:flex;gap:6px;flex:none;}
+  #panel .pBlk{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:28px;
+    padding:0 8px;border-radius:6px;background:rgba(255,255,255,.1);color:#e8eaed;font-size:13px;cursor:pointer;line-height:1;}
+  #panel .pBlk:active{background:rgba(138,180,248,.35);}
+  #panel #panelClose{font-size:15px;}
   #tip{position:absolute;bottom:12px;left:12px;z-index:20;color:#d5d9de;font-size:12px;
     background:rgba(20,24,32,.7);padding:6px 10px;border-radius:6px;}
   #search{position:absolute;top:60px;left:12px;z-index:20;width:250px;display:flex;flex-direction:column;gap:6px;}
@@ -55,6 +79,10 @@
   #search button#searchBtn{padding:8px 12px;border:0;border-radius:8px;background:#8ab4f8;color:#12203a;font-size:13px;cursor:pointer;flex:none;}
   #search .hint{color:#eef;font-size:11px;text-shadow:0 1px 2px rgba(0,0,0,.6);}
   #search select{width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(25,28,36,.9);color:#fff;font-size:12px;outline:none;}
+  /* 第二行：地点分类 / 导航起点 两列等宽，标签各自在控件上方 */
+  #search .fldRow{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:start;}
+  #search .fldRow .fld{min-width:0;}
+  #search .fldRow select{text-overflow:ellipsis;}
   #noResult{color:#f28b82;font-size:11px;display:none}
   #searchResults{list-style:none;margin:0;padding:0;background:rgba(25,28,36,.96);border:1px solid rgba(255,255,255,.14);
     border-radius:8px;max-height:240px;overflow:auto;display:none;}
@@ -62,22 +90,50 @@
   #searchResults li:last-child{border-bottom:0;}
   #searchResults li:hover{background:rgba(138,180,248,.18);}
   #searchResults li .rsub{color:#9aa0a6;font-size:11px;margin-left:6px;}
-  @media (max-width:640px){
+  @media (max-width:640px), (max-height:500px){
     html,body{background:#eef0f3}
     #banner{font-size:12px;padding:4px 10px;line-height:1.35;white-space:nowrap;overflow:visible;gap:6px}
     #banner b{font-size:13px}
     #infoBtn{font-size:11px}
-    #search{top:36px;left:8px;right:8px;width:auto}
+    #search{top:calc(36px + var(--sTop,0px));left:8px;right:8px;width:auto}
     #search input,#search select,#search button#searchBtn{min-height:44px;font-size:14px}
     #search .fld>label{font-size:12px}
     #searchResults{max-height:44vh;}
-    #panel{top:auto;left:8px;right:8px;width:auto;max-height:42vh;bottom:96px}
+    /* 手机详情：底部可展开面板。高度按 --appH（visibleViewport）算，操作固定可见、正文独立滚动 */
+    #panel{top:auto;left:8px;right:8px;width:auto;bottom:calc(8px + var(--sBot,0px));
+      /* 详情必须压在工具栏(20)之上，否则照片下半部被「新生手册」按钮盖住且点击被抢走 */
+      z-index:26;
+      max-height:calc(var(--appH) * .46);
+      display:none;flex-direction:column;overflow:hidden;padding:10px 12px 0;box-sizing:border-box;
+      border-radius:14px 14px 10px 10px;}
+    #panel.expanded{top:calc(var(--appTop,0px) + 8px + var(--sTop,0px)) !important;bottom:calc(8px + var(--sBot,0px));
+      max-height:none;border-radius:12px;}
+    #panel .pHd{flex:none;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.1);align-items:center;}
+    #panel .pHd h3{font-size:15px;line-height:1.3;}
+    #panel .pBlk{min-width:44px;min-height:44px;font-size:14px;}
+    #panel #panelExpand{display:inline-flex;}
+    #panel .pBody{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 0 12px;}
+    #panel .pBody h3{display:none;}
+    #panel .pFoot{flex:none;display:flex;gap:8px;padding:8px 0 calc(8px + var(--sBot,0px));}
     #tip{display:none}
     #routeInfo{left:8px !important;right:8px !important;max-width:none !important;max-height:36vh}
-    .toolBar button{padding:5px 6px !important;font-size:11px !important}
+    /* 工具栏两钮并排等宽、高度 ≥44、字号 ≥14（不再压字压内边距） */
+    .toolBar{left:8px;right:8px;gap:8px;max-width:none;flex-wrap:nowrap;}
+    .toolBar button{flex:1 1 0;min-width:0;min-height:44px;padding:0 10px !important;font-size:14px !important;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #meMarkerEl .dot{width:16px;height:16px;}
+    #zoomCtl{right:8px;bottom:8px;gap:6px;}
+    #zoomCtl button{width:44px;height:44px;font-size:18px;}
+    #zoomCtl #zoomReset{font-size:13px;}
     .marker .lbl{font-size:9px;padding:0 2px}
     .marker.smallLbl .lbl{font-size:8px;padding:0 1px}
-    .marker.lblAbove .lbl{top:auto;bottom:20px;transform:translateX(20px);}
+    /* 相邻标记密集：圆点显式 7px 外径、无边框，背景改由 box-shadow 画描边，避免默认边框撑大 */
+    .marker .dot{box-sizing:border-box;width:7px;height:7px;border:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.4);}
+    /* 横屏：搜索区在左、地图在右，工具栏改为竖排贴左列下沿，两钮各占一半高度（仍 ≥44） */
+    .toolBar.isCol{flex-direction:column;flex-wrap:nowrap;gap:6px;right:auto;max-width:none;}
+    .toolBar.isCol button{flex:0 0 auto;width:100%;min-height:44px;}
+    #search{max-width:calc(100vw - 16px);}
+    #search .fldRow select{min-width:0;width:100%;}
   }
   /* 校园照片：缩略图网格 + 点击放大 */
   .phHead{color:#cfd6df;font-size:12px;margin:2px 0 6px;}
@@ -116,21 +172,70 @@
     border-top-color:#fff;border-radius:50%;animation:pvSpin .8s linear infinite;}
   @keyframes pvSpin{to{transform:rotate(360deg);}}
   /* 手机端照片：3 列缩略图，一行放下同地点全部视角，减少弹窗滚动（须置于基础样式之后才生效） */
-  @media (max-width:640px){
+  @media (max-width:640px), (max-height:500px){
     .phGrid{grid-template-columns:repeat(3,1fr);gap:4px;}
     .phGrid.solo{grid-template-columns:1fr;}
   }
+  /* 使用说明弹层：入口在标题栏「❓ 使用说明」，可重复打开，关闭后地图操作恢复 */
+  #helpOv{position:fixed;left:0;top:var(--appTop,0px);width:100%;height:var(--appH,100vh);z-index:95;
+    background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;}
+  #helpOv[hidden]{display:none;}
+  #helpOv .hCard{width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;
+    background:rgba(25,28,36,.98);color:#e8eaed;border:1px solid rgba(255,255,255,.12);border-radius:12px;
+    box-shadow:0 10px 40px rgba(0,0,0,.6);overflow:hidden;}
+  #helpOv .hHd{flex:none;display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.1);font-size:15px;}
+  #helpOv .hHd b{color:#ffd166;flex:1;}
+  #helpOv .hX{flex:none;display:inline-flex;align-items:center;justify-content:center;
+    box-sizing:border-box;width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.12);cursor:pointer;font-size:15px;}
+  #helpOv .hBody{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;font-size:13px;line-height:1.75;}
+  #helpOv ol{margin:0;padding-left:20px;}
+  #helpOv li{margin-bottom:8px;}
+  #helpOv li b{color:#8ab4f8;font-weight:600;}
+  #helpOv .hNote{color:#9aa0a6;font-size:12px;border-top:1px dashed rgba(255,255,255,.16);padding-top:8px;margin-top:2px;}
+  #helpOv .hFt{flex:none;display:flex;justify-content:flex-end;padding:10px 14px calc(10px + var(--sBot,0px));border-top:1px solid rgba(255,255,255,.1);}
+  #helpOv .hBtn{display:inline-flex;align-items:center;justify-content:center;min-width:88px;min-height:40px;padding:0 16px;
+    border-radius:8px;background:#2f6bff;color:#fff;font-size:14px;cursor:pointer;}
+  #helpOv .hBtn:active{filter:brightness(.9);}
+  @media (max-width:640px), (max-height:500px){
+    #helpOv .hCard{width:100%;max-height:100%;}
+    #helpOv .hX{width:44px;height:44px;font-size:16px;}
+    #helpOv .hBtn{min-height:44px;font-size:15px;}
+    #helpOv .hBody{font-size:14px;}
+  }
+  /* 横屏手机（可见高度 ≤500）：搜索区收窄到左侧，分类/起点紧凑并排，
+     地图占据右侧。字号放到 16px 防 iOS 聚焦自动放大，点击区仍保持 ≥44 */
+  @media (max-height:500px) and (orientation:landscape){
+    #search{width:210px;right:auto;}
+    #search .fldRow{gap:4px;}
+    #search input,#search select,#search button#searchBtn{font-size:16px;padding:6px 8px;}
+    #search .fld>label{font-size:11px;}
+    #search .hint{display:none;}
+    #searchResults{max-height:38vh;}
+    /* 详情面板在横屏改成右侧半屏，不压住左列控件 */
+    #panel{left:calc(210px + 24px);right:8px;top:calc(8px + var(--sTop,0px)) !important;
+      bottom:calc(8px + var(--sBot,0px));max-height:none;}
+    #panel.expanded{left:calc(210px + 24px);top:calc(8px + var(--sTop,0px)) !important;}
+    /* 横屏面板已是整高，无需「展开/收起」 */
+    #panel #panelExpand{display:none !important;}
+    #routeInfo{left:8px !important;right:auto !important;width:210px;}
+  }
+
 </style>
 </head>
 <body>
 <div id="app">
   <div id="mapViewport">
-    <div id="mapLayer"><picture><source srcset="./data/treefree.webp" type="image/webp"><img id="groundImg" src="./data/treefree.png" alt="校区平面图" fetchpriority="high" decoding="async"></picture></div>
-    <svg id="routeSvg"></svg>
-    <div id="overlay"></div>
-    <div id="meMarkerEl" style="display:none"><div class="dot"></div></div>
+      <div id="mapLayer"><picture><source srcset="./data/treefree.webp" type="image/webp"><img id="groundImg" src="./data/treefree.png" alt="校区平面图" fetchpriority="high" decoding="async"></picture></div>
+      <svg id="routeSvg"></svg>
+      <div id="overlay"></div>
+      <div id="meMarkerEl" style="display:none"><div class="dot"></div></div>
+    <div id="zoomCtl" role="group" aria-label="地图缩放">
+      <button type="button" id="zoomIn" aria-label="放大">＋</button>
+      <button type="button" id="zoomOut" aria-label="缩小">－</button>
+      <button type="button" id="zoomReset" aria-label="恢复原图">恢复</button>
+    </div>
   </div>
-  <div id="banner"><b id="stTitle">加载中…</b><span id="infoBtn">ℹ️ 数据说明</span></div>
+  <div id="banner"><b id="stTitle">加载中…</b><span id="helpBtn" role="button" tabindex="0" aria-label="使用说明">❓ 使用说明</span><span id="infoBtn" role="button" tabindex="0">ℹ️ 数据说明</span></div>
   <div id="search">
     <div class="fld">
       <label for="q">搜索地点</label>
@@ -140,33 +245,63 @@
       </div>
     </div>
     <ul id="searchResults" aria-label="搜索结果"></ul>
-    <div class="fld">
-      <label for="catFilter">地点分类</label>
-      <select id="catFilter" aria-label="地点分类"><option value="">全部分类</option></select>
-    </div>
-    <div class="fld">
-      <label for="startPick">导航起点</label>
-      <select id="startPick" aria-label="导航起点"><option value="__ph__">请选择起点</option></select>
+    <div class="fldRow">
+      <div class="fld">
+        <label for="catFilter">地点分类</label>
+        <select id="catFilter" aria-label="地点分类"><option value="">全部分类</option></select>
+      </div>
+      <div class="fld">
+        <label for="startPick">导航起点</label>
+        <select id="startPick" aria-label="导航起点"><option value="__ph__">请选择起点</option></select>
+      </div>
     </div>
     <div class="hint">回车或点搜索定位；点结果看信息；拖动平移</div>
     <div id="noResult">未找到该地点</div>
   </div>
-  <div id="panel"><span class="close" onclick="closePanel()">✕</span><div id="panelBody"></div></div>
+  <div id="panel" role="dialog" aria-labelledby="panelTitle2">
+    <div class="pHd"><h3 id="panelTitle2">地点详情</h3>
+      <div class="pActs">
+        <span class="pBlk" id="panelExpand" role="button" tabindex="0" aria-label="展开详情" hidden>⤢ 展开</span>
+        <span class="pBlk" id="panelClose" role="button" tabindex="0" aria-label="关闭详情">✕</span>
+      </div>
+    </div>
+    <div class="pBody" id="panelBody"></div>
+  </div>
   <div id="tip">拖动平移 · 点标记看信息</div>
+  <div id="helpOv" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+    <div class="hCard">
+      <div class="hHd"><b id="helpTitle">使用说明</b><span class="hX" id="helpClose" role="button" tabindex="0" aria-label="关闭使用说明">✕</span></div>
+      <div class="hBody">
+        <ol>
+          <li><b>搜索地点</b>：顶部输入框输入楼名（如「申三」「弘毅苑」），回车或点「搜索」；结果多于一个时在下拉列表里点选。</li>
+          <li><b>查看建筑与照片</b>：点地图上的圆点或搜索结果，弹出地点详情；点缩略图可看大图。</li>
+          <li><b>单指拖动</b>：按住地图拖动可平移。</li>
+          <li><b>缩放</b>：双指捏合，或点右侧「＋ / －」按钮；地图缩放到单个楼栋时仍然可用。</li>
+          <li><b>恢复全图</b>：点右侧「恢复」，视图回到整幅校园图；起点、终点和路线不会丢。</li>
+          <li><b>选择起点和终点</b>：「导航起点」下拉可选起点；在详情里点「从这里出发」或「到这里去」自动生成路线。</li>
+          <li><b>清除路线</b>：点路线提示条上的「✕ 清除路线」，起点会保留，直接点新地点即可再算。</li>
+          <li><b>新生手册 / 培养计划</b>：点地图上的「新生手册」「培养计划」两个按钮进入对应页面。</li>
+        </ol>
+        <div class="hNote">手机浏览器地址栏收起 / 展开、横竖屏切换时地图与详情会自动按可见区域重排，不会重置你的缩放。</div>
+      </div>
+      <div class="hFt"><span class="hBtn" id="helpOk" role="button" tabindex="0">知道了</span></div>
+    </div>
+  </div>
 </div>
 <script type="module">
 // ---------- 数据 ----------
-// 底图 265KB 走 <picture> 先渲染；四件 JSON 并行拉（照片清单 4KB，不拖首屏）
-const parseSafe = async (p) => { try { return await (await fetch(p)).json(); } catch (e) { return null; } };
-const [data, phm, roadNet, photosJson] = await Promise.all([
-  parseSafe('./data/campus.json'),
-  parseSafe('./data/place_handbook_map.json'),
-  parseSafe('./data/road_network.json'),
-  parseSafe('./data/place_photos.json'),
+// 底图 265KB 走 <picture> 先渲染，JSON 三件并行拉；全部就位再初始化交互
+const [resp, phmResp, roadNetResp] = await Promise.all([
+  fetch('./data/campus.json'),
+  fetch('./data/place_handbook_map.json'),
+  fetch('./data/road_network.json'),
 ]);
-if (!data) throw new Error('campus.json 加载失败');
 // 照片清单：只含文件名与尺寸，不含图片本体；缩略图随详情按需加载
-const placePhotos = photosJson || {};
+let placePhotos = {};
+try { placePhotos = await (await fetch('./data/place_photos.json')).json(); } catch (e) { placePhotos = {}; }
+const data = await resp.json();
+const phm = await phmResp.json();
+const roadNet = await roadNetResp.json();
 const meta = data.meta;
 const HIDDEN = new Set(['b03','b14','c01','c02','c03']);
 const feats = data.features.filter(f => f.kind === 'road' || !HIDDEN.has(f.id));
@@ -176,6 +311,47 @@ function proj(lon, lat){ return [(lon-oLon)*M_LON, (lat-oLat)*M_LAT]; }
 const byId = {};
 for (const f of feats) byId[f.id] = f;
 const CAT_LABEL = {dorm:'宿舍', teaching:'教学楼', food:'餐饮', sport:'体育', service:'服务'};
+
+// ---------- 视口（动态可见高度）：地址栏收起/展开、横竖屏都由这里驱动 ----------
+// 优先用 visualViewport（手机地址栏、软键盘会改变它），退化为 innerHeight；
+// --appH / --appTop 供底部面板与安全区计算使用，不依赖固定 vh 或固定底部距离。
+function viewH() {
+  const vv = window.visualViewport;
+  const h = vv ? vv.height : window.innerHeight;
+  return Math.max(240, Math.round(h));
+}
+function viewTop() {
+  const vv = window.visualViewport;
+  return Math.max(0, Math.round(vv ? vv.offsetTop : 0));
+}
+function syncAppHeight() {
+  const root = document.documentElement;
+  const h = viewH(), t = viewTop();
+  root.style.setProperty('--appH', h + 'px');
+  root.style.setProperty('--appTop', t + 'px');
+  document.getElementById('app').style.height = h + 'px';
+  document.getElementById('app').style.top = t + 'px';
+}
+const safeTop = (() => {
+  const p = document.createElement('div');
+  p.style.cssText = 'position:absolute;left:0;top:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden';
+  document.body.appendChild(p);
+  const h = p.getBoundingClientRect().height;
+  p.remove();
+  return h;
+})();
+const safeBot = (() => {
+  const p = document.createElement('div');
+  p.style.cssText = 'position:absolute;left:0;top:0;width:0;height:env(safe-area-inset-bottom,0px);visibility:hidden';
+  document.body.appendChild(p);
+  const h = p.getBoundingClientRect().height;
+  p.remove();
+  return h;
+})();
+document.documentElement.style.setProperty('--sTop', safeTop + 'px');
+document.documentElement.style.setProperty('--sBot', safeBot + 'px');
+syncAppHeight();
+
 (function fillFilters(){
   const cf = document.getElementById('catFilter');
   [...new Set(feats.filter(f=>f.kind==='building'&&f.category).map(f=>f.category))].forEach(c=>{
@@ -281,140 +457,414 @@ function drawStyledPath(parent, pts, r) {
   parent.appendChild(outer); parent.appendChild(inner);
   return {outer, inner};
 }
-let scale = 0.5, offsetX = 0, offsetY = 0;
-
-function fitMap() {
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const narrow = vw <= 640;
-  if (narrow) {
-    const sr = document.getElementById('search').getBoundingClientRect();
-    const top = sr.bottom + 4;
-    scale = vw / 1452;
-    const gh = 1083 * scale;
-    offsetX = 0;
-    offsetY = 0;
-    mapViewport.style.top = top + 'px';
-    mapViewport.style.bottom = 'auto';
-    mapViewport.style.height = gh + 'px';
-    const tbTop = top + gh + 4;
-    toolBar.style.top = tbTop + 'px';
-    toolBar.style.bottom = 'auto';
-    const tbH = toolBar.getBoundingClientRect().height;
-    const belowTb = tbTop + tbH + 4;
-    locStatus.style.top = belowTb + 'px';
-    locStatus.style.bottom = 'auto';
-    relayoutBelow();
-    const footer = document.getElementById('footer');
-    if (footer) footer.style.display = 'block';
-  } else {
-    mapViewport.style.top = '';
-    mapViewport.style.bottom = '';
-    mapViewport.style.height = '';
-    toolBar.style.top = '';
-    toolBar.style.bottom = '12px';
-    routeInfo.style.top = '';
-    routeInfo.style.bottom = '44px';
-    routeInfo.style.maxHeight = '';
-    locStatus.style.top = '';
-    locStatus.style.bottom = '52px';
-    const panel = document.getElementById('panel');
-    if (panel) { panel.style.top = ''; panel.style.bottom = ''; panel.style.maxHeight = ''; }
-    const footer = document.getElementById('footer');
-    if (footer) footer.style.display = 'none';
-    const padTop = 164, padBottom = 44;
-    const availH = vh - padTop - padBottom;
-    scale = Math.min(vw / 1452, availH / 1083);
-    offsetX = (vw - 1452 * scale) / 2;
-    offsetY = padTop + (availH - 1083 * scale) / 2;
+let scale = 0.5;                 // 内容坐标 → 视口像素的比例
+let minScale = 0.2;              // 缩放下限 = 适应全图（fitMap 时按可见区域重算）
+const MAX_SCALE_FACTOR = 4;      // 缩放上限 ≈ 适应状态的 4 倍
+const IMG_W = 1452, IMG_H = 1083;
+let offsetX = 0, offsetY = 0;    // 内容坐标原点在视口内的像素位置
+let _fitSnap = null;             // 「适应地图」快照：只恢复视图，不动起终点与路线
+const gw = () => IMG_W * scale, gh = () => IMG_H * scale;
+const maxScale = () => Math.max(minScale * MAX_SCALE_FACTOR, 0.25);
+// 平移边界（可见区域坐标）：
+//   图 ≤ 可见区域 → 图必须完整落在可见区域内（fitMap 时居中）
+//   图 > 可见区域 → 允许在 [可见区域右缘-图宽, 可见区域左缘] 内偏移，即可平移到所有内容
+function panBounds() {
+  const va = visibleArea();
+  const W = gw(), H = gh();
+  const ax = va.left, bx = va.right - W;
+  const ay = va.top, by = va.bottom - H;
+  return {loX: Math.min(ax, bx), hiX: Math.max(ax, bx),
+          loY: Math.min(ay, by), hiY: Math.max(ay, by)};
+}
+// 只拦越界：图比视口大时不许拖出边界；图比视口小时不允许漂出可见区域
+function clampOffset() {
+  const bb = panBounds();
+  offsetX = Math.min(Math.max(offsetX, bb.loX), bb.hiX);
+  offsetY = Math.min(Math.max(offsetY, bb.loY), bb.hiY);
+}
+// 可见区域：缩放比例、居中偏移、平移边界共用这同一套区域。
+// 桌面端只扣「顶部标题栏」与「底部工具栏」这两条固定栏；搜索框是左上角悬浮层，
+// 只为它预留它自己那块矩形（不整列留白），地图仍按剩下的实际宽高铺到最大。
+// 窄屏判定：竖屏 375/390 与横屏 839×400 都要按手机布局（按钮 44px、底部面板），
+// 因此除宽度外还看实际可见高度（地址栏占用后的可视高度更小）
+function isNarrow() { return window.innerWidth <= 640 || viewH() <= 500; }
+function visibleArea() {
+  const vw = mapViewport.clientWidth, vh = mapViewport.clientHeight;
+  let left = 0, top = 0, right = vw, bottom = vh;
+  if (!isNarrow()) {
+    try {
+      const b = mapViewport.getBoundingClientRect();
+      const bn = document.getElementById('banner');
+      if (bn) top = Math.max(0, Math.min(bn.getBoundingClientRect().bottom - b.top, vh - 160));
+      const tb = toolBar.getBoundingClientRect();
+      // 只在工具栏「真是一整行横条」时才扣底部；横向矮窗是左列竖排，扣它会得出负宽度并退回整块视口
+      if (tb.height > 0 && !toolBar.classList.contains('isCol') && tb.top - b.top > vh * 0.5) {
+        bottom = Math.min(vh, tb.top - b.top - 8);
+      }
+    } catch (err) { /* 初始化早期忽略 */ }
   }
+  if (right - left < 120 || bottom - top < 120) { left = 0; top = 0; right = vw; bottom = vh; }
+  return {left, top, right, bottom, cx: (left + right) / 2, cy: (top + bottom) / 2,
+          w: right - left, h: bottom - top};
+}
+// 横屏手机：可见高度只有 300~400，顶部两行会把地图压成一条缝。
+// 这种尺寸把搜索区挪到左侧、地图放右侧并排，按钮尺寸保持不变。
+function isSideLayout() { return viewH() <= 500 && window.innerWidth > window.innerHeight; }
+// 进入任一布局分支前先清掉上一模式留下的内联定位，避免横屏的左偏移/竖排工具栏残留到竖屏
+function resetLayoutStyles() {
+  toolBar.classList.remove('isCol');
+  toolBar.style.width = '';
+  const s = mapViewport.style;
+  s.left = ''; s.right = ''; s.top = ''; s.bottom = ''; s.height = '';
+}
+// 详情展开时地图容器被收短过；收起或关闭详情时必须恢复，否则地图被压成 120px 条
+function restoreMapArea() {
+  mapViewport.style.height = '';
+  if (isNarrow()) layoutTopOnly();
+}
+// 竖屏详情「展开」中：地图容器收短到面板上沿，返回该高度；未展开返回 null
+function panelExpandedGap() {
+  if (!panel.classList.contains('expanded') || isSideLayout()) return null;
+  const gap = Math.round(panel.getBoundingClientRect().top - mapViewport.getBoundingClientRect().top - 8);
+  return Math.max(120, gap);
+}
+// 桌面布局：清掉手机/横屏并排写入的全部内联位置，回到 CSS 默认的悬浮搜索框 + 右下工具栏
+// 只改布局，不动 scale/offset（调用方负责是否重新适应全图）
+function applyDesktopLayout() {
+  resetLayoutStyles();   // 清 mapViewport 的内联 left/right/top/bottom/height 与工具栏 isCol/width
+  const searchEl = document.getElementById('search');
+  if (searchEl) searchEl.style.top = '';
+  // 注意：toolBar/locStatus 的默认位置写在内联 cssText 里（不是 CSS 规则），
+  // 只清 right 会把它们变成 left:auto 贴到窗口左边，必须显式写回右下角锚点
+  toolBar.style.left = '';
+  toolBar.style.right = '12px';
+  toolBar.style.top = '';
+  toolBar.style.bottom = '12px';
+  routeInfo.style.top = '';
+  routeInfo.style.left = '12px';
+  routeInfo.style.bottom = '44px';
+  routeInfo.style.maxHeight = '';
+  locStatus.style.top = '';
+  locStatus.style.left = '';
+  locStatus.style.right = '12px';
+  locStatus.style.bottom = '52px';
+  const panelEl = document.getElementById('panel');
+  if (panelEl) { panelEl.style.top = ''; panelEl.style.bottom = ''; panelEl.style.maxHeight = ''; }
+  showFooter(false);
+}
+function fitMap() {
+  syncAppHeight();   // 先按 visualViewport 同步容器高度（地址栏/横竖屏变化后不靠固定 vh）
+  resetLayoutStyles();
+  const vh = viewH();
+  const appTop = document.getElementById('app').getBoundingClientRect().top;
+  const searchEl = document.getElementById('search');
+  if (isNarrow()) {
+    searchEl.style.top = Math.round(safeTop + 36) + 'px';
+    const sr = searchEl.getBoundingClientRect();
+    if (isSideLayout()) {
+      // 横向：搜索区整列留在左侧，工具栏贴它的下沿，地图从搜索区右侧开始铺满
+      toolBar.style.left = '8px';
+      toolBar.style.right = 'auto';
+      toolBar.style.top = Math.round(sr.bottom - appTop + 6) + 'px';
+      toolBar.style.bottom = 'auto';
+      toolBar.classList.add('isCol');
+      toolBar.style.width = Math.round(sr.width) + 'px';
+      const bnr = document.getElementById('banner').getBoundingClientRect();
+      const landTop = Math.round(Math.max(safeTop, bnr.bottom - appTop) + 4);
+      mapViewport.style.left = (Math.round(sr.width) + 16) + 'px';
+      mapViewport.style.right = '0';
+      mapViewport.style.top = landTop + 'px';
+      mapViewport.style.bottom = 'auto';
+      mapViewport.style.height = Math.max(160, vh - landTop - 8 - safeBot) + 'px';
+      locStatus.style.left = (Math.round(sr.width) + 24) + 'px';
+      locStatus.style.right = '8px';
+      locStatus.style.bottom = 'auto';
+      locStatus.style.top = (landTop + 8) + 'px';
+      relayoutBelow();
+    } else {
+      toolBar.style.left = '8px';
+      toolBar.style.right = '8px';
+      toolBar.style.width = '';
+      mapViewport.style.left = '0';
+      mapViewport.style.right = '0';
+      // 工具栏紧贴搜索区下方独立成行，地图再从工具栏下方开始：图片不被浮层压住
+      toolBar.style.top = Math.round(sr.bottom - appTop + 6) + 'px';
+      toolBar.style.bottom = 'auto';
+      const top = Math.round(toolBar.getBoundingClientRect().bottom - appTop + 6);
+      mapViewport.style.top = top + 'px';
+      mapViewport.style.bottom = 'auto';
+      const tbH = toolBar.getBoundingClientRect().height || 0;
+      const belowTb = top + tbH + 6;
+      locStatus.style.top = belowTb + 'px';
+      locStatus.style.bottom = 'auto';
+      locStatus.style.left = '';
+      locStatus.style.right = '';
+      relayoutBelow();
+      // 竖屏：地图容器铺满「工具栏下方 → 可见区底部」。平面图 1452×1083（比例 1.34）在竖屏里
+      // 按宽铺满只占约 280px 高；若容器也只留 280，下半屏会空出一大片背景色。容器改为撑满，
+      // 图片在其中垂直居中（panBounds 保证图小居中、图大不出边），缩放控件悬浮在右下角。
+      const availH = Math.max(160, vh - top - 4 - safeBot);
+      mapViewport.style.height = availH + 'px';
+    }
+    // 比例按最终容器实测尺寸算：容器即实际可见区域，比例取「宽、高都放得下整幅图」的上限
+    const fw = mapViewport.clientWidth || window.innerWidth;
+    const fh = mapViewport.clientHeight || Math.max(160, vh - 240);
+    scale = Math.min(fw / IMG_W, fh / IMG_H);
+    const footer = document.getElementById('footer');
+    showFooter(false);
+  } else {
+    applyDesktopLayout();
+    // 用与缩放/平移同一套可见区域：实际可用宽高决定最大比例，再在区域内居中
+    const va = visibleArea();
+    scale = Math.min(va.w / IMG_W, va.h / IMG_H);
+  }
+  minScale = scale;   // 缩放下限严格等于适应全图的缩放比
+  const va = visibleArea();
+  offsetX = va.cx - gw() / 2;
+  offsetY = va.cy - gh() / 2;
+  updateTransform();
+  _fitSnap = {scale, ox: offsetX, oy: offsetY};
+}
+// 顶部控件（搜索区两行、工具栏单行）高度变化后只重排「地图区起点」，不重置用户缩放
+// 地址栏收起/展开只改可见高度：地图容器跟着伸缩，比例与平移不动（仅做边界夹紧）
+function layoutTopOnly() {
+  syncAppHeight();
+  if (!isNarrow()) {
+    // 矮横向（978×480 这类手机并排布局）拉高成桌面窗口时，必须清掉旧的左偏移/竖排工具栏，
+    // 否则地图卡在 left=226px 的窄栏、工具栏仍 isCol、新窗口下半部全是空白
+    applyDesktopLayout();
+    updateTransform();   // 保留用户缩放下重新夹紧边界并同步标记/路线
+    return;
+  }
+  resetLayoutStyles();   // 横屏→竖屏时清掉左侧偏移与竖排工具栏，否则地图被挤到右边
+  const appTop = document.getElementById('app').getBoundingClientRect().top;
+  const searchEl = document.getElementById('search');
+  searchEl.style.top = Math.round(safeTop + 36) + 'px';
+  const sr = searchEl.getBoundingClientRect();
+  if (isSideLayout()) {
+    toolBar.style.left = '8px';
+    toolBar.style.right = 'auto';
+    toolBar.style.top = Math.round(sr.bottom - appTop + 6) + 'px';
+    toolBar.style.bottom = 'auto';
+    toolBar.classList.add('isCol');
+    toolBar.style.width = Math.round(sr.width) + 'px';
+    const bnr = document.getElementById('banner').getBoundingClientRect();
+    const landTop = Math.round(Math.max(safeTop, bnr.bottom - appTop) + 4);
+    mapViewport.style.left = (Math.round(sr.width) + 16) + 'px';
+    mapViewport.style.right = '0';
+    mapViewport.style.top = landTop + 'px';
+    mapViewport.style.height = Math.max(160, viewH() - landTop - 8 - safeBot) + 'px';
+    relayoutBelow();
+    updateTransform();
+    return;
+  }
+  toolBar.style.left = '8px';
+  toolBar.style.right = '8px';
+  toolBar.style.width = '';
+  toolBar.style.top = Math.round(sr.bottom - appTop + 6) + 'px';
+  toolBar.style.bottom = 'auto';
+  mapViewport.style.left = '0';
+  mapViewport.style.right = '0';
+  const top = Math.round(toolBar.getBoundingClientRect().bottom - appTop + 6);
+  mapViewport.style.top = top + 'px';
+  mapViewport.style.bottom = 'auto';
+  const tbH = toolBar.getBoundingClientRect().height || 0;
+  const belowTb = top + tbH + 6;
+  locStatus.style.top = belowTb + 'px';
+  locStatus.style.left = '';
+  locStatus.style.right = '';
+  // 地图容器铺满到可见区底部（与 fitMap 同口径），搜索区/工具栏高度变化时只改起点，不缩高度
+  // 详情展开中则保持「收短到面板上沿」，避免重排把地图顶回全高压到面板后面
+  const gap = panelExpandedGap();
+  mapViewport.style.height = (gap !== null ? gap : Math.max(160, viewH() - top - 4 - safeBot)) + 'px';
+  relayoutBelow();
   updateTransform();
 }
-function clampOffset() {
-  const vw = mapViewport.clientWidth, vh = mapViewport.clientHeight;
-  const gw = 1452 * scale, gh = 1083 * scale;
-  if (gw >= vw) offsetX = Math.max(-(gw - vw), Math.min(0, offsetX));
-  else offsetX = Math.max(0, Math.min(vw - gw, offsetX));
-  if (gh >= vh) offsetY = Math.max(-(gh - vh), Math.min(0, offsetY));
-  else offsetY = Math.max(0, Math.min(vh - gh, offsetY));
+// 是否还能「看到整幅图」：缩放停在适应状态（误差 0.5%）且没有人为平移
+function atFitView() {
+  if (!_fitSnap) return false;
+  return Math.abs(scale - _fitSnap.scale) <= Math.max(1e-6, _fitSnap.scale * 0.005) &&
+         Math.hypot(offsetX - _fitSnap.ox, offsetY - _fitSnap.oy) <= 1.5;
 }
+// 视口变化（resize / 地址栏伸缩 / 横竖屏旋屏 / 软键盘）：
+// 用户已缩放或拖动 → 只重排顶部与边界，绝不重置缩放；仍停在全图 → 跟随新视口重新适应
+let _lastW = 0, _lastH = 0;
+function onViewportChange() {
+  const w = window.innerWidth, h = viewH();
+  if (w === _lastW && h === _lastH) { layoutTopOnly(); return; }
+  const firstish = _lastW === 0;
+  const keep = !firstish && !atFitView();
+  _lastW = w; _lastH = h;
+  if (keep) layoutTopOnly(); else fitMap();
+}
+function onResize() { onViewportChange(); }
 function updateTransform() {
   clampOffset();
-  mapLayer.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${scale})`;
+  mapLayer.style.transform = 'translate(' + offsetX + 'px,' + offsetY + 'px) scale(' + scale + ')';
+  // 标记/定位点只更新像素位置，尺寸恒定（不随 scale 变形），始终跟随其地图点
   for (const m of markerList) {
     m.el.style.left = (m.px * scale + offsetX) + 'px';
     m.el.style.top = (m.py * scale + offsetY) + 'px';
   }
-  routeSvg.setAttribute('width', mapViewport.clientWidth);
-  routeSvg.setAttribute('height', mapViewport.clientHeight);
-  const tf = `translate(${offsetX},${offsetY}) scale(${scale})`;
-  if (routeLayer) routeLayer.setAttribute('transform', tf);
-  netLayer.setAttribute('transform', tf);
+  // 路线层与底图共用同一 offset+scale：线宽随之按比例变化，不会因缩放而与道路错位
+  routeSvg.setAttribute('width', IMG_W);
+  routeSvg.setAttribute('height', IMG_H);
+  routeSvg.style.transform = 'translate(' + offsetX + 'px,' + offsetY + 'px) scale(' + scale + ')';
   if (mePx) {
     meMarkerEl.style.left = (mePx[0] * scale + offsetX) + 'px';
     meMarkerEl.style.top = (mePx[1] * scale + offsetY) + 'px';
   }
 }
-// 拖动
-let dragging = false, dragX0, dragY0, offX0, offY0, moved = 0;
+// ---- 缩放：以视口内某点（默认可见区域中心）为不动点，该点下的地图内容保持不动 ----
+// 锚点有两种口径：不传时用可见区域中心（visibleArea 返回的已是视口内坐标，不能再减视口偏移）；
+// 传了则视为 clientX/clientY（滚轮、双指中点），需减视口左上角换成视口内坐标。
+function zoomAt(newScale, anchorX, anchorY) {
+  newScale = Math.max(minScale, Math.min(maxScale(), newScale));
+  const vpRect = mapViewport.getBoundingClientRect();
+  const va = visibleArea();
+  const hasAnchor = anchorX !== undefined && anchorX !== null && anchorY !== undefined && anchorY !== null;
+  const vx = Math.max(0, Math.min(mapViewport.clientWidth, hasAnchor ? anchorX - vpRect.left : va.cx));
+  const vy = Math.max(0, Math.min(mapViewport.clientHeight, hasAnchor ? anchorY - vpRect.top : va.cy));
+  const cx = (vx - offsetX) / scale, cy = (vy - offsetY) / scale;   // 不动点的内容坐标
+  scale = newScale;
+  offsetX = vx - cx * scale;
+  offsetY = vy - cy * scale;
+  updateTransform();
+  return scale;
+}
+function zoomBy(f, ax, ay) { return zoomAt(scale * f, ax, ay); }
+// 让可见区域中心定位到指定内容坐标（focusFeature / 定位跟随共用）
+function centerOnContent(px, py) {
+  const va = visibleArea();
+  offsetX = va.cx - px * scale;
+  offsetY = va.cy - py * scale;
+  updateTransform();
+}
+// 恢复原图：按当前屏幕尺寸重算初始全图比例与位置（等价于首次进入的 fitMap），
+// 起点/终点/路线/导航状态一律不动，仅重置地图视图
+function resetView() {
+  // 先按当前尺寸重排（横竖屏切换后网格可能已变），再回全图：保证比例=当前全图比例
+  layoutTopOnly();
+  fitMap();
+  return scale;
+}
+// 缩放控件：点完缩放按钮不会穿透弹出地点详情
+for (const [id, fn] of [['zoomIn', () => zoomBy(1.5)], ['zoomOut', () => zoomBy(1 / 1.5)],
+                        ['zoomReset', resetView]]) {
+  const btn = document.getElementById(id);
+  if (!btn) continue;
+  btn.addEventListener('pointerdown', e => { e.stopPropagation(); });
+  btn.addEventListener('mousedown', e => { e.stopPropagation(); });
+  btn.addEventListener('touchstart', e => { e.stopPropagation(); }, {passive: true});
+  btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); fn(); });
+}
+// 滚轮缩放：以鼠标位置为不动点
+mapViewport.addEventListener('wheel', e => {
+  e.preventDefault();
+  const k = Math.exp(-e.deltaY * 0.0016);   // 每滚 100px 约 1.17 倍
+  zoomBy(k, e.clientX, e.clientY);
+}, {passive: false});
+
+// ---- 鼠标拖动（左键） ----
+let dragging = false, dragX0 = 0, dragY0 = 0, dragOX0 = 0, dragOY0 = 0, moved = 0;
+let mouseFromTouch = false;   // 鼠标事件序列来自触摸合成：不参与地图点击判定
+let touchGhostUntil = 0;      // 触摸结束后浏览器补发兼容鼠标事件的截止时间
+// ---- 鼠标拖动（左键）：触摸序列合成的鼠标事件不参与地图点击判定 ----
 mapViewport.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  // 触摸序列刚结束时浏览器补发的合成 mousedown：整段忽略；窗口期外的真实鼠标按下照常拖拽
+  if (mouseFromTouch) {
+    if (performance.now() < touchGhostUntil) return;
+    mouseFromTouch = false;
+  }
   dragging = true; moved = 0;
-  dragX0 = e.clientX; dragY0 = e.clientY; offX0 = offsetX; offY0 = offsetY;
+  dragX0 = e.clientX; dragY0 = e.clientY;
+  dragOX0 = offsetX; dragOY0 = offsetY;
   mapViewport.classList.add('dragging');
 });
+// 触摸序列开始即标记：其后的合成鼠标事件（mousedown/mousemove/mouseup/click）不参与地图点击
+mapViewport.addEventListener('touchstart', () => { mouseFromTouch = true; }, {passive: true});
 window.addEventListener('mousemove', e => {
-  if (!dragging) return;
+  if (!dragging || mouseFromTouch) return;
   const dx = e.clientX - dragX0, dy = e.clientY - dragY0;
   moved = Math.max(moved, Math.hypot(dx, dy));
-  offsetX = offX0 + dx; offsetY = offY0 + dy;
+  offsetX = dragOX0 + dx; offsetY = dragOY0 + dy;
   updateTransform();
 });
 window.addEventListener('mouseup', e => {
   if (!dragging) return;
-  dragging = false; mapViewport.classList.remove('dragging');
+  dragging = false;
+  mapViewport.classList.remove('dragging');
   if (moved < 5) handleMapClick(e);
 });
 
-// 触屏
+// ---- 触屏：单指平移、双指真捏合（以两指中点为不动点） ----
 let touchState = null;
+function pinchInfo(ts) {
+  const a = ts[0], b = ts[1];
+  return {d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+          mx: (a.clientX + b.clientX) / 2, my: (a.clientY + b.clientY) / 2};
+}
 mapViewport.addEventListener('touchstart', e => {
-  if (e.touches.length === 1) {
-    touchState = {type:'pan', x:e.touches[0].clientX, y:e.touches[0].clientY, ox:offsetX, oy:offsetY, moved:0};
-  } else if (e.touches.length === 2) {
-    touchState = {type:'pinch'};
+  if (e.touches.length >= 2) {
+    const p = pinchInfo(e.touches);
+    touchState = {type: 'pinch', d0: p.d, s0: scale};
+  } else if (e.touches.length === 1) {
+    touchState = {type: 'pan', x: e.touches[0].clientX, y: e.touches[0].clientY,
+                  ox0: offsetX, oy0: offsetY, moved: 0};
   }
 }, {passive: false});
 mapViewport.addEventListener('touchmove', e => {
-  e.preventDefault();
+  if (e.cancelable) e.preventDefault();
   if (!touchState) return;
-  if (touchState.type==='pan' && e.touches.length===1) {
-    const dx=e.touches[0].clientX-touchState.x, dy=e.touches[0].clientY-touchState.y;
-    touchState.moved = Math.max(touchState.moved, Math.hypot(dx,dy));
-    offsetX=touchState.ox+dx; offsetY=touchState.oy+dy; updateTransform();
-
+  if (e.touches.length >= 2) {
+    if (touchState.type !== 'pinch') {
+      const p0 = pinchInfo(e.touches);
+      touchState = {type: 'pinch', d0: p0.d, s0: scale};
+      return;
+    }
+    const p = pinchInfo(e.touches);
+    if (touchState.d0 > 8) zoomAt(touchState.s0 * (p.d / touchState.d0), p.mx, p.my);
+  } else if (e.touches.length === 1 && touchState.type === 'pan') {
+    const dx = e.touches[0].clientX - touchState.x, dy = e.touches[0].clientY - touchState.y;
+    touchState.moved = Math.max(touchState.moved, Math.hypot(dx, dy));
+    offsetX = touchState.ox0 + dx; offsetY = touchState.oy0 + dy;
+    updateTransform();
   }
 }, {passive: false});
 mapViewport.addEventListener('touchend', e => {
-  if (touchState && touchState.type==='pan' && touchState.moved<5 && e.changedTouches.length===1) {
-    const rect=mapViewport.getBoundingClientRect();
-    handleMapClick({clientX:e.changedTouches[0].clientX, clientY:e.changedTouches[0].clientY});
+  const st = touchState;
+  // 只有「单指轻点」才算点击；双指捏合结束、拖动结束都不弹地点详情
+  if (st && st.type === 'pan' && st.moved < 5 && e.touches.length === 0 && e.changedTouches.length === 1) {
+    // 本次轻点已被地图消费：阻止浏览器再补发 mousedown/mouseup/click，
+    // 否则兼容鼠标事件会落到刚弹出的面板照片上，一次点击就误开高清大图
+    if (e.cancelable) e.preventDefault();
+    handleMapClick({clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY});
+    touchState = null;
+    return;
   }
-  touchState = null;
-});
-
+  touchState = (e.touches.length >= 2) ? {type: 'pinch', d0: 0, s0: scale} : null;
+  touchGhostUntil = performance.now() + 700;   // 兼容鼠标事件窗口（轻点分支已 preventDefault，这里兜底）
+}, {passive: false});
+mapViewport.addEventListener('touchcancel', () => { touchState = null; });
 // 分类是否放行该地点：分类只影响展示层，building 才受分类约束（校门/打卡点始终显示）
 function markerInCategory(f) {
   const cat = document.getElementById('catFilter').value;
   return !cat || f.kind !== 'building' || f.category === cat;
 }
+const HIT_R = 15;   // 标记判定半径（与 28px 透明触控区一致）
 function handleMapClick(e) {
   const rect = mapViewport.getBoundingClientRect();
   const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-  // 检查是否点中标记：鼠标与触摸都走这里，统一跳过被当前分类隐藏的标记
+  // 鼠标与触摸共用：跳过被分类隐藏的标记；半径内多个标记时取最近的那个（防止误开相邻地点）
+  let best = null, bestD = HIT_R;
   for (const m of markerList) {
     if (!markerInCategory(m.f)) continue;
     const mx = m.px * scale + offsetX, my = m.py * scale + offsetY;
-    if (Math.hypot(sx - mx, sy - my) < 15) { showPanel(m.f); return; }
+    const d = Math.hypot(sx - mx, sy - my);
+    if (d <= bestD) { bestD = d; best = m; }
   }
+  if (best) { showPanel(best.f); return; }
   // 点选位置模式
   if (pickMode) {
     const [x, z] = px2xz((sx - offsetX) / scale, (sy - offsetY) / scale);
@@ -443,7 +893,8 @@ function showPanel(f) {
   if (!f) { closePanel(); return; }
   currentPanelFeature = f;
   for (const m of markerList) m.el.classList.toggle('highlight', m.f === f);
-  let html = `<h3>${f.name}</h3>`;
+  document.getElementById('panelTitle2').textContent = f.name;
+  let html = '';
   const catName = {dorm:'宿舍', teaching:'教学楼', food:'餐饮', sport:'体育', service:'服务', gate:'校门'}[f.category] || '';
   if (catName) html += `<div>类型：${catName}</div>`;
   if (phm.place_to_handbook[f.id] && phm.place_to_handbook[f.id].length) {
@@ -455,51 +906,73 @@ function showPanel(f) {
     html += '</div>';
   }
   if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') html += '<div id="photoSlot" style="margin:8px 0"></div>';
-  if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') {
-    // 起点/终点操作区：按「用户是否已主动选起点」和「本地点是否为当前起点」分三态
-    // 用地点 ID（routeStartId）判定是否同一地点，不用名称/坐标猜测
-    const btnBase = 'border:0;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px';
-    const isCurrentStart = userPickedStart && routeStartId === f.id;
-    if (isCurrentStart) {
-      // 三态一：本地点就是当前起点 → 只标注，不提供同点导航（不生成同点路线/「已到达」）
-      html += '<div style="margin-top:8px;color:#8ab4f8;font-size:13px">📍 当前起点</div>';
-    } else if (userPickedStart) {
-      // 三态二：已选起点且本地点不是起点 → 主入口「到这里去」，起点以简短小字呈现，改起点走次级入口
-      html += '<div style="margin-top:8px;color:#9aa0a6;font-size:12px">起点：' + routeStartName + '</div>';
-      html += '<div style="margin-top:6px">' +
-        '<button onclick=\'setRouteEndById("' + f.id + '")\' style="background:#ffb020;color:#222;' + btnBase + '">🧭 到这里去</button>' +
-        '<span role="button" onclick=\'setRouteStartById("' + f.id + '")\' style="color:#8ab4f8;cursor:pointer;font-size:12px;text-decoration:underline;margin-left:12px">设为新起点</span>' +
-        '</div>';
-    } else {
-      // 三态三：尚未主动选起点（含页面默认大门）→ 保留原始双按钮
-      html += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
-        '<button onclick=\'setRouteStartById("' + f.id + '")\' style="background:#8ab4f8;color:#12203a;' + btnBase + '">🚶 从这里出发</button>' +
-        '<button onclick=\'setRouteEndById("' + f.id + '")\' style="background:#ffb020;color:#222;' + btnBase + '">🧭 到这里去</button>' +
-        '</div>';
-    }
-  }
   panelBody.innerHTML = html;
-  panel.style.display = 'block';
-  if (window.innerWidth <= 640) {
+  renderPanelActions(f);
+  panel.style.display = isNarrow() ? 'flex' : 'block';
+  panel.classList.remove('expanded');
+  { mapViewport.style.height = ''; layoutTopOnly(); }
+  document.getElementById('panelExpand').textContent = '⤢ 展开';
+  setPanelExpandVisible(isNarrow() && !isSideLayout());   // 竖屏底部面板才需要「展开/收起」
+  if (isNarrow()) {
     routeInfo.style.display = 'none';
     locStatus.style.display = 'none';
     const footer = document.getElementById('footer');
-    if (footer) footer.style.display = 'none';
-    relayoutBelow();
+    showFooter(false);
   }
-  // 带照片的详情：手机端由 hasPhotos 加高弹窗（见移动端 CSS）
+  // 带照片的详情：手机端照片 3 列，滚动区独立
   const phList = placePhotos[f.id] || [];
-  const hasPhotos = phList.length > 0;
-  panel.classList.toggle('hasPhotos', hasPhotos);
-  panel.style.display = 'block';
-  if (window.innerWidth <= 640) {
-    routeInfo.style.display = 'none';
-    locStatus.style.display = 'none';
-    const footer = document.getElementById('footer');
-    if (footer) footer.style.display = 'none';
-    relayoutBelow();
-  }
+  panel.classList.toggle('hasPhotos', phList.length > 0);
+  if (isNarrow()) relayoutBelow();
   if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') renderPlacePhotos(f);
+  panelBody.scrollTop = 0;
+}
+// 详情底部操作区（固定可见）：从这里出发 / 到这里去 / 设为新起点 / 当前起点
+function renderPanelActions(f) {
+  let foot = panel.querySelector('.pFoot');
+  if (!foot) {
+    foot = document.createElement('div');
+    foot.className = 'pFoot';
+    panel.appendChild(foot);
+  }
+  if (!(f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin')) { foot.remove(); return; }
+  foot.innerHTML = '';
+  const btnBase = 'border:0;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:14px;flex:1 1 0;min-height:44px;box-sizing:border-box';
+  const isCurrentStart = userPickedStart && routeStartId === f.id;
+  if (isCurrentStart) {
+    const d = document.createElement('div');
+    d.style.cssText = 'flex:1;color:#8ab4f8;font-size:14px;padding:10px 2px;min-height:44px;display:flex;align-items:center';
+    d.textContent = '📍 当前起点';
+    foot.appendChild(d);
+    return;
+  }
+  if (userPickedStart) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.style.cssText = 'background:#ffb020;color:#222;' + btnBase;
+    b.textContent = '🧭 到这里去';
+    b.onclick = () => setRouteEndById(f.id);
+    foot.appendChild(b);
+    const s = document.createElement('span');
+    s.setAttribute('role', 'button');
+    s.tabIndex = 0;
+    s.style.cssText = 'flex:none;display:inline-flex;align-items:center;color:#8ab4f8;cursor:pointer;font-size:13px;' +
+      'text-decoration:underline;padding:0 4px;min-height:44px';
+    s.textContent = '设为新起点';
+    s.onclick = () => setRouteStartById(f.id);
+    foot.appendChild(s);
+    return;
+  }
+  const b1 = document.createElement('button');
+  b1.type = 'button';
+  b1.style.cssText = 'background:#8ab4f8;color:#12203a;' + btnBase;
+  b1.textContent = '🚶 从这里出发';
+  b1.onclick = () => setRouteStartById(f.id);
+  const b2 = document.createElement('button');
+  b2.type = 'button';
+  b2.style.cssText = 'background:#ffb020;color:#222;' + btnBase;
+  b2.textContent = '🧭 到这里去';
+  b2.onclick = () => setRouteEndById(f.id);
+  foot.append(b1, b2);
 }
 // ---------- 地点照片（按地点 ID 关联，支持同地点多视角） ----------
 let photoPanelToken = 0;   // 每次打开详情递增，丢弃过期回调，防止上一处照片串入当前面板
@@ -549,7 +1022,6 @@ function openPhotoViewer(p, f) {
     img.style.transform = '';
     scale = 1; tx = 0; ty = 0; apply();
     img.src = './photos/' + p.full;
-    img.decoding = 'async';   // 大图（200~370KB）解码不占主线程，弹窗先出来
   };
   img.onload = () => {
     if (!ov.isConnected) return;
@@ -612,16 +1084,56 @@ let pendingStatus = null;
 let currentPanelFeature = null;
 function closePanel() {
   panel.style.display = 'none';
+  panel.classList.remove('expanded');
   currentPanelFeature = null;
-  if (window.innerWidth <= 640) {
+  if (isNarrow()) {
+    restoreMapArea();   // 展开中关闭时把地图容器还原，否则地图被压成 120px 条
     if (navState || lastRoute) renderRoute();   // 恢复已保存的导航状态（正常/已到达/不可达）
-    const footer = document.getElementById('footer');
-    if (footer) footer.style.display = 'block';
+    showFooter(!isNarrow());   // 手机端不显示页脚：它会压在底部缩放按钮上
     relayoutBelow();
     if (pendingStatus) { const ps = pendingStatus; pendingStatus = null; showStatus(ps); }
   }
 }
 window.closePanel = closePanel;
+function setPanelExpandVisible(on) {
+  const el = document.getElementById('panelExpand');
+  if (!el) return;
+  const show = !!(on && !isSideLayout());
+  if (show) el.removeAttribute('hidden'); else el.setAttribute('hidden', '');
+}
+// 详情底部面板的「展开 / 收起」：展开后占满可见高度（按 --appH，不含浏览器底栏），再点收起
+function togglePanelExpand(force) {
+  if (panel.style.display === 'none') return false;
+  const on = (force === undefined) ? !panel.classList.contains('expanded') : !!force;
+  panel.classList.toggle('expanded', on);
+  document.getElementById('panelExpand').textContent = on ? '⤡ 收起' : '⤢ 展开';
+  document.getElementById('panelExpand').setAttribute('aria-label', on ? '收起详情' : '展开详情');
+  if (!isSideLayout()) {
+    if (on) {
+      // 竖屏展开：地图容器收短到面板上沿，展开后地图仍可见可拖
+      const gap = panelExpandedGap();
+      if (gap !== null) mapViewport.style.height = gap + 'px';
+      updateTransform();
+    } else {
+      restoreMapArea();   // 收回原高度，缩放/平移不动
+    }
+  }
+  relayoutBelow();
+  updateTransform();
+  return on;
+}
+window.togglePanelExpand = togglePanelExpand;
+{
+  const pe = document.getElementById('panelExpand');
+  const pc = document.getElementById('panelClose');
+  const bind = (el, fn) => {
+    if (!el) return;
+    el.onclick = e => { e.preventDefault(); e.stopPropagation(); fn(); };
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } };
+  };
+  bind(pe, () => togglePanelExpand());
+  bind(pc, () => closePanel());
+}
 
 // ---------- 路网图（按坐标文件 29 条折线重建）+ 寻路 ----------
 // 坐标文件：参考图 1451×1084 像素（原点左上，x右 y下）；落到 1452×1083 底图按比例换算后复用 px2xz
@@ -1055,28 +1567,65 @@ let mePx = null, followMode = false, pickMode = false;
 function setMyLocal(e, n, source) {
   mePx = [(e - TF_B) / TF_A, (TF_D - n) / (-TF_C)];
   meMarkerEl.style.display = 'block';
-  if (followMode) {
-    const vw = mapViewport.clientWidth, vh = mapViewport.clientHeight;
-    offsetX = vw/2 - mePx[0] * scale;
-    offsetY = vh/2 - mePx[1] * scale;
-  }
+  if (followMode) centerOnContent(mePx[0], mePx[1]);
   if (source) showStatus(source);
   updateNavProgress();
   updateTransform();
 }
 const toolBar = document.createElement('div');
-toolBar.style.cssText = 'position:absolute;bottom:12px;right:12px;z-index:20;display:flex;gap:6px;flex-wrap:wrap;max-width:60vw';
+// 宽度交给 CSS（桌面 max-width:60vw / 手机媒体查询铺满左右），内联 max-width 会压过媒体查询
+toolBar.style.cssText = 'position:absolute;bottom:12px;right:12px;z-index:20;display:flex;gap:6px;flex-wrap:wrap';
 toolBar.className = 'toolBar';
 const locStatus = document.createElement('div');
 locStatus.id = 'locStatus';
-locStatus.style.cssText = 'position:absolute;bottom:52px;right:12px;z-index:20;color:#d5d9de;font-size:12px;background:rgba(20,24,32,.85);padding:5px 9px;border-radius:6px;display:none;max-width:320px';
+locStatus.style.cssText = 'position:absolute;bottom:52px;right:12px;z-index:20;color:#d5d9de;font-size:12px;background:rgba(20,24,32,.85);padding:5px 9px;border-radius:6px;display:none;max-width:320px;pointer-events:none';
 document.getElementById('app').appendChild(locStatus);
+// 提示条只是纯文字反馈：不拦截任何点击，且与缩放 +/-/恢复 控件重叠时横向让开
+function avoidZoomCtl(el) {
+  if (!el) return;
+  el.style.pointerEvents = 'none';
+  const zc = document.getElementById('zoomCtl');
+  if (!zc || getComputedStyle(zc).display === 'none') return;
+  const zr = zc.getBoundingClientRect();
+  if (!zr.width || !zr.height) return;
+  const r = el.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const overlapX = r.right > zr.left - 4 && r.left < zr.right + 4;
+  const overlapY = r.bottom > zr.top - 4 && r.top < zr.bottom + 4;
+  const gap = 8;
+  if (overlapX && overlapY) {
+    el.style.right = Math.round(window.innerWidth - zr.left + gap) + 'px';
+
+  } else {
+    el.style.right = '';
+  }
+}
 function relayoutBelow() {
-  if (window.innerWidth > 640) return;
+  if (!isNarrow()) {
+    locStatus.style.top = '';
+    locStatus.style.bottom = '52px';
+    locStatus.style.right = '';
+    avoidZoomCtl(locStatus);
+    return;
+  }
+  const appTop = document.getElementById('app').getBoundingClientRect().top;
   const tb = document.querySelector('.toolBar');
-  const belowTb = tb.getBoundingClientRect().bottom + 4;
+  const belowTb = tb.getBoundingClientRect().bottom - appTop + 6;
+  if (isSideLayout()) {
+    // 横屏：状态条与路线卡片都放在左列工具栏下方，避免压住右侧地图上的缩放按钮
+    locStatus.style.top = belowTb + 'px';
+    locStatus.style.bottom = 'auto';
+    const lsH = (locStatus.style.display !== 'none' && getComputedStyle(locStatus).display !== 'none')
+      ? locStatus.getBoundingClientRect().height + 4 : 0;
+    const riTop = belowTb + lsH;
+    routeInfo.style.top = riTop + 'px';
+    routeInfo.style.bottom = 'auto';
+    routeInfo.style.maxHeight = Math.max(56, viewH() - riTop - 6) + 'px';
+    return;
+  }
   locStatus.style.top = belowTb + 'px';
   locStatus.style.bottom = 'auto';
+  avoidZoomCtl(locStatus);
   const lsVisible = locStatus.style.display !== 'none' && getComputedStyle(locStatus).display !== 'none';
   const lsH = lsVisible ? locStatus.getBoundingClientRect().height + 4 : 0;
   const riTop = belowTb + lsH;
@@ -1089,29 +1638,28 @@ function relayoutBelow() {
     footer.style.top = (riTop + riH) + 'px';
     footer.style.bottom = 'auto';
   }
-  routeInfo.style.maxHeight = Math.max(60, window.innerHeight - riTop - 4) + 'px';
+  const vh = viewH();
+  routeInfo.style.maxHeight = Math.max(60, vh - riTop - 4) + 'px';
+  // 注意：详情面板的高度不再由本函数设置。手机端它是底部展开面板，高度按 --appH 与安全区
+  // 在 CSS 里算（标题/操作固定、正文滚动），两者各设一套会互相打架。
   const panel = document.getElementById('panel');
-  if (panel) {
-    panel.style.top = belowTb + 'px';
-    panel.style.bottom = 'auto';
-    // 带照片详情允许多用下方空间（照片区在弹窗内滚动），无照片详情高度不变
-    const avail = window.innerHeight - belowTb - 4;
-    const limit = panel.classList.contains('hasPhotos') ? Math.round(window.innerHeight * 0.62) : avail;
-    panel.style.maxHeight = Math.max(60, Math.min(avail, limit)) + 'px';
-  }
+  if (panel) { panel.style.top = ''; panel.style.bottom = ''; panel.style.maxHeight = ''; }
 }
 function showStatus(t) {
   if (window.innerWidth <= 640 && panel.style.display !== 'none') { pendingStatus = t; return; }
   pendingStatus = null;
   locStatus.textContent = t;
   locStatus.style.display = 'block';
+  locStatus.style.right = '';
   relayoutBelow();
+  avoidZoomCtl(locStatus);   // 文字撑开后重新测量一次，避免首帧未避让
+
   setTimeout(() => { locStatus.style.display = 'none'; relayoutBelow(); }, 6000);
 }
 function mkBtn(label, fn) {
   const b = document.createElement('button');
   b.textContent = label;
-  b.style.cssText = 'background:rgba(25,28,36,.92);color:#e8eaed;border:1px solid rgba(255,255,255,.18);padding:7px 10px;border-radius:8px;cursor:pointer;font-size:12px';
+  b.style.cssText = 'background:rgba(25,28,36,.92);color:#e8eaed;border:1px solid rgba(255,255,255,.18);padding:7px 10px;border-radius:8px;cursor:pointer;font-size:12px;box-sizing:border-box';
   b.onclick = fn;
   toolBar.appendChild(b);
   return b;
@@ -1178,13 +1726,51 @@ function setFollowMode(force) {
   followMode = (force === undefined) ? !followMode : !!force;
   return followMode;
 }
-// 普通用户按钮：只保留导览相关入口
+// 普通用户按钮：只保留导览相关入口（手机端两钮并排等宽、高度 ≥44、字号 ≥14，见媒体查询）
+toolBar.setAttribute('role', 'group');
+toolBar.setAttribute('aria-label', '新生手册与培养计划');
 mkBtn('📖 新生手册', () => location.href = 'handbook.html');
 mkBtn('📋 培养计划', () => location.href = 'curriculum.html');
 document.getElementById('app').appendChild(toolBar);
+
+// ---------- 使用说明（可从标题栏重复打开，关闭后地图操作恢复） ----------
+const helpOv = document.getElementById('helpOv');
+function openHelp() {
+  helpOv.hidden = false;
+  const body = helpOv.querySelector('.hBody');
+  if (body) body.scrollTop = 0;
+  clearResults();
+  const ok = document.getElementById('helpOk');
+  if (ok && ok.focus) { try { ok.focus({preventScroll: true}); } catch (e) {} }
+}
+function closeHelp() {
+  helpOv.hidden = true;
+  const hb = document.getElementById('helpBtn');
+  if (hb && hb.focus) { try { hb.focus({preventScroll: true}); } catch (e) {} }
+}
+{
+  const bind = (el, fn) => {
+    if (!el) return;
+    el.onclick = e => { e.preventDefault(); e.stopPropagation(); fn(); };
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } };
+  };
+  bind(document.getElementById('helpBtn'), openHelp);
+  bind(document.getElementById('helpClose'), closeHelp);
+  bind(document.getElementById('helpOk'), closeHelp);
+  // 点遮罩空白处也能关；点卡片本身不关
+  helpOv.addEventListener('click', e => { if (e.target === helpOv) closeHelp(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !helpOv.hidden) closeHelp(); });
+}
+// 页脚显隐统一入口：隐藏时一并关掉命中测试，避免一块透明层压住缩放按钮/工具栏
+function showFooter(on) {
+  if (!footer) return;
+  footer.style.display = on ? 'block' : 'none';
+  footer.style.pointerEvents = 'none';   // 页脚只做说明，永远不参与命中测试
+  footer.setAttribute('aria-hidden', on ? 'false' : 'true');
+}
 const footer = document.createElement('div');
 footer.id = 'footer';
-footer.style.cssText = 'position:absolute;left:0;right:0;bottom:4px;z-index:15;text-align:center;color:#9aa0a6;font-size:11px;line-height:1.6;display:none;padding:0 8px';
+footer.style.cssText = 'position:absolute;left:0;right:0;bottom:4px;z-index:15;pointer-events:none;text-align:center;color:#9aa0a6;font-size:11px;line-height:1.6;display:none;padding:0 8px';
 footer.innerHTML = '© 2026 上海理工大学基础学院 · 军工路1100号<br>草案级导览，地标位置待实地校正';
 document.getElementById('app').appendChild(footer);
 function updateNavProgress() {
@@ -1214,11 +1800,7 @@ const noResult = document.getElementById('noResult');
 function focusFeature(f){
   const px = featPx(f);
   if (!px) return;
-  const vw = mapViewport.clientWidth, vh = mapViewport.clientHeight;
-
-  offsetX = vw/2 - px[0] * scale;
-  offsetY = vh/2 - px[1] * scale;
-  updateTransform();
+  centerOnContent(px[0], px[1]);
   showPanel(f);
 }
 const resultsEl = document.getElementById('searchResults');
@@ -1347,13 +1929,61 @@ window.__nav = {
   get routePtsPx() { return routePts.map(p => [Math.round(p[0]), Math.round(p[1])]); },
   startOptionCount() { const sp = document.getElementById('startPick'); let n = 0; for (const o of sp.options) if (o.value && o.value !== '__ph__') n++; return n; },
   get startPickValue() { return document.getElementById('startPick').value; },
+  // ---- 地图缩放（供验收读取内部状态与模拟手势） ----
+  get mapScale() { return scale; },
+  get mapMinScale() { return minScale; },
+  get mapMaxScale() { return maxScale(); },
+  get mapOffset() { return {x: offsetX, y: offsetY}; },
+  get viewportSize() { return {w: mapViewport.clientWidth, h: mapViewport.clientHeight}; },
+  get viewportRect() { const r = mapViewport.getBoundingClientRect(); return {left: r.left, top: r.top, width: r.width, height: r.height}; },
+  get fitSnap() { return _fitSnap ? {..._fitSnap} : null; },
+  zoomTo: (s, ax, ay) => zoomAt(s, ax, ay),
+  zoomById: (btn) => { document.getElementById(btn).click(); return scale; },
+  resetView,
+  visibleArea: () => visibleArea(),   // 缩放/居中/平移共用的区域（验收可读）
+  // 标记在视口内的中心点 + 圆点/标签的屏幕盒子（几何与真实渲染一致）
+  markerBox(id) {
+    const m = markerList.find(x => x.f.id === id);
+    if (!m) return null;
+    const vr = mapViewport.getBoundingClientRect();
+    const dot = m.el.querySelector('.dot').getBoundingClientRect();
+    const lbl = m.el.querySelector('.lbl').getBoundingClientRect();
+    const el = m.el.getBoundingClientRect();
+    return {cx: vr.left + m.px * scale + offsetX, cy: vr.top + m.py * scale + offsetY,
+            dot: {w: dot.width, h: dot.height, left: dot.left, top: dot.top},
+            lbl: {w: lbl.width, h: lbl.height, left: lbl.left, top: lbl.top, cx: lbl.left + lbl.width / 2, cy: lbl.top + lbl.height / 2},
+            hit: {w: el.width, h: el.height}};
+  },
+  // 视口中心（用于点缩放按钮后验证锚点不动）
+  zoomAnchorPoint() {
+    const va = visibleArea();
+    const vr = mapViewport.getBoundingClientRect();
+    return {x: vr.left + va.cx, y: vr.top + va.cy};
+  },
+  // 视口坐标 → 该处地图内容是否在范围（用于滚轮/捏合锚点比对）
+  contentPointAt(clientX, clientY) {
+    const vr = mapViewport.getBoundingClientRect();
+    return {x: (clientX - vr.left - offsetX) / scale, y: (clientY - vr.top - offsetY) / scale};
+  },
+  // 当前缩放状态：底图/路线/标记三层是否同步（验收用）
+  layersSync() {
+    const rects = {};
+    for (const id of ['groundImg', 'routeSvg', 'meMarkerEl', 'b07']) {
+      const el = id === 'b07' ? (markerList.find(m => m.f.id === 'b07') || {}).el : document.getElementById(id);
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      rects[id] = {l: r.left, t: r.top, w: r.width, h: r.height};
+    }
+    return {scale, ox: offsetX, oy: offsetY, gw: gw(), gh: gh(), borders: panBounds(), rects};
+  },
   get markerVisibleCount() { return markerList.filter(m => m.el.style.display !== 'none').length; },
   get markerTotalCount() { return markerList.length; },
   get searchResultsVisible() { return resultsEl.style.display !== 'none'; },
   get searchResultCount() { return resultsEl.querySelectorAll('li').length; },
   get noResultVisible() { return noResult.style.display === 'block' || noResult.style.display === '' && getComputedStyle(noResult).display !== 'none'; },
   get panelVisible() { return panel.style.display !== 'none' && getComputedStyle(panel).display !== 'none'; },
-  get panelTitle() { const h = panelBody.querySelector('h3'); return h ? h.textContent : ''; },
+  // 手机端标题固定在面板头部（#panelTitle2），正文里不再重复；两者取先命中者
+  get panelTitle() { const h = document.getElementById('panelTitle2'); return h && h.textContent ? h.textContent : ''; },
   get panelFeatureId() { return currentPanelFeature ? currentPanelFeature.id : ''; },
   markerInCategoryById: id => { const f = byId[id]; return f ? markerInCategory(f) : false; },
   // 标记中心的视口坐标（供验收真实点击/触摸；几何与 handleMapClick 一致）
@@ -1415,8 +2045,17 @@ window.__nav.debug = {
     if (document.getElementById('stTitle')) document.getElementById('stTitle').textContent = '上海理工大学基础学院 · 校园导览 — 调试模式：路网已显示，可用 __nav.debug.* 控制';
   }
 }
+// 初始适应 + 视口监听：
+// resize / visualViewport 变化（地址栏收起展开、旋屏、分屏、软键盘）都走 onViewportChange，
+// 已缩放的视图不会被无条件 fitMap 重置。
+_lastW = window.innerWidth; _lastH = viewH();
 fitMap();
-addEventListener('resize', fitMap);
+addEventListener('resize', onResize);
+addEventListener('orientationchange', () => setTimeout(onResize, 120));
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize', onResize);
+  visualViewport.addEventListener('scroll', () => { syncAppHeight(); layoutTopOnly(); });
+}
 
 // ---------- 非首屏资源延后加载（不挡交互） ----------
 // 手册与培养计划是两个独立页面，用户不点就不必现在下载
