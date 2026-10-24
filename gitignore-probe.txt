@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>上海理工大学基础学院 · 校园导览</title>
+<meta name="description" content="上海理工大学基础学院军工路1100号校区导览：楼栋定位、出入口、步行路径规划与新生手册。">
+<link rel="preload" as="image" href="./data/treefree.webp" fetchpriority="high">
+<link rel="preload" as="fetch" href="./data/campus.json" crossorigin="anonymous">
+<style>
+  /* 安全区与动态视口：--sTop/--sBot 由 JS 依据设备安全区写入，--appH/--appTop 依据 visualViewport 写入 */
+  :root{--sTop:0px;--sBot:0px;--appH:100vh;--appTop:0px;}
+  /* 首屏就位前铺一层底色，避免白闪（与 body 同色，图到位后被覆盖） */
+  html::before{content:'';position:fixed;inset:0;z-index:0;background:#a9c4dd;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:"Microsoft YaHei",sans-serif;background:#a9c4dd;}
+  /* 高度由 JS 按 visualViewport 写入（--appH / --appTop），地址栏收起/展开时不再依赖固定 100% */
+  #app{position:relative;left:0;width:100%;height:100%;top:0;}
+  /* 地图视口：overflow 裁切；底图/标记/路线统一由 offset+scale 变换，缩放时锚点处内容保持不动 */
+  #mapViewport{position:absolute;inset:0;z-index:1;overflow:hidden;cursor:grab;touch-action:none;}
+  #mapViewport.dragging{cursor:grabbing;}
+  #mapLayer{position:absolute;top:0;left:0;transform-origin:0 0;}
+  #mapLayer picture{display:block;}
+  #groundImg{display:block;width:1452px;height:1083px;user-select:none;-webkit-user-drag:none;}
+  #overlay{position:absolute;inset:0;z-index:2;pointer-events:none;}
+  /* 标记外层只做像素定位（固定 28px 透明触控区），不随地图 scale 变形 */
+  .marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;z-index:3;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
+  .marker .dot{box-sizing:border-box;width:8px;height:8px;border:0;border-radius:50%;background:#2f7bff;box-shadow:0 0 0 1.5px rgba(255,255,255,.8),0 1px 2px rgba(0,0,0,.4);}
+  .marker .lbl{position:absolute;left:50%;top:11px;transform:translateX(-50%);color:rgba(255,255,255,.95);font-size:10px;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.9);padding:0 3px;background:rgba(0,0,0,.42);border-radius:2px;pointer-events:none;}
+  .marker.smallLbl .lbl{font-size:9px;padding:0 2px;}
+  /* 公共浴室 b07：文字置于圆点正上方并水平居中（原 translateX(20px) 会压住门诊部标签） */
+  .marker.lblAbove .lbl{top:auto;bottom:22px;transform:translateX(-50%);}
+  .marker.pending .dot{background:#fdd663;border-style:dashed;}
+  .marker.gate .dot{background:#4aa3ff;}
+  .marker.checkin .dot{background:#ff6b6b;}
+  .marker.labelOnly .dot{display:none;}
+  .marker.labelOnly .lbl{font-size:11px;padding:1px 4px;background:rgba(0,0,0,.55);}
+  .marker.highlight .dot{background:#ffb020;box-shadow:0 0 10px rgba(255,176,32,.7);}
+  .marker.highlight .lbl{color:#ffd166;font-weight:bold;}
+  /* 定位点固定像素尺寸（边框计入 box-sizing），只跟随坐标、不随缩放变形 */
+  #meMarkerEl{position:absolute;transform:translate(-50%,-50%);z-index:6;pointer-events:none;}
+  #meMarkerEl .dot{box-sizing:border-box;width:16px;height:16px;border:3px solid #fff;border-radius:50%;
+    background:#2f7bff;box-shadow:0 0 8px rgba(47,123,255,.6);}
+  /* 缩放控件：吸附在地图视口右下角，电脑/手机同一套，手机 44x44 触控 */
+  #zoomCtl{position:absolute;right:12px;bottom:56px;z-index:8;filter:drop-shadow(0 2px 5px rgba(0,0,0,.28));display:flex;flex-direction:column;gap:8px;}
+  #zoomCtl button{box-sizing:border-box;width:40px;height:40px;padding:0;border-radius:10px;cursor:pointer;
+    border:1px solid rgba(255,255,255,.5);background:rgba(25,28,36,.95);color:#fff;
+    font-size:16px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+  #zoomCtl #zoomReset{font-size:12px;font-weight:400;}
+  #zoomCtl button:active{background:rgba(138,180,248,.35);}
+  #routeSvg{position:absolute;top:0;left:0;z-index:4;pointer-events:none;overflow:visible;transform-origin:0 0;}
+  #banner{position:absolute;top:0;left:0;right:0;z-index:20;background:rgba(20,24,32,.88);color:#e8eaed;
+    padding:calc(6px + var(--sTop,0px)) 16px 6px;font-size:13px;line-height:1.4;border-bottom:1px solid rgba(255,255,255,.08);
+    display:flex;align-items:baseline;gap:8px;}
+  #banner b{color:#ffd166;font-size:14px;}
+  #infoBtn{margin-left:auto;cursor:pointer;color:#8ab4f8;font-size:12px;white-space:nowrap;}
+  #helpBtn{margin-left:auto;cursor:pointer;color:#8ab4f8;font-size:12px;white-space:nowrap;}
+  #helpBtn + #infoBtn{margin-left:8px;}
+  /* 详情面板：手机为可展开的底部面板（标题/操作固定，正文独立滚动），桌面保持右上浮窗 */
+  #panel{position:absolute;top:60px;right:12px;z-index:20;width:300px;max-height:70vh;overflow:auto;box-sizing:border-box;
+    background:rgba(25,28,36,.94);color:#e8eaed;border-radius:10px;padding:14px 16px;display:none;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);font-size:13px;line-height:1.7;}
+  #panel h3{margin:0 0 8px;font-size:16px;color:#fff;}
+  #panel .pHd{display:flex;align-items:flex-start;gap:8px;}
+  #panel .pHd h3{margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  #panel .pActs{display:flex;gap:6px;flex:none;}
+  #panel .pBlk{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:28px;
+    padding:0 8px;border-radius:6px;background:rgba(255,255,255,.1);color:#e8eaed;font-size:13px;cursor:pointer;line-height:1;}
+  #panel .pBlk:active{background:rgba(138,180,248,.35);}
+  /* 全局兜底：.pBlk 的 display:inline-flex 优先级高于浏览器默认的 [hidden]{display:none}，
+     不加这条桌面端「展开详情」按钮会照常显示并抢布局 */
+  [hidden]{display:none !important;}
+  #panel #panelClose{font-size:15px;}
+  #tip{position:absolute;bottom:12px;left:12px;z-index:20;color:#d5d9de;font-size:12px;
+    background:rgba(20,24,32,.7);padding:6px 10px;border-radius:6px;}
+  #search{position:absolute;top:60px;left:12px;z-index:20;width:250px;display:flex;flex-direction:column;gap:6px;}
+  #search .fld{display:flex;flex-direction:column;gap:2px;}
+  #search .fld>label{color:#cfd6df;font-size:11px;line-height:1.3;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+  #search .inrow{display:flex;gap:6px;}
+  #search input{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);
+    background:rgba(25,28,36,.9);color:#fff;font-size:13px;outline:none;}
+  #search .inrow input{flex:1;min-width:0;}
+  #search button#searchBtn{padding:8px 12px;border:0;border-radius:8px;background:#8ab4f8;color:#12203a;font-size:13px;cursor:pointer;flex:none;}
+  #search .hint{color:#eef;font-size:11px;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+  #search select{width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(25,28,36,.9);color:#fff;font-size:12px;outline:none;}
+  /* 第二行：地点分类 / 导航起点 两列等宽，标签各自在控件上方 */
+  #search .fldRow{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:start;}
+  #search .fldRow .fld{min-width:0;}
+  #search .fldRow select{text-overflow:ellipsis;}
+  #noResult{color:#f28b82;font-size:11px;display:none}
+  #searchResults{list-style:none;margin:0;padding:0;background:rgba(25,28,36,.96);border:1px solid rgba(255,255,255,.14);
+    border-radius:8px;max-height:240px;overflow:auto;display:none;}
+  #searchResults li{padding:8px 10px;color:#e8eaed;font-size:13px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.07);}
+  #searchResults li:last-child{border-bottom:0;}
+  #searchResults li:hover{background:rgba(138,180,248,.18);}
+  #searchResults li .rsub{color:#9aa0a6;font-size:11px;margin-left:6px;}
+  /* 地图入口按钮（新生手册 / 培养计划 / 入学待办）：数量由 JS 生成，桌面自然排成一行靠右下 */
+  .toolBar button{min-height:32px;padding:7px 10px;font-size:12px;white-space:nowrap;flex:none;box-sizing:border-box;
+    font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:5px;}
+  .toolBar button .tx{white-space:nowrap;}
+  .toolBar.isCol{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+  @media (max-width:640px), (max-height:500px){
+    html,body{background:#eef0f3}
+    #banner{font-size:12px;padding:4px 10px;line-height:1.35;white-space:nowrap;overflow:visible;gap:6px}
+    #banner b{font-size:13px}
+    #infoBtn{font-size:11px}
+    #search{top:calc(36px + var(--sTop,0px));left:8px;right:8px;width:auto}
+    #search input,#search select,#search button#searchBtn{min-height:44px;font-size:14px}
+    #search .fld>label{font-size:12px}
+    #searchResults{max-height:44vh;}
+    /* 手机详情：底部可展开面板。高度按 --appH（visibleViewport）算，操作固定可见、正文独立滚动 */
+    #panel{top:auto;left:8px;right:8px;width:auto;bottom:calc(8px + var(--sBot,0px));
+      /* 详情必须压在工具栏(20)之上，否则照片下半部被「新生手册」按钮盖住且点击被抢走 */
+      z-index:26;
+      max-height:calc(var(--appH) * .46);
+      display:none;flex-direction:column;overflow:hidden;padding:10px 12px 0;box-sizing:border-box;
+      border-radius:14px 14px 10px 10px;}
+    #panel.expanded{top:calc(var(--appTop,0px) + 8px + var(--sTop,0px)) !important;bottom:calc(8px + var(--sBot,0px));
+      max-height:none;border-radius:12px;}
+    #panel .pHd{flex:none;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.1);align-items:center;}
+    #panel .pHd h3{font-size:15px;line-height:1.3;}
+    #panel .pBlk{min-width:44px;min-height:44px;font-size:14px;}
+    #panel #panelExpand{display:inline-flex;}
+    #panel .pBody{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 0 12px;}
+    #panel .pBody h3{display:none;}
+    #panel .pFoot{flex:none;display:flex;gap:8px;padding:8px 0 calc(8px + var(--sBot,0px));}
+    #tip{display:none}
+    #routeInfo{left:8px !important;right:8px !important;max-width:none !important;max-height:36vh}
+    /* 工具栏三入口：竖屏三等宽并排，高度 ≥44、字号 ≥14；只有当前两个入口带装饰图标，
+       第三入口不带图标，320px 宽下仍要完整显示四字标签（靠 flex 均分与不缩字，不截断） */
+    .toolBar{left:8px;right:8px;gap:6px;max-width:none;flex-wrap:nowrap;}
+    .toolBar button{flex:1 1 0;min-width:0;min-height:44px;padding:0 6px !important;font-size:14px !important;}
+    #meMarkerEl .dot{width:16px;height:16px;}
+    #zoomCtl{right:8px;bottom:8px;gap:6px;}
+    #zoomCtl button{width:44px;height:44px;font-size:18px;}
+    #zoomCtl #zoomReset{font-size:13px;}
+    .marker .lbl{font-size:9px;padding:0 2px}
+    .marker.smallLbl .lbl{font-size:8px;padding:0 1px}
+    /* 相邻标记密集：圆点显式 7px 外径、无边框，背景改由 box-shadow 画描边，避免默认边框撑大 */
+    .marker .dot{box-sizing:border-box;width:7px;height:7px;border:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.4);}
+    /* 横屏：搜索区在左、地图在右，工具栏改为竖排贴左列下沿，每钮仍 ≥44 且保持四字标签 */
+    .toolBar.isCol{flex-direction:column;flex-wrap:nowrap;gap:6px;right:auto;max-width:none;padding:0;}
+    .toolBar.isCol button{flex:0 0 auto;width:100%;min-height:44px;}
+    #search{max-width:calc(100vw - 16px);}
+    #search .fldRow select{min-width:0;width:100%;}
+  }
+  /* 极窄屏（320px）：隐藏入口装饰图标保四字标签完整，不缩字号、不截断文字 */
+  @media (max-width:360px){
+    .toolBar .ic{display:none !important;}
+  }
+  /* 校园照片：缩略图网格 + 点击放大 */
+  .phHead{color:#cfd6df;font-size:12px;margin:2px 0 6px;}
+  .phGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .phGrid.solo{grid-template-columns:1fr;}
+  .phItem{position:relative;padding:0;border:1px solid rgba(255,255,255,.14);border-radius:6px;overflow:hidden;
+    background:#000;cursor:zoom-in;line-height:0;aspect-ratio:4/3;}
+  .phGrid.solo .phItem{aspect-ratio:auto;}
+  .phItem img{width:100%;height:100%;object-fit:cover;display:block;}
+  .phGrid.solo .phItem img{height:auto;object-fit:contain;}
+  .phCap{position:absolute;left:0;right:0;bottom:0;padding:2px 4px;font-size:10px;line-height:1.3;color:#fff;
+    background:linear-gradient(to top,rgba(0,0,0,.75),rgba(0,0,0,0));text-align:left;}
+  #photoViewer{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.9);display:flex;flex-direction:column;opacity:1;}
+  #photoViewer .pvBar{display:flex;align-items:center;gap:8px;padding:10px 14px;color:#e8eaed;font-size:13px;}
+  #photoViewer .pvT{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #photoViewer .pvZ span,#photoViewer .pvX{display:inline-flex;align-items:center;justify-content:center;
+    min-width:36px;min-height:36px;cursor:pointer;border-radius:6px;background:rgba(255,255,255,.12);margin-left:6px;}
+  #photoViewer .pvStage{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:0 12px 12px;}
+  #photoViewer .pvStage img{max-width:100%;max-height:100%;overflow:hidden;transform-origin:center;transition:transform .12s;will-change:transform;touch-action:none;user-select:none;-webkit-user-drag:none;}
+  #photoViewer .pvMsg{width:100%;max-width:320px;margin:auto;padding:18px 16px;border-radius:10px;text-align:center;
+    color:#e8eaed;font-size:14px;line-height:1.7;background:rgba(255,255,255,.08);}
+  #photoViewer .pvMsg .pvIcon{font-size:22px;line-height:1.2;margin-bottom:6px;}
+  #photoViewer .pvMsg .pvSub{font-size:12px;color:#9aa0a6;word-break:break-all;}
+  #photoViewer.loading .pvStage img,#photoViewer.error .pvStage img{display:none;}
+  #photoViewer .pvLoad,#photoViewer .pvErr{display:none;}
+  #photoViewer.loading .pvLoad{display:block;}
+  #photoViewer.error .pvErr{display:block;}
+  #photoViewer.error .pvZ{display:none;}
+  /* 按钮内部容器不得被 .pvZ span 的 layout 规则抢走（曾导致 .pvBtns 宽度归零） */
+  #photoViewer .pvBtns{display:flex;gap:10px;justify-content:center;margin-top:12px;}
+  #photoViewer .pvBtn{display:flex;align-items:center;justify-content:center;min-height:40px;min-width:88px;padding:0 16px;
+    border-radius:8px;cursor:pointer;font-size:14px;font-weight:400;color:#e8eaed;background:rgba(255,255,255,.14);}
+  #photoViewer .pvBtn.primary{background:#2f6bff;color:#fff;}
+  #photoViewer .pvBtn:active{filter:brightness(.9);}
+  #photoViewer .pvSpin{width:24px;height:24px;margin:0 auto 8px;border:2px solid rgba(255,255,255,.25);
+    border-top-color:#fff;border-radius:50%;animation:pvSpin .8s linear infinite;}
+  @keyframes pvSpin{to{transform:rotate(360deg);}}
+  /* 手机端照片：3 列缩略图，一行放下同地点全部视角，减少弹窗滚动（须置于基础样式之后才生效） */
+  @media (max-width:640px), (max-height:500px){
+    .phGrid{grid-template-columns:repeat(3,1fr);gap:4px;}
+    .phGrid.solo{grid-template-columns:1fr;}
+  }
+  /* 使用说明弹层：入口在标题栏「❓ 使用说明」，可重复打开，关闭后地图操作恢复 */
+  #helpOv{position:fixed;left:0;top:var(--appTop,0px);width:100%;height:var(--appH,100vh);z-index:95;
+    background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;}
+  #helpOv[hidden]{display:none;}
+  #helpOv .hCard{width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;
+    background:rgba(25,28,36,.98);color:#e8eaed;border:1px solid rgba(255,255,255,.12);border-radius:12px;
+    box-shadow:0 10px 40px rgba(0,0,0,.6);overflow:hidden;}
+  #helpOv .hHd{flex:none;display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.1);font-size:15px;}
+  #helpOv .hHd b{color:#ffd166;flex:1;}
+  #helpOv .hX{flex:none;display:inline-flex;align-items:center;justify-content:center;
+    box-sizing:border-box;width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.12);cursor:pointer;font-size:15px;}
+  #helpOv .hBody{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;font-size:13px;line-height:1.75;}
+  #helpOv ol{margin:0;padding-left:20px;}
+  #helpOv li{margin-bottom:8px;}
+  #helpOv li b{color:#8ab4f8;font-weight:600;}
+  #helpOv .hNote{color:#9aa0a6;font-size:12px;border-top:1px dashed rgba(255,255,255,.16);padding-top:8px;margin-top:2px;}
+  #helpOv .hFt{flex:none;display:flex;justify-content:flex-end;padding:10px 14px calc(10px + var(--sBot,0px));border-top:1px solid rgba(255,255,255,.1);}
+  #helpOv .hBtn{display:inline-flex;align-items:center;justify-content:center;min-width:88px;min-height:40px;padding:0 16px;
+    border-radius:8px;background:#2f6bff;color:#fff;font-size:14px;cursor:pointer;}
+  #helpOv .hBtn:active{filter:brightness(.9);}
+  @media (max-width:640px), (max-height:500px){
+    #helpOv .hCard{width:100%;max-height:100%;}
+    #helpOv .hX{width:44px;height:44px;font-size:16px;}
+    #helpOv .hBtn{min-height:44px;font-size:15px;}
+    #helpOv .hBody{font-size:14px;}
+  }
+  /* 横屏手机（可见高度 ≤500）：搜索区收窄到左侧，分类/起点紧凑并排，
+     地图占据右侧。字号放到 16px 防 iOS 聚焦自动放大，点击区仍保持 ≥44 */
+  @media (max-height:500px) and (orientation:landscape){
+    #search{width:210px;right:auto;}
+    #search .fldRow{gap:4px;}
+    #search input,#search select,#search button#searchBtn{font-size:16px;padding:6px 8px;}
+    #search .fld>label{font-size:11px;}
+    #search .hint{display:none;}
+    #searchResults{max-height:38vh;}
+    /* 详情面板在横屏改成右侧半屏，不压住左列控件 */
+    #panel{left:calc(210px + 24px);right:8px;top:calc(8px + var(--sTop,0px)) !important;
+      bottom:calc(8px + var(--sBot,0px));max-height:none;}
+    #panel.expanded{left:calc(210px + 24px);top:calc(8px + var(--sTop,0px)) !important;}
+    /* 横屏面板已是整高，无需「展开/收起」 */
+    #panel #panelExpand{display:none !important;}
+    #routeInfo{left:8px !important;right:auto !important;width:210px;}
+  }
+
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="mapViewport">
+      <div id="mapLayer"><picture><source srcset="./data/treefree.webp" type="image/webp"><img id="groundImg" src="./data/treefree.png" alt="校区平面图" fetchpriority="high" decoding="async"></picture></div>
+      <svg id="routeSvg"></svg>
+      <div id="overlay"></div>
+      <div id="meMarkerEl" style="display:none"><div class="dot"></div></div>
+    <div id="zoomCtl" role="group" aria-label="地图缩放">
+      <button type="button" id="zoomIn" aria-label="放大">＋</button>
+      <button type="button" id="zoomOut" aria-label="缩小">－</button>
+      <button type="button" id="zoomReset" aria-label="恢复原图">恢复</button>
+    </div>
+  </div>
+  <div id="banner"><b id="stTitle">加载中…</b><span id="helpBtn" role="button" tabindex="0" aria-label="使用说明">❓ 使用说明</span><span id="infoBtn" role="button" tabindex="0">ℹ️ 数据说明</span></div>
+  <div id="search">
+    <div class="fld">
+      <label for="q">搜索地点</label>
+      <div class="inrow">
+        <input id="q" placeholder="搜楼名，如：弘毅苑 / 申三" aria-label="搜索地点">
+        <button id="searchBtn" type="button">搜索</button>
+      </div>
+    </div>
+    <ul id="searchResults" aria-label="搜索结果"></ul>
+    <div class="fldRow">
+      <div class="fld">
+        <label for="catFilter">地点分类</label>
+        <select id="catFilter" aria-label="地点分类"><option value="">全部分类</option></select>
+      </div>
+      <div class="fld">
+        <label for="startPick">导航起点</label>
+        <select id="startPick" aria-label="导航起点"><option value="__ph__">请选择起点</option></select>
+      </div>
+    </div>
+    <div class="hint">回车或点搜索定位；点结果看信息；拖动平移</div>
+    <div id="noResult">未找到该地点</div>
+  </div>
+  <div id="panel" role="dialog" aria-labelledby="panelTitle2">
+    <div class="pHd"><h3 id="panelTitle2">地点详情</h3>
+      <div class="pActs">
+        <span class="pBlk" id="panelExpand" role="button" tabindex="0" aria-label="展开详情" hidden>⤢ 展开</span>
+        <span class="pBlk" id="panelClose" role="button" tabindex="0" aria-label="关闭详情">✕</span>
+      </div>
+    </div>
+    <div class="pBody" id="panelBody"></div>
+  </div>
+  <div id="tip">拖动平移 · 点标记看信息</div>
+  <div id="helpOv" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+    <div class="hCard">
+      <div class="hHd"><b id="helpTitle">使用说明</b><span class="hX" id="helpClose" role="button" tabindex="0" aria-label="关闭使用说明">✕</span></div>
+      <div class="hBody">
+        <ol>
+          <li><b>搜索地点</b>：顶部输入框输入楼名（如「申三」「弘毅苑」），回车或点「搜索」；结果多于一个时在下拉列表里点选。</li>
+          <li><b>查看建筑与照片</b>：点地图上的圆点或搜索结果，弹出地点详情；点缩略图可看大图。</li>
+          <li><b>单指拖动</b>：按住地图拖动可平移。</li>
+          <li><b>缩放</b>：双指捏合，或点右侧「＋ / －」按钮；地图缩放到单个楼栋时仍然可用。</li>
+          <li><b>恢复全图</b>：点右侧「恢复」，视图回到整幅校园图；起点、终点和路线不会丢。</li>
+          <li><b>选择起点和终点</b>：「导航起点」下拉可选起点；在详情里点「从这里出发」或「到这里去」自动生成路线。</li>
+          <li><b>清除路线</b>：点路线提示条上的「✕ 清除路线」，起点会保留，直接点新地点即可再算。</li>
+          <li><b>三个入口</b>：点地图上的「新生手册」「培养计划」「入学待办」按钮分别进入对应页面；「入学待办」是独立的清单页，勾选进度只存在本机。</li>
+        </ol>
+        <div class="hNote">手机浏览器地址栏收起 / 展开、横竖屏切换时地图与详情会自动按可见区域重排，不会重置你的缩放。</div>
+      </div>
+      <div class="hFt"><span class="hBtn" id="helpOk" role="button" tabindex="0">知道了</span></div>
+    </div>
+  </div>
+</div>
+<script type="module">
+// ---------- 数据 ----------
+// 底图 265KB 走 <picture> 先渲染，JSON 三件并行拉；全部就位再初始化交互
+const [resp, phmResp, roadNetResp] = await Promise.all([
+  fetch('./data/campus.json'),
+  fetch('./data/place_handbook_map.json'),
+  fetch('./data/road_network.json'),
+]);
+// 照片清单：只含文件名与尺寸，不含图片本体；缩略图随详情按需加载
+let placePhotos = {};
+try { placePhotos = await (await fetch('./data/place_photos.json')).json(); } catch (e) { placePhotos = {}; }
+const data = await resp.json();
+const phm = await phmResp.json();
+const roadNet = await roadNetResp.json();
+const meta = data.meta;
+const HIDDEN = new Set(['b03','b14','c01','c02','c03']);
+const feats = data.features.filter(f => f.kind === 'road' || !HIDDEN.has(f.id));
+const [oLon, oLat] = meta.projection.originLonLatGCJ02;
+const M_LAT = meta.projection.mPerDegLat, M_LON = meta.projection.mPerDegLon;
+function proj(lon, lat){ return [(lon-oLon)*M_LON, (lat-oLat)*M_LAT]; }
+const byId = {};
+for (const f of feats) byId[f.id] = f;
+const CAT_LABEL = {dorm:'宿舍', teaching:'教学楼', food:'餐饮', sport:'体育', service:'服务'};
+
+// ---------- 视口（动态可见高度）：地址栏收起/展开、横竖屏都由这里驱动 ----------
+// 优先用 visualViewport（手机地址栏、软键盘会改变它），退化为 innerHeight；
+// --appH / --appTop 供底部面板与安全区计算使用，不依赖固定 vh 或固定底部距离。
+function viewH() {
+  const vv = window.visualViewport;
+  const h = vv ? vv.height : window.innerHeight;
+  return Math.max(240, Math.round(h));
+}
+function viewTop() {
+  const vv = window.visualViewport;
+  return Math.max(0, Math.round(vv ? vv.offsetTop : 0));
+}
+function syncAppHeight() {
+  const root = document.documentElement;
+  const h = viewH(), t = viewTop();
+  root.style.setProperty('--appH', h + 'px');
+  root.style.setProperty('--appTop', t + 'px');
+  document.getElementById('app').style.height = h + 'px';
+  document.getElementById('app').style.top = t + 'px';
+}
+const safeTop = (() => {
+  const p = document.createElement('div');
+  p.style.cssText = 'position:absolute;left:0;top:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden';
+  document.body.appendChild(p);
+  const h = p.getBoundingClientRect().height;
+  p.remove();
+  return h;
+})();
+const safeBot = (() => {
+  const p = document.createElement('div');
+  p.style.cssText = 'position:absolute;left:0;top:0;width:0;height:env(safe-area-inset-bottom,0px);visibility:hidden';
+  document.body.appendChild(p);
+  const h = p.getBoundingClientRect().height;
+  p.remove();
+  return h;
+})();
+document.documentElement.style.setProperty('--sTop', safeTop + 'px');
+document.documentElement.style.setProperty('--sBot', safeBot + 'px');
+syncAppHeight();
+
+(function fillFilters(){
+  const cf = document.getElementById('catFilter');
+  [...new Set(feats.filter(f=>f.kind==='building'&&f.category).map(f=>f.category))].forEach(c=>{
+    const o=document.createElement('option'); o.value=c; o.textContent=CAT_LABEL[c]||c; cf.appendChild(o);});
+  // 起点下拉：包含所有可导航地点（楼栋 + 出入口），ID 与名称永久一一对应
+  const sp = document.getElementById('startPick');
+  const NAV_KINDS = new Set(['building', 'gate']);
+  feats.filter(f => NAV_KINDS.has(f.kind)).forEach(f=>{
+    const o=document.createElement('option'); o.value=f.id; o.textContent=f.name; sp.appendChild(o);});
+})();
+
+document.getElementById('stTitle').textContent = '上海理工大学基础学院 · 校园导览';
+
+// ---------- 坐标转换（localMeters → 底图像素） ----------
+// transform: sxMPerPx=0.6408, syMPerPx=1.043, cropOffsetPx=[-868.31,-193.86], anchorPx=[0,0]
+// xM = sxMPerPx*(px + cropOffsetPx[0] - anchorPx[0]) => px = (xM/sxMPerPx) - cropOffsetPx[0] + anchorPx[0]
+// zM: Three.js z=-zM, cz=(cropOffsetPx[1]+py-anchorPx[1])*syMPerPx, z=cz => -zM = syMPerPx*(py+cropOffsetPx[1]-anchorPx[1])
+// => py = (-zM/syMPerPx) - cropOffsetPx[1] + anchorPx[1] = (202.19-zM)/1.043
+const TF_A = 0.445736, TF_B = -556.41, TF_C = -0.725188, TF_D = 202.19;
+// 底图标注坐标（从底图文字标注读取或微调对齐，已按新底图1452×1083缩放）
+const PX_OVERRIDE = {
+  b01:[477,219], b02:[316,288], b04:[252,345], b05:[467,446],
+  b06:[575,302], b07:[632,310], b08:[748,331], b09:[618,394],
+  b10:[748,446], b11:[992,302], b12:[992,489],
+  b13:[1350,50], b15:[1040,838], b16:[1180,930], b17:[1006,956], b18:[769,956],
+  b19:[510,899], b20:[252,956], b21:[116,910], b22:[305,466], b23:[275,720],
+  b24:[518,699], b25:[743,673], b26:[526,788], b30:[1251,748],
+  b31:[1290,410],
+  g01:[94,834], g02:[109,671], g03:[1130,130],
+};
+const PENDING = new Set(['b01','b02','b04','b05','b06','b07','b08','b09','b10','b11','b12','b15','b16','b17','b18','b19','b20','b21','b22','b23','b24','b25','b26','b30','b31','g01','g02','g03']);
+
+function featPx(f) {
+  if (PX_OVERRIDE[f.id]) return PX_OVERRIDE[f.id];
+  if (f.kind === 'building' && f.footprint && f.footprint.localMeters) {
+    let cx = 0, cy = 0;
+    for (const [x, y] of f.footprint.localMeters) { cx += x; cy += y; }
+    cx /= f.footprint.localMeters.length; cy /= f.footprint.localMeters.length;
+    return [(cx - TF_B) / TF_A, (TF_D - cy) / (-TF_C)];
+  }
+  if (f.position && f.position.localMeters) {
+    const [xM, zM] = f.position.localMeters;
+    return [(xM - TF_B) / TF_A, (TF_D - zM) / (-TF_C)];
+  }
+  if (f.position && f.position.lonlat) {
+    const [ex, ny] = proj(...f.position.lonlat);
+    return [(ex - TF_B) / TF_A, (TF_D - ny) / (-TF_C)];
+  }
+  return null;
+}
+// {x,z}（Three.js风格，z=-zM）→ 像素
+function xz2px(x, z) { return [(x - TF_B) / TF_A, (z + TF_D) / (-TF_C)]; }
+// 像素 → {x,z}
+function px2xz(px, py) { return [px * TF_A + TF_B, py * (-TF_C) - TF_D]; }
+
+// ---------- 2D 地图交互 ----------
+const mapViewport = document.getElementById('mapViewport');
+const mapLayer = document.getElementById('mapLayer');
+const overlay = document.getElementById('overlay');
+const routeSvg = document.getElementById('routeSvg');
+const meMarkerEl = document.getElementById('meMarkerEl');
+// 矢量路线层：路网预览层（默认隐藏）+ 导航路线层
+const SVGNS = 'http://www.w3.org/2000/svg';
+const netLayer = document.createElementNS(SVGNS, 'g');
+netLayer.setAttribute('id', 'netLayer');
+netLayer.style.display = 'none';
+routeSvg.appendChild(netLayer);
+const routeLayer = document.createElementNS(SVGNS, 'g');
+routeLayer.setAttribute('id', 'routeLayer');
+routeSvg.appendChild(routeLayer);
+// 折线 → 带小圆角的 SVG path（直线保持直，圆角只作用于转弯显示，不改变图节点/连通关系）
+function roundPath(pts, r) {
+  if (!pts || pts.length < 2) return '';
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const p0 = pts[i-1], p1 = pts[i], p2 = pts[i+1];
+    const v1x = p0[0]-p1[0], v1y = p0[1]-p1[1], v2x = p2[0]-p1[0], v2y = p2[1]-p1[1];
+    const l1 = Math.hypot(v1x, v1y), l2 = Math.hypot(v2x, v2y);
+    const rr = Math.min(r, l1/2, l2/2);
+    if (rr < 0.5 || l1 < 1e-6 || l2 < 1e-6) { d += ` L ${p1[0]} ${p1[1]}`; continue; }
+    const ax = p1[0] + v1x/l1*rr, ay = p1[1] + v1y/l1*rr;
+    const bx = p1[0] + v2x/l2*rr, by = p1[1] + v2y/l2*rr;
+    d += ` L ${ax} ${ay} Q ${p1[0]} ${p1[1]} ${bx} ${by}`;
+  }
+  const last = pts[pts.length-1];
+  return d + ` L ${last[0]} ${last[1]}`;
+}
+// 按 style 统一：白描边 + 红芯、圆头圆角
+function drawStyledPath(parent, pts, r) {
+  const d = roundPath(pts, r);
+  if (!d) return null;
+  const st = roadNet.style || {};
+  const outer = document.createElementNS(SVGNS, 'path');
+  outer.setAttribute('d', d); outer.setAttribute('fill', 'none');
+  outer.setAttribute('stroke', st.outerColor || '#ffffff');
+  outer.setAttribute('stroke-width', st.outerWidth || 14);
+  outer.setAttribute('stroke-linecap', 'round'); outer.setAttribute('stroke-linejoin', 'round');
+  const inner = document.createElementNS(SVGNS, 'path');
+  inner.setAttribute('d', d); inner.setAttribute('fill', 'none');
+  inner.setAttribute('stroke', st.innerColor || '#ff1c26');
+  inner.setAttribute('stroke-width', st.innerWidth || 7);
+  inner.setAttribute('stroke-linecap', 'round'); inner.setAttribute('stroke-linejoin', 'round');
+  parent.appendChild(outer); parent.appendChild(inner);
+  return {outer, inner};
+}
+let scale = 0.5;                 // 内容坐标 → 视口像素的比例
+let minScale = 0.2;              // 缩放下限 = 适应全图（fitMap 时按可见区域重算）
+const MAX_SCALE_FACTOR = 4;      // 缩放上限 ≈ 适应状态的 4 倍
+const IMG_W = 1452, IMG_H = 1083;
+let offsetX = 0, offsetY = 0;    // 内容坐标原点在视口内的像素位置
+let _fitSnap = null;             // 「适应地图」快照：只恢复视图，不动起终点与路线
+const gw = () => IMG_W * scale, gh = () => IMG_H * scale;
+const maxScale = () => Math.max(minScale * MAX_SCALE_FACTOR, 0.25);
+// 平移边界（可见区域坐标）：
+//   图 ≤ 可见区域 → 图必须完整落在可见区域内（fitMap 时居中）
+//   图 > 可见区域 → 允许在 [可见区域右缘-图宽, 可见区域左缘] 内偏移，即可平移到所有内容
+function panBounds() {
+  const va = visibleArea();
+  const W = gw(), H = gh();
+  const ax = va.left, bx = va.right - W;
+  const ay = va.top, by = va.bottom - H;
+  return {loX: Math.min(ax, bx), hiX: Math.max(ax, bx),
+          loY: Math.min(ay, by), hiY: Math.max(ay, by)};
+}
+// 只拦越界：图比视口大时不许拖出边界；图比视口小时不允许漂出可见区域
+function clampOffset() {
+  const bb = panBounds();
+  offsetX = Math.min(Math.max(offsetX, bb.loX), bb.hiX);
+  offsetY = Math.min(Math.max(offsetY, bb.loY), bb.hiY);
+}
+// 可见区域：缩放比例、居中偏移、平移边界共用这同一套区域。
+// 桌面端只扣「顶部标题栏」与「底部工具栏」这两条固定栏；搜索框是左上角悬浮层，
+// 只为它预留它自己那块矩形（不整列留白），地图仍按剩下的实际宽高铺到最大。
+// 窄屏判定：竖屏 375/390 与横屏 839×400 都要按手机布局（按钮 44px、底部面板），
+// 因此除宽度外还看实际可见高度（地址栏占用后的可视高度更小）
+function isNarrow() { return window.innerWidth <= 640 || viewH() <= 500; }
+function visibleArea() {
+  const vw = mapViewport.clientWidth, vh = mapViewport.clientHeight;
+  let left = 0, top = 0, right = vw, bottom = vh;
+  if (!isNarrow()) {
+    try {
+      const b = mapViewport.getBoundingClientRect();
+      const bn = document.getElementById('banner');
+      if (bn) top = Math.max(0, Math.min(bn.getBoundingClientRect().bottom - b.top, vh - 160));
+      const tb = toolBar.getBoundingClientRect();
+      // 只在工具栏「真是一整行横条」时才扣底部；横向矮窗是左列竖排，扣它会得出负宽度并退回整块视口
+      if (tb.height > 0 && !toolBar.classList.contains('isCol') && tb.top - b.top > vh * 0.5) {
+        bottom = Math.min(vh, tb.top - b.top - 8);
+      }
+    } catch (err) { /* 初始化早期忽略 */ }
+  }
+  if (right - left < 120 || bottom - top < 120) { left = 0; top = 0; right = vw; bottom = vh; }
+  return {left, top, right, bottom, cx: (left + right) / 2, cy: (top + bottom) / 2,
+          w: right - left, h: bottom - top};
+}
+// 横屏手机：可见高度只有 300~400，顶部两行会把地图压成一条缝。
+// 这种尺寸把搜索区挪到左侧、地图放右侧并排，按钮尺寸保持不变。
+function isSideLayout() { return viewH() <= 500 && window.innerWidth > window.innerHeight; }
+// 进入任一布局分支前先清掉上一模式留下的内联定位，避免横屏的左偏移/竖排工具栏残留到竖屏
+function resetLayoutStyles() {
+  toolBar.classList.remove('isCol');
+  toolBar.style.width = '';
+  const s = mapViewport.style;
+  s.left = ''; s.right = ''; s.top = ''; s.bottom = ''; s.height = '';
+}
+// 详情展开时地图容器被收短过；收起或关闭详情时必须恢复，否则地图被压成 120px 条
+function restoreMapArea() {
+  mapViewport.style.height = '';
+  layoutTopOnly();   // 手机重排顶部并重算高度；桌面走 applyDesktopLayout 顺带清掉内联定位
+}
+// 竖屏详情「展开」中：地图容器收短到面板上沿，返回该高度；未展开返回 null
+function panelExpandedGap() {
+  if (!panel.classList.contains('expanded') || isSideLayout()) return null;
+  const gap = Math.round(panel.getBoundingClientRect().top - mapViewport.getBoundingClientRect().top - 8);
+  return Math.max(120, gap);
+}
+// 桌面布局：清掉手机/横屏并排写入的全部内联位置，回到 CSS 默认的悬浮搜索框 + 右下工具栏
+// 只改布局，不动 scale/offset（调用方负责是否重新适应全图）
+function applyDesktopLayout() {
+  resetLayoutStyles();   // 清 mapViewport 的内联 left/right/top/bottom/height 与工具栏 isCol/width
+  const searchEl = document.getElementById('search');
+  if (searchEl) searchEl.style.top = '';
+  // 注意：toolBar/locStatus 的默认位置写在内联 cssText 里（不是 CSS 规则），
+  // 只清 right 会把它们变成 left:auto 贴到窗口左边，必须显式写回右下角锚点
+  toolBar.style.left = '';
+  toolBar.style.right = '12px';
+  toolBar.style.top = '';
+  toolBar.style.bottom = '12px';
+  routeInfo.style.top = '';
+  routeInfo.style.left = '12px';
+  routeInfo.style.bottom = '44px';
+  routeInfo.style.maxHeight = '';
+  locStatus.style.top = '';
+  locStatus.style.left = '';
+  locStatus.style.right = '12px';
+  locStatus.style.bottom = '52px';
+  const panelEl = document.getElementById('panel');
+  if (panelEl) { panelEl.style.top = ''; panelEl.style.bottom = ''; panelEl.style.maxHeight = ''; }
+  showFooter(false);
+}
+function fitMap() {
+  syncAppHeight();   // 先按 visualViewport 同步容器高度（地址栏/横竖屏变化后不靠固定 vh）
+  resetLayoutStyles();
+  const vh = viewH();
+  const appTop = document.getElementById('app').getBoundingClientRect().top;
+  const searchEl = document.getElementById('search');
+  if (isNarrow()) {
+    searchEl.style.top = Math.round(safeTop + 36) + 'px';
+    const sr = searchEl.getBoundingClientRect();
+    if (isSideLayout()) {
+      // 横向：搜索区整列留在左侧，工具栏贴它的下沿，地图从搜索区右侧开始铺满
+      toolBar.style.left = '8px';
+      toolBar.style.right = 'auto';
+      toolBar.style.top = Math.round(sr.bottom - appTop + 6) + 'px';
+      toolBar.style.bottom = 'auto';
+      toolBar.classList.add('isCol');
+      toolBar.style.width = Math.round(sr.width) + 'px';
+      const bnr = document.getElementById('banner').getBoundingClientRect();
+      const landTop = Math.round(Math.max(safeTop, bnr.bottom - appTop) + 4);
+      mapViewport.style.left = (Math.round(sr.width) + 16) + 'px';
+      mapViewport.style.right = '0';
+      mapViewport.style.top = landTop + 'px';
+      mapViewport.style.bottom = 'auto';
+      mapViewport.style.height = Math.max(160, vh - landTop - 8 - safeBot) + 'px';
+      locStatus.style.left = (Math.round(sr.width) + 24) + 'px';
+      locStatus.style.right = '8px';
+      locStatus.style.bottom = 'auto';
+      locStatus.style.top = (landTop + 8) + 'px';
+      relayoutBelow();
+    } else {
+      toolBar.style.left = '8px';
+      toolBar.style.right = '8px';
+      toolBar.style.width = '';
+      mapViewport.style.left = '0';
+      mapViewport.style.right = '0';
+      // 工具栏紧贴搜索区下方独立成行，地图再从工具栏下方开始：图片不被浮层压住
+      toolBar.style.top = Math.round(sr.bottom - appTop + 6) + 'px';
+      toolBar.style.bottom = 'auto';
+      const top = Math.round(toolBar.getBoundingClientRect().bottom - appTop + 6);
+      mapViewport.style.top = top + 'px';
+      mapViewport.style.bottom = 'auto';
+      const tbH = toolBar.getBoundingClientRect().height || 0;
+      const belowTb = top + tbH + 6;
+      locStatus.style.top = belowTb + 'px';
+      locStatus.style.bottom = 'auto';
+      locStatus.style.left = '';
+      locStatus.style.right = '';
+      relayoutBelow();
+      // 竖屏：地图容器铺满「工具栏下方 → 可见区底部」。平面图 1452×1083（比例 1.34）在竖屏里
+      // 按宽铺满只占约 280px 高；若容器也只留 280，下半屏会空出一大片背景色。容器改为撑满，
+      // 图片在其中垂直居中（panBounds 保证图小居中、图大不出边），缩放控件悬浮在右下角。
+      const availH = Math.max(160, vh - top - 4 - safeBot);
+      mapViewport.style.height = availH + 'px';
+    }
+    // 比例按最终容器实测尺寸算：容器即实际可见区域，比例取「宽、高都放得下整幅图」的上限
+    const fw = mapViewport.clientWidth || window.innerWidth;
+    const fh = mapViewport.clientHeight || Math.max(160, vh - 240);
+    scale = Math.min(fw / IMG_W, fh / IMG_H);
+    const footer = document.getElementById('footer');
+    showFooter(false);
+  } else {
+    applyDesktopLayout();
+    // 用与缩放/平移同一套可见区域：实际可用宽高决定最大比例，再在区域内居中
+    const va = visibleArea();
+    scale = Math.min(va.w / IMG_W, va.h / IMG_H);
+  }
+  minScale = scale;   // 缩放下限严格等于适应全图的缩放比
+  const va = visibleArea();
+  offsetX = va.cx - gw() / 2;
+  offsetY = va.cy - gh() / 2;
+  updateTransform();
+  _fitSnap = {scale, ox: offsetX, oy: offsetY};
+}
+// 顶部控件（搜索区两行、工具栏单行）高度变化后只重排「地图区起点」，不重置用户缩放
+// 地址栏收起/展开只改可见高度：地图容器跟着伸缩，比例与平移不动（仅做边界夹紧）
+function layoutTopOnly() {
+  syncAppHeight();
+  if (!isNarrow()) {
+    // 矮横向（978×480 这类手机并排布局）拉高成桌面窗口时，必须清掉旧的左偏移/竖排工具栏，
+    // 否则地图卡在 left=226px 的窄栏、工具栏仍 isCol、新窗口下半部全是空白
+    applyDesktopLayout();
+    updateTransform();   // 保留用户缩放下重新夹紧边界并同步标记/路线
+    return;
+  }
+  resetLayoutStyles();   // 横屏→竖屏时清掉左侧偏移与竖排工具栏，否则地图被挤到右边
+  const appTop = document.getElementById('app').getBoundingClientRect().top;
+  const searchEl = document.getElementById('search');
+  searchEl.style.top = Math.round(safeTop + 36) + 'px';
+  const sr = searchEl.getBoundingClientRect();
+  if (isSideLayout()) {
+    toolBar.style.left = '8px';
+    toolBar.style.right = 'auto';
+    toolBar.style.top = Math.round(sr.bottom - appTop + 6) + 'px';
+    toolBar.style.bottom = 'auto';
+    toolBar.classList.add('isCol');
+    toolBar.style.width = Math.round(sr.width) + 'px';
+    const bnr = document.getElementById('banner').getBoundingClientRect();
+    const landTop = Math.round(Math.max(safeTop, bnr.bottom - appTop) + 4);
+    mapViewport.style.left = (Math.round(sr.width) + 16) + 'px';
+    mapViewport.style.right = '0';
+    mapViewport.style.top = landTop + 'px';
+    mapViewport.style.height = Math.max(160, viewH() - landTop - 8 - safeBot) + 'px';
+    relayoutBelow();
+    updateTransform();
+    return;
+  }
+  toolBar.style.left = '8px';
+  toolBar.style.right = '8px';
+  toolBar.style.width = '';
+  toolBar.style.top = Math.round(sr.bottom - appTop + 6) + 'px';
+  toolBar.style.bottom = 'auto';
+  mapViewport.style.left = '0';
+  mapViewport.style.right = '0';
+  const top = Math.round(toolBar.getBoundingClientRect().bottom - appTop + 6);
+  mapViewport.style.top = top + 'px';
+  mapViewport.style.bottom = 'auto';
+  const tbH = toolBar.getBoundingClientRect().height || 0;
+  const belowTb = top + tbH + 6;
+  locStatus.style.top = belowTb + 'px';
+  locStatus.style.left = '';
+  locStatus.style.right = '';
+  // 地图容器铺满到可见区底部（与 fitMap 同口径），搜索区/工具栏高度变化时只改起点，不缩高度
+  // 详情展开中则保持「收短到面板上沿」，避免重排把地图顶回全高压到面板后面
+  const gap = panelExpandedGap();
+  mapViewport.style.height = (gap !== null ? gap : Math.max(160, viewH() - top - 4 - safeBot)) + 'px';
+  relayoutBelow();
+  updateTransform();
+}
+// 是否还能「看到整幅图」：缩放停在适应状态（误差 0.5%）且没有人为平移
+function atFitView() {
+  if (!_fitSnap) return false;
+  return Math.abs(scale - _fitSnap.scale) <= Math.max(1e-6, _fitSnap.scale * 0.005) &&
+         Math.hypot(offsetX - _fitSnap.ox, offsetY - _fitSnap.oy) <= 1.5;
+}
+// 视口变化（resize / 地址栏伸缩 / 横竖屏旋屏 / 软键盘）：
+// 用户已缩放或拖动 → 只重排顶部与边界，绝不重置缩放；仍停在全图 → 跟随新视口重新适应
+let _lastW = 0, _lastH = 0;
+function onViewportChange() {
+  const w = window.innerWidth, h = viewH();
+  if (w === _lastW && h === _lastH) { layoutTopOnly(); return; }
+  const firstish = _lastW === 0;
+  const keep = !firstish && !atFitView();
+  _lastW = w; _lastH = h;
+  if (keep) layoutTopOnly(); else fitMap();
+}
+function onResize() { onViewportChange(); }
+function updateTransform() {
+  clampOffset();
+  mapLayer.style.transform = 'translate(' + offsetX + 'px,' + offsetY + 'px) scale(' + scale + ')';
+  // 标记/定位点只更新像素位置，尺寸恒定（不随 scale 变形），始终跟随其地图点
+  for (const m of markerList) {
+    m.el.style.left = (m.px * scale + offsetX) + 'px';
+    m.el.style.top = (m.py * scale + offsetY) + 'px';
+  }
+  // 路线层与底图共用同一 offset+scale：线宽随之按比例变化，不会因缩放而与道路错位
+  routeSvg.setAttribute('width', IMG_W);
+  routeSvg.setAttribute('height', IMG_H);
+  routeSvg.style.transform = 'translate(' + offsetX + 'px,' + offsetY + 'px) scale(' + scale + ')';
+  if (mePx) {
+    meMarkerEl.style.left = (mePx[0] * scale + offsetX) + 'px';
+    meMarkerEl.style.top = (mePx[1] * scale + offsetY) + 'px';
+  }
+}
+// ---- 缩放：以视口内某点（默认可见区域中心）为不动点，该点下的地图内容保持不动 ----
+// 锚点有两种口径：不传时用可见区域中心（visibleArea 返回的已是视口内坐标，不能再减视口偏移）；
+// 传了则视为 clientX/clientY（滚轮、双指中点），需减视口左上角换成视口内坐标。
+function zoomAt(newScale, anchorX, anchorY) {
+  newScale = Math.max(minScale, Math.min(maxScale(), newScale));
+  const vpRect = mapViewport.getBoundingClientRect();
+  const va = visibleArea();
+  const hasAnchor = anchorX !== undefined && anchorX !== null && anchorY !== undefined && anchorY !== null;
+  const vx = Math.max(0, Math.min(mapViewport.clientWidth, hasAnchor ? anchorX - vpRect.left : va.cx));
+  const vy = Math.max(0, Math.min(mapViewport.clientHeight, hasAnchor ? anchorY - vpRect.top : va.cy));
+  const cx = (vx - offsetX) / scale, cy = (vy - offsetY) / scale;   // 不动点的内容坐标
+  scale = newScale;
+  offsetX = vx - cx * scale;
+  offsetY = vy - cy * scale;
+  updateTransform();
+  return scale;
+}
+function zoomBy(f, ax, ay) { return zoomAt(scale * f, ax, ay); }
+// 让可见区域中心定位到指定内容坐标（focusFeature / 定位跟随共用）
+function centerOnContent(px, py) {
+  const va = visibleArea();
+  offsetX = va.cx - px * scale;
+  offsetY = va.cy - py * scale;
+  updateTransform();
+}
+// 恢复原图：按当前屏幕尺寸重算初始全图比例与位置（等价于首次进入的 fitMap），
+// 起点/终点/路线/导航状态一律不动，仅重置地图视图
+function resetView() {
+  // 先按当前尺寸重排（横竖屏切换后网格可能已变），再回全图：保证比例=当前全图比例
+  layoutTopOnly();
+  fitMap();
+  return scale;
+}
+// 缩放控件：点完缩放按钮不会穿透弹出地点详情
+for (const [id, fn] of [['zoomIn', () => zoomBy(1.5)], ['zoomOut', () => zoomBy(1 / 1.5)],
+                        ['zoomReset', resetView]]) {
+  const btn = document.getElementById(id);
+  if (!btn) continue;
+  btn.addEventListener('pointerdown', e => { e.stopPropagation(); });
+  btn.addEventListener('mousedown', e => { e.stopPropagation(); });
+  btn.addEventListener('touchstart', e => { e.stopPropagation(); }, {passive: true});
+  btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); fn(); });
+}
+// 滚轮缩放：以鼠标位置为不动点
+mapViewport.addEventListener('wheel', e => {
+  e.preventDefault();
+  const k = Math.exp(-e.deltaY * 0.0016);   // 每滚 100px 约 1.17 倍
+  zoomBy(k, e.clientX, e.clientY);
+}, {passive: false});
+
+// ---- 鼠标拖动（左键） ----
+let dragging = false, dragX0 = 0, dragY0 = 0, dragOX0 = 0, dragOY0 = 0, moved = 0;
+let mouseFromTouch = false;   // 鼠标事件序列来自触摸合成：不参与地图点击判定
+let touchGhostUntil = 0;      // 触摸结束后浏览器补发兼容鼠标事件的截止时间
+// ---- 鼠标拖动（左键）：触摸序列合成的鼠标事件不参与地图点击判定 ----
+mapViewport.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  // 触摸序列刚结束时浏览器补发的合成 mousedown：整段忽略；窗口期外的真实鼠标按下照常拖拽
+  if (mouseFromTouch) {
+    if (performance.now() < touchGhostUntil) return;
+    mouseFromTouch = false;
+  }
+  dragging = true; moved = 0;
+  dragX0 = e.clientX; dragY0 = e.clientY;
+  dragOX0 = offsetX; dragOY0 = offsetY;
+  mapViewport.classList.add('dragging');
+});
+// 触摸序列开始即标记：其后的合成鼠标事件（mousedown/mousemove/mouseup/click）不参与地图点击
+mapViewport.addEventListener('touchstart', () => { mouseFromTouch = true; }, {passive: true});
+window.addEventListener('mousemove', e => {
+  if (!dragging || mouseFromTouch) return;
+  const dx = e.clientX - dragX0, dy = e.clientY - dragY0;
+  moved = Math.max(moved, Math.hypot(dx, dy));
+  offsetX = dragOX0 + dx; offsetY = dragOY0 + dy;
+  updateTransform();
+});
+window.addEventListener('mouseup', e => {
+  if (!dragging) return;
+  dragging = false;
+  mapViewport.classList.remove('dragging');
+  if (moved < 5) handleMapClick(e);
+});
+
+// ---- 触屏：单指平移、双指真捏合（以两指中点为不动点） ----
+let touchState = null;
+function pinchInfo(ts) {
+  const a = ts[0], b = ts[1];
+  return {d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+          mx: (a.clientX + b.clientX) / 2, my: (a.clientY + b.clientY) / 2};
+}
+mapViewport.addEventListener('touchstart', e => {
+  if (e.touches.length >= 2) {
+    const p = pinchInfo(e.touches);
+    touchState = {type: 'pinch', d0: p.d, s0: scale};
+  } else if (e.touches.length === 1) {
+    touchState = {type: 'pan', x: e.touches[0].clientX, y: e.touches[0].clientY,
+                  ox0: offsetX, oy0: offsetY, moved: 0};
+  }
+}, {passive: false});
+mapViewport.addEventListener('touchmove', e => {
+  if (e.cancelable) e.preventDefault();
+  if (!touchState) return;
+  if (e.touches.length >= 2) {
+    if (touchState.type !== 'pinch') {
+      const p0 = pinchInfo(e.touches);
+      touchState = {type: 'pinch', d0: p0.d, s0: scale};
+      return;
+    }
+    const p = pinchInfo(e.touches);
+    if (touchState.d0 > 8) zoomAt(touchState.s0 * (p.d / touchState.d0), p.mx, p.my);
+  } else if (e.touches.length === 1 && touchState.type === 'pan') {
+    const dx = e.touches[0].clientX - touchState.x, dy = e.touches[0].clientY - touchState.y;
+    touchState.moved = Math.max(touchState.moved, Math.hypot(dx, dy));
+    offsetX = touchState.ox0 + dx; offsetY = touchState.oy0 + dy;
+    updateTransform();
+  }
+}, {passive: false});
+mapViewport.addEventListener('touchend', e => {
+  const st = touchState;
+  // 只有「单指轻点」才算点击；双指捏合结束、拖动结束都不弹地点详情
+  if (st && st.type === 'pan' && st.moved < 5 && e.touches.length === 0 && e.changedTouches.length === 1) {
+    // 本次轻点已被地图消费：阻止浏览器再补发 mousedown/mouseup/click，
+    // 否则兼容鼠标事件会落到刚弹出的面板照片上，一次点击就误开高清大图
+    if (e.cancelable) e.preventDefault();
+    handleMapClick({clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY});
+    touchState = null;
+    return;
+  }
+  touchState = (e.touches.length >= 2) ? {type: 'pinch', d0: 0, s0: scale} : null;
+  touchGhostUntil = performance.now() + 700;   // 兼容鼠标事件窗口（轻点分支已 preventDefault，这里兜底）
+}, {passive: false});
+mapViewport.addEventListener('touchcancel', () => { touchState = null; });
+// 分类是否放行该地点：分类只影响展示层，building 才受分类约束（校门/打卡点始终显示）
+function markerInCategory(f) {
+  const cat = document.getElementById('catFilter').value;
+  return !cat || f.kind !== 'building' || f.category === cat;
+}
+const HIT_R = 15;   // 标记判定半径（与 28px 透明触控区一致）
+function handleMapClick(e) {
+  const rect = mapViewport.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  // 鼠标与触摸共用：跳过被分类隐藏的标记；半径内多个标记时取最近的那个（防止误开相邻地点）
+  let best = null, bestD = HIT_R;
+  for (const m of markerList) {
+    if (!markerInCategory(m.f)) continue;
+    const mx = m.px * scale + offsetX, my = m.py * scale + offsetY;
+    const d = Math.hypot(sx - mx, sy - my);
+    if (d <= bestD) { bestD = d; best = m; }
+  }
+  if (best) { showPanel(best.f); return; }
+  // 点选位置模式
+  if (pickMode) {
+    const [x, z] = px2xz((sx - offsetX) / scale, (sy - offsetY) / scale);
+    setMyLocal(x, -z, '点选位置');
+  }
+}
+
+// ---------- 地点标记 ----------
+const markerList = [];
+for (const f of feats) {
+  const px = featPx(f);
+  if (!px) continue;
+  const el = document.createElement('div');
+  el.className = 'marker' + (f.kind === 'gate' ? ' gate' : f.kind === 'checkin' ? ' checkin' : '') + (PENDING.has(f.id) ? ' pending' : '') + (f.id === 'b13' ? ' labelOnly' : '') + (f.id === 'b07' ? ' lblAbove' : '') + (f.id === 'b06' || f.id === 'b07' ? ' smallLbl' : '');
+  el.innerHTML = `<div class="dot"></div><div class="lbl">${f.name}</div>`;
+  el.title = f.name + (PENDING.has(f.id) ? '（位置待核实）' : '');
+  overlay.appendChild(el);
+  markerList.push({f, px: px[0], py: px[1], el});
+}
+
+// ---------- 地点详情面板 ----------
+const panel = document.getElementById('panel');
+const panelBody = document.getElementById('panelBody');
+window.panel = panel;
+function showPanel(f) {
+  if (!f) { closePanel(); return; }
+  currentPanelFeature = f;
+  for (const m of markerList) m.el.classList.toggle('highlight', m.f === f);
+  document.getElementById('panelTitle2').textContent = f.name;
+  let html = '';
+  const catName = {dorm:'宿舍', teaching:'教学楼', food:'餐饮', sport:'体育', service:'服务', gate:'校门'}[f.category] || '';
+  if (catName) html += `<div>类型：${catName}</div>`;
+  if (phm.place_to_handbook[f.id] && phm.place_to_handbook[f.id].length) {
+    html += '<div style="margin-top:8px;border-top:1px dashed rgba(255,255,255,.2);padding-top:8px"><div style="color:#8ab4f8;font-size:12px;margin-bottom:4px">📖 相关手册章节</div>';
+    phm.place_to_handbook[f.id].forEach(file => {
+      const title = file.replace(/\.md$/,'').replace(/^\d+[a-z]?-/,'');
+      html += '<a href="handbook.html?chapter=' + encodeURIComponent(file) + '" style="display:block;color:#e8eaed;text-decoration:none;font-size:13px;padding:3px 0">→ ' + title + '</a>';
+    });
+    html += '</div>';
+  }
+  if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') html += '<div id="photoSlot" style="margin:8px 0"></div>';
+  panelBody.innerHTML = html;
+  renderPanelActions(f);
+  panel.style.display = isNarrow() ? 'flex' : 'block';
+  panel.classList.remove('expanded');
+  { mapViewport.style.height = ''; layoutTopOnly(); }
+  document.getElementById('panelExpand').textContent = '⤢ 展开';
+  setPanelExpandVisible(isNarrow() && !isSideLayout());   // 竖屏底部面板才需要「展开/收起」
+  if (isNarrow()) {
+    routeInfo.style.display = 'none';
+    locStatus.style.display = 'none';
+    const footer = document.getElementById('footer');
+    showFooter(false);
+  }
+  // 带照片的详情：手机端照片 3 列，滚动区独立
+  const phList = placePhotos[f.id] || [];
+  panel.classList.toggle('hasPhotos', phList.length > 0);
+  if (isNarrow()) relayoutBelow();
+  if (f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin') renderPlacePhotos(f);
+  panelBody.scrollTop = 0;
+}
+// 详情底部操作区（固定可见）：从这里出发 / 到这里去 / 设为新起点 / 当前起点
+function renderPanelActions(f) {
+  let foot = panel.querySelector('.pFoot');
+  if (!foot) {
+    foot = document.createElement('div');
+    foot.className = 'pFoot';
+    panel.appendChild(foot);
+  }
+  if (!(f.kind === 'building' || f.kind === 'gate' || f.kind === 'checkin')) { foot.remove(); return; }
+  foot.innerHTML = '';
+  const btnBase = 'border:0;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:14px;flex:1 1 0;min-height:44px;box-sizing:border-box';
+  const isCurrentStart = userPickedStart && routeStartId === f.id;
+  if (isCurrentStart) {
+    const d = document.createElement('div');
+    d.style.cssText = 'flex:1;color:#8ab4f8;font-size:14px;padding:10px 2px;min-height:44px;display:flex;align-items:center';
+    d.textContent = '📍 当前起点';
+    foot.appendChild(d);
+    return;
+  }
+  if (userPickedStart) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.style.cssText = 'background:#ffb020;color:#222;' + btnBase;
+    b.textContent = '🧭 到这里去';
+    b.onclick = () => setRouteEndById(f.id);
+    foot.appendChild(b);
+    const s = document.createElement('span');
+    s.setAttribute('role', 'button');
+    s.tabIndex = 0;
+    s.style.cssText = 'flex:none;display:inline-flex;align-items:center;color:#8ab4f8;cursor:pointer;font-size:13px;' +
+      'text-decoration:underline;padding:0 4px;min-height:44px';
+    s.textContent = '设为新起点';
+    s.onclick = () => setRouteStartById(f.id);
+    foot.appendChild(s);
+    return;
+  }
+  const b1 = document.createElement('button');
+  b1.type = 'button';
+  b1.style.cssText = 'background:#8ab4f8;color:#12203a;' + btnBase;
+  b1.textContent = '🚶 从这里出发';
+  b1.onclick = () => setRouteStartById(f.id);
+  const b2 = document.createElement('button');
+  b2.type = 'button';
+  b2.style.cssText = 'background:#ffb020;color:#222;' + btnBase;
+  b2.textContent = '🧭 到这里去';
+  b2.onclick = () => setRouteEndById(f.id);
+  foot.append(b1, b2);
+}
+// ---------- 地点照片（按地点 ID 关联，支持同地点多视角） ----------
+let photoPanelToken = 0;   // 每次打开详情递增，丢弃过期回调，防止上一处照片串入当前面板
+function renderPlacePhotos(f) {
+  const slot = document.getElementById('photoSlot');
+  if (!slot) return;
+  const token = ++photoPanelToken;
+  const list = (placePhotos[f.id] || []);
+  if (!list.length) { slot.innerHTML = '<div style="color:#9aa0a6">📷 暂无实拍照片</div>'; return; }
+  const grid = list.map((p, i) =>
+    '<button type="button" class="phItem" data-i="' + i + '" aria-label="查看' + p.view + '大图">' +
+    '<img src="./photos/' + p.thumb + '" alt="' + f.name + ' · ' + p.view + '" loading="lazy" decoding="async" style="object-fit:contain">' +
+    (list.length > 1 ? '<span class="phCap">' + p.view + '</span>' : '') +
+    '</button>').join('');
+  slot.innerHTML = '<div class="phHead">📷 校园照片（' + list.length + ' 张）</div>' +
+    '<div class="phGrid' + (list.length === 1 ? ' solo' : '') + '">' + grid + '</div>';
+  slot.querySelectorAll('.phItem').forEach(btn => {
+    btn.onclick = () => openPhotoViewer(list[+btn.dataset.i], f);
+  });
+}
+// 点缩略图才加载高清图；查看器挂在 body 上，不随面板重绘丢失
+function openPhotoViewer(p, f) {
+  closePhotoViewer();
+  const ov = document.createElement('div');
+  ov.id = 'photoViewer';
+  ov.innerHTML = '<div class="pvBar"><span class="pvT">' + f.name + (p.view && p.view !== f.name ? ' · ' + p.view : '') +
+    '</span><span class="pvZ"><span role="button" data-z="fit">适应</span><span role="button" data-z="in">＋</span><span role="button" data-z="out">－</span></span>' +
+    '<span class="pvX" role="button" aria-label="关闭">✕</span></div>' +
+    '<div class="pvStage"><div class="pvMsg pvLoad" role="status" aria-live="polite"><div class="pvSpin"></div>' +
+    '正在加载高清图…<div class="pvSub" style="margin-top:4px">点右上角 ✕ 可随时关闭</div>' +
+    '<div class="pvBtns"><span class="pvBtn" role="button" tabindex="0" data-act="close">关闭</span></div></div>' +
+    '<div class="pvMsg pvErr" role="alert"><div class="pvIcon">⚠️</div>高清图加载失败' +
+    '<div class="pvSub">' + p.full + '</div>' +
+    '<div class="pvBtns"><span class="pvBtn primary" role="button" tabindex="0" data-act="retry">重试</span>' +
+    '<span class="pvBtn" role="button" tabindex="0" data-act="close">关闭</span></div></div>' +
+    '<img alt="' + f.name + '"></div>';
+  document.body.appendChild(ov);
+  ov.classList.add('loading');
+  const img = ov.querySelector('img');
+  let scale = 1;
+  let tx = 0, ty = 0;
+  // 放大后保持比例、支持拖动查看门牌等细节（图片自身 overflow 裁切，不撑破弹窗）
+  const apply = () => { img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')'; img.style.cursor = scale > 1 ? 'grab' : 'zoom-in'; };
+  const load = () => {   // 首次与重试共用：保持同一路径，失败后可原样重试
+    ov.classList.remove('ready', 'error');
+    ov.classList.add('loading');
+    img.style.transform = '';
+    scale = 1; tx = 0; ty = 0; apply();
+    img.src = './photos/' + p.full;
+  };
+  img.onload = () => {
+    if (!ov.isConnected) return;
+    ov.classList.remove('loading', 'error');
+    ov.classList.add('ready');
+  };
+  img.onerror = () => {
+    if (!ov.isConnected) return;
+    ov.classList.remove('loading', 'ready');
+    ov.classList.add('error');
+  };
+  load();   // 高清仅在用户点击后加载
+  let drag = null;
+  img.onpointerdown = e => {
+    if (scale <= 1) {   // 未放大时点图即放大，等效于「＋」
+      scale = 1.5; apply(); return;
+    }
+    drag = { x: e.clientX, y: e.clientY, tx, ty };
+    img.setPointerCapture(e.pointerId);
+    img.style.cursor = 'grabbing';
+  };
+  img.onpointermove = e => {
+    if (!drag) return;
+    const st = ov.querySelector('.pvStage');
+    const maxX = Math.max(0, (img.offsetWidth * scale - st.clientWidth) / 2);
+    const maxY = Math.max(0, (img.offsetHeight * scale - st.clientHeight) / 2);
+    tx = Math.max(-maxX, Math.min(maxX, drag.tx + e.clientX - drag.x));
+    ty = Math.max(-maxY, Math.min(maxY, drag.ty + e.clientY - drag.y));
+    apply();
+  };
+  img.onpointerup = () => { drag = null; apply(); };
+  ov.querySelectorAll('[data-z]').forEach(el => {
+    el.onclick = e => {
+      e.stopPropagation();
+      const z = el.dataset.z;
+      scale = z === 'in' ? Math.min(4, scale * 1.5) : z === 'out' ? Math.max(1, scale / 1.5) : 1;
+      if (scale === 1) { tx = 0; ty = 0; }
+      apply();
+    };
+  });
+  ov.querySelector('.pvX').onclick = closePhotoViewer;
+  // 加载中/失败面板上的按钮：重试重新拉图，关闭移除节点（与 ✕ 等价）
+  ov.querySelectorAll('[data-act]').forEach(el => {
+    el.onclick = e => {
+      e.stopPropagation();
+      if (el.dataset.act === 'retry') load();
+      else closePhotoViewer();
+    };
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } };
+  });
+  ov.querySelector('.pvStage').onclick = e => { if (e.target === ov.querySelector('.pvStage')) closePhotoViewer(); };
+  const onKey = e => { if (e.key === 'Escape') { closePhotoViewer(); document.removeEventListener('keydown', onKey); } };
+  document.addEventListener('keydown', onKey);
+}
+function closePhotoViewer() {
+  const ov = document.getElementById('photoViewer');
+  if (ov) { ov.remove(); }
+}
+let pendingStatus = null;
+let currentPanelFeature = null;
+function closePanel() {
+  panel.style.display = 'none';
+  panel.classList.remove('expanded');
+  currentPanelFeature = null;
+  // 桌面与手机都要还原：展开态残留的容器高度/内联定位不清掉，关掉详情后地图会留一条被压扁的窄带
+  restoreMapArea();
+  if (navState || lastRoute) renderRoute();   // 恢复已保存的导航状态（正常/已到达/不可达）
+  showFooter(!isNarrow());   // 手机端不显示页脚：它会压在底部缩放按钮上
+  relayoutBelow();
+  if (pendingStatus) { const ps = pendingStatus; pendingStatus = null; showStatus(ps); }
+}
+window.closePanel = closePanel;
+function setPanelExpandVisible(on) {
+  const el = document.getElementById('panelExpand');
+  if (!el) return;
+  const show = !!(on && panelExpandSupported());
+  if (show) el.removeAttribute('hidden'); else el.setAttribute('hidden', '');
+}
+// 「展开 / 收起」只服务手机竖屏的底部面板：桌面右上浮窗与横屏并排面板都是整高，不提供该操作
+function panelExpandSupported() { return isNarrow() && !isSideLayout(); }
+// 详情底部面板的「展开 / 收起」：展开后占满可见高度（按 --appH，不含浏览器底栏），再点收起
+function togglePanelExpand(force) {
+  if (!panelExpandSupported()) return false;   // 桌面/横屏：不切 class、不写内联高度
+  if (panel.style.display === 'none') return false;
+  const on = (force === undefined) ? !panel.classList.contains('expanded') : !!force;
+  panel.classList.toggle('expanded', on);
+  document.getElementById('panelExpand').textContent = on ? '⤡ 收起' : '⤢ 展开';
+  document.getElementById('panelExpand').setAttribute('aria-label', on ? '收起详情' : '展开详情');
+  if (on) {
+    // 竖屏展开：地图容器收短到面板上沿，展开后地图仍可见可拖
+    const gap = panelExpandedGap();
+    if (gap !== null) mapViewport.style.height = gap + 'px';
+  } else {
+    restoreMapArea();   // 收回原高度，缩放/平移不动
+  }
+  relayoutBelow();
+  updateTransform();
+  return on;
+}
+window.togglePanelExpand = togglePanelExpand;
+{
+  const pe = document.getElementById('panelExpand');
+  const pc = document.getElementById('panelClose');
+  const bind = (el, fn) => {
+    if (!el) return;
+    el.onclick = e => { e.preventDefault(); e.stopPropagation(); fn(); };
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } };
+  };
+  bind(pe, () => togglePanelExpand());
+  bind(pc, () => closePanel());
+}
+
+// ---------- 路网图（按坐标文件 29 条折线重建）+ 寻路 ----------
+// 坐标文件：参考图 1451×1084 像素（原点左上，x右 y下）；落到 1452×1083 底图按比例换算后复用 px2xz
+const REF_SX = 1452 / 1451, REF_SY = 1083 / 1084;
+function ref2xz(rx, ry) { const [x, z] = px2xz(rx * REF_SX, ry * REF_SY); return {x, z}; }
+const roadPolys = roadNet.polylines.map(p => p.points.map(q => ref2xz(q[0], q[1])));
+// 1) 遍历全部相邻点，收集所有线段
+const rawSegs = [];
+for (const P of roadPolys)
+  for (let i = 0; i < P.length - 1; i++) {
+    const a = P[i], b = P[i+1];
+    if (Math.hypot(a.x-b.x, a.z-b.z) > 1e-6) rawSegs.push([a, b]);
+  }
+// 2) 线段两两求交（十字交点、T形交点、内部落点），在交点处切分
+const segParam = rawSegs.map(() => [0, 1]);
+function segIntersect(a, b, c, d) {
+  const d1x = b.x-a.x, d1z = b.z-a.z, d2x = d.x-c.x, d2z = d.z-c.z;
+  const den = d1x*d2z - d1z*d2x;
+  if (Math.abs(den) < 1e-12) return null;   // 平行/共线不在此处理
+  const t = ((c.x-a.x)*d2z - (c.z-a.z)*d2x) / den;
+  const u = ((c.x-a.x)*d1z - (c.z-a.z)*d1x) / den;
+  if (t < -1e-6 || t > 1+1e-6 || u < -1e-6 || u > 1+1e-6) return null;
+  return [Math.min(1, Math.max(0, t)), Math.min(1, Math.max(0, u))];
+}
+for (let i = 0; i < rawSegs.length; i++)
+  for (let j = i+1; j < rawSegs.length; j++) {
+    const hit = segIntersect(rawSegs[i][0], rawSegs[i][1], rawSegs[j][0], rawSegs[j][1]);
+    if (hit) { segParam[i].push(hit[0]); segParam[j].push(hit[1]); }
+  }
+// 3) 建图：同一节点只允许极小误差合并
+const NODE_TOL = 1.0;   // 米
+const rNodes = [];
+function addRNode(x, z) {
+  for (let i = 0; i < rNodes.length; i++)
+    if (Math.hypot(rNodes[i].x - x, rNodes[i].z - z) < NODE_TOL) return i;
+  rNodes.push({x, z});
+  return rNodes.length - 1;
+}
+let rAdj = [];
+const edgeSeen = new Set();
+function addREdge(a, b) {
+  if (a === b) return;
+  const key = a < b ? a+'_'+b : b+'_'+a;
+  if (edgeSeen.has(key)) return;
+  const d = Math.hypot(rNodes[a].x-rNodes[b].x, rNodes[a].z-rNodes[b].z);
+  if (d < 1e-6) return;
+  edgeSeen.add(key);
+  if (!rAdj[a]) rAdj[a] = [];
+  if (!rAdj[b]) rAdj[b] = [];
+  rAdj[a].push([b, d, '校园道路']);
+  rAdj[b].push([a, d, '校园道路']);
+}
+rawSegs.forEach(([a, b], i) => {
+  const ts = [...new Set(segParam[i].map(t => Math.round(t*1e6)/1e6))].sort((p, q) => p - q);
+  let prev = -1;
+  for (const t of ts) {
+    const ni = addRNode(a.x + (b.x-a.x)*t, a.z + (b.z-a.z)*t);
+    if (prev >= 0) addREdge(prev, ni);
+    prev = ni;
+  }
+});
+rAdj = rNodes.map((_, i) => rAdj[i] || []);   // 补齐孤立点
+// 不可变基础图：一经建好不再修改，供每次查询复制（let 便于隔离测试临时替换后恢复）
+let baseAdj = rAdj.map(list => list.map(e => [e[0], e[1], e[2]]));
+let baseNodes = rNodes.map(n => ({x: n.x, z: n.z}));
+// 仅使用坐标文件中明确连接的路段；删除“相距小于40自动步行衔接”。
+// 端点吸附：返回最近基础边上的投影（u,v 为原节点，t 为边上参数，proj 为投影坐标）
+// 主连通分量（最大分量）节点集合：正常点位吸附到主路网；仅“贴边”的点位才允许吸附孤立支线。
+// 孤立支线是刻意保留的封闭通道，贴边接入可正确显示不可达；否则回退主分量，避免跨草地吸附。
+const mainCompNodes = (function () {
+  const n = baseAdj.length;
+  const comp = new Array(n).fill(-1);
+  let cid = 0, bestCid = -1, bestSize = -1;
+  for (let i = 0; i < n; i++) {
+    if (comp[i] !== -1) continue;
+    const stack = [i]; comp[i] = cid; let size = 0;
+    while (stack.length) {
+      const u = stack.pop(); size++;
+      for (const [v] of baseAdj[u]) if (comp[v] === -1) { comp[v] = cid; stack.push(v); }
+    }
+    if (size > bestSize) { bestSize = size; bestCid = cid; }
+    cid++;
+  }
+  const s = new Set();
+  for (let i = 0; i < n; i++) if (comp[i] === bestCid) s.add(i);
+  return s;
+})();
+// 贴边阈值（米）：点位到孤立支线距离在此以内视为“就在通道口”，接受孤立段吸附
+const ISO_SNAP_M = 8;
+function nearestEdgeOnBase(P) {
+  let bestMain = null, best = null;
+  for (let u = 0; u < baseAdj.length; u++)
+    for (const [v] of baseAdj[u]) {
+      if (v < u) continue;
+      const a = baseNodes[u], b = baseNodes[v];
+      const abx = b.x-a.x, abz = b.z-a.z, L2 = abx*abx + abz*abz;
+      if (L2 < 1e-9) continue;
+      let t = ((P.x-a.x)*abx + (P.z-a.z)*abz) / L2;
+      t = Math.max(0, Math.min(1, t));
+      const px = a.x + abx*t, pz = a.z + abz*t;
+      const d = Math.hypot(P.x-px, P.z-pz);
+      if (!best || d < best.d) best = {d, u, v, t, proj: {x: px, z: pz}};
+      const inMain = mainCompNodes.has(u) || mainCompNodes.has(v);
+      if (inMain && (!bestMain || d < bestMain.d)) bestMain = {d, u, v, t, proj: {x: px, z: pz}};
+    }
+  // 最近边属于孤立支线：仅当贴边（很近）才接受；否则回退主分量
+  if (best && bestMain && !(mainCompNodes.has(best.u) || mainCompNodes.has(best.v)) && best.d > ISO_SNAP_M) {
+    return bestMain;
+  }
+  return best;
+}
+function nearestNodeOnBase(p) {
+  let bi = 0, bd = 1e18;
+  for (let i = 0; i < baseNodes.length; i++) {
+    const d = Math.hypot(baseNodes[i].x-p.x, baseNodes[i].z-p.z);
+    if (d < bd) { bd = d; bi = i; }
+  }
+  return bi;
+}
+// 临时图查询：复制基础图，把起终点投影点按其在同一边上的顺序插入，并替换被切分的原边。
+// 不修改基础图；基础图节点数恒定。
+function buildTempGraph(S, T) {
+  const nodes = baseNodes.map(n => ({x: n.x, z: n.z}));
+  const adj = baseAdj.map(list => list.map(e => [e[0], e[1], e[2]]));
+  const ensure = i => { while (adj.length <= i) adj.push([]); };
+  const sE = nearestEdgeOnBase(S), tE = nearestEdgeOnBase(T);
+  const ins = new Map();   // key 'u_v' → {u,v,items:[{t,proj,tag}]}
+  const add = (e, P, tag) => {
+    if (!e) return;
+    const [u, v] = e.u < e.v ? [e.u, e.v] : [e.v, e.u];
+    const key = u + '_' + v;
+    if (!ins.has(key)) ins.set(key, {u, v, items: []});
+    ins.get(key).items.push({t: e.t, proj: e.proj, tag});
+  };
+  add(sE, S, 's'); add(tE, T, 't');
+  let sIdx = null, tIdx = null;
+  for (const {u, v, items} of ins.values()) {
+    items.sort((a, b) => a.t - b.t);
+    adj[u] = adj[u].filter(e => e[0] !== v);
+    adj[v] = adj[v].filter(e => e[0] !== u);
+    const idxs = [u];
+    // 同边相同 t / 几乎相同坐标的投影必须合并为一个节点：起终点都指向它 → 同地点不绕圈
+    let lastT = null, lastNode = null;
+    for (const it of items) {
+      let ni;
+      if (it.t <= 1e-9) ni = u;
+      else if (it.t >= 1-1e-9) ni = v;
+      else if (lastNode !== null && (Math.abs(it.t - lastT) < 1e-6 ||
+               Math.hypot(it.proj.x - nodes[lastNode].x, it.proj.z - nodes[lastNode].z) < 1e-6)) ni = lastNode;
+      else { ni = nodes.length; nodes.push({x: it.proj.x, z: it.proj.z}); ensure(ni); }
+      it.node = ni;
+      lastT = it.t; lastNode = ni;
+      idxs.push(ni);
+    }
+    idxs.push(v);
+    for (let i = 0; i < idxs.length - 1; i++) {
+      const a = idxs[i], b = idxs[i+1];
+      if (a === b) continue;
+      const w = Math.hypot(nodes[a].x-nodes[b].x, nodes[a].z-nodes[b].z);
+      if (w < 1e-9) continue;
+      ensure(a); ensure(b);
+      adj[a].push([b, w, '校园道路']);
+      adj[b].push([a, w, '校园道路']);
+    }
+    items.forEach((it) => { if (it.tag === 's') sIdx = it.node; else tIdx = it.node; });
+  }
+  if (sIdx === null) sIdx = nearestNodeOnBase(S);
+  if (tIdx === null) tIdx = nearestNodeOnBase(T);
+  // 起终点在米坐标里几乎重合（同一建筑的同一投影点）→ 明确 0 米/同地点
+  const same = sIdx === tIdx ||
+    Math.hypot(nodes[sIdx].x - nodes[tIdx].x, nodes[sIdx].z - nodes[tIdx].z) < 1e-6;
+  return {nodes, adj, sIdx, tIdx, same, sDist: sE ? sE.d : 0, tDist: tE ? tE.d : 0};
+}
+function dijkstra(graph, s, e) {
+  const {nodes, adj} = graph;
+  const dist = nodes.map(() => 1e18), prev = nodes.map(() => -1), done = nodes.map(() => false);
+  dist[s] = 0;
+  for (;;) {
+    let u = -1, ud = 1e18;
+    for (let i = 0; i < nodes.length; i++)
+      if (!done[i] && dist[i] < ud) { ud = dist[i]; u = i; }
+    if (u === -1 || u === e) break;
+    done[u] = true;
+    for (const [v, w] of adj[u])
+      if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; prev[v] = u; }
+  }
+  if (dist[e] >= 1e18) return null;
+  const path = [];
+  for (let v = e; v !== -1; v = prev[v]) path.unshift(v);
+  return {path, dist: dist[e]};
+}
+function keyOf(a, b) { return a < b ? a+'_'+b : b+'_'+a; }
+
+// ---------- 路线 ----------
+let routeStart = null, routeStartName = '大门', routeEndPt = null, routeEndName = '';
+let lastRoute = null, traveledM = -1, offRouteM = 0;
+let navState = null, routeEndId = null;
+// routeStartId：起点地点 ID，用于「同地点」判定（替代名称/坐标猜测）
+// userPickedStart：是否已由用户主动选过起点；页面默认「大门」只预填起点，不置此标志
+let routeStartId = null, userPickedStart = false;
+let routePts = [], routePair = null;
+const routeInfo = document.createElement('div');
+routeInfo.style.cssText = 'position:absolute;bottom:44px;left:12px;z-index:20;background:rgba(25,28,36,.94);color:#e8eaed;border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.5;display:none;border:1px solid rgba(255,255,255,.1);max-width:360px;max-height:60vh;overflow:auto';
+routeInfo.id = 'routeInfo';
+document.getElementById('app').appendChild(routeInfo);
+
+function removeRoutePath() {
+  if (routePair) {
+    if (routePair.outer.parentNode) routePair.outer.parentNode.removeChild(routePair.outer);
+    if (routePair.inner.parentNode) routePair.inner.parentNode.removeChild(routePair.inner);
+    routePair = null;
+  }
+}
+// 去除重复点、合并同向共线点（直线保持直，只在真实转弯处保留拐点）
+function simplifyPx(pts) {
+  const out = [];
+  for (const p of pts) {
+    const last = out[out.length-1];
+    if (last && Math.hypot(p[0]-last[0], p[1]-last[1]) < 0.5) continue;
+    out.push(p);
+  }
+  if (out.length < 3) return out;
+  const res = [out[0]];
+  for (let i = 1; i < out.length - 1; i++) {
+    const a = res[res.length-1], b = out[i], c = out[i+1];
+    const v1x = b[0]-a[0], v1y = b[1]-a[1], v2x = c[0]-b[0], v2y = c[1]-b[1];
+    const l1 = Math.hypot(v1x, v1y), l2 = Math.hypot(v2x, v2y);
+    if (l1 < 1e-6 || l2 < 1e-6) continue;
+    const cross = (v1x/l1)*(v2y/l2) - (v1y/l1)*(v2x/l2);
+    const sameDir = (v1x*v2x + v1y*v2y) > 0;   // 必须同向共线才可合并，反向折返点保留
+    if (Math.abs(cross) < 1e-3 && sameDir) continue;
+    res.push(b);
+  }
+  res.push(out[out.length-1]);
+  return res;
+}
+// 同上去重/合并共线，但作用于米坐标（{x,z}），供步骤距离计算
+function simplifyXZ(pts) {
+  const out = [];
+  for (const p of pts) {
+    const last = out[out.length-1];
+    if (last && Math.hypot(p.x-last.x, p.z-last.z) < 1e-6) continue;
+    out.push(p);
+  }
+  if (out.length < 3) return out;
+  const res = [out[0]];
+  for (let i = 1; i < out.length - 1; i++) {
+    const a = res[res.length-1], b = out[i], c = out[i+1];
+    const v1x = b.x-a.x, v1z = b.z-a.z, v2x = c.x-b.x, v2z = c.z-b.z;
+    const l1 = Math.hypot(v1x, v1z), l2 = Math.hypot(v2x, v2z);
+    if (l1 < 1e-6 || l2 < 1e-6) continue;
+    const cross = (v1x/l1)*(v2z/l2) - (v1z/l1)*(v2x/l2);
+    const sameDir = (v1x*v2x + v1z*v2z) > 0;   // 必须同向共线才可合并，反向折返点保留
+    if (Math.abs(cross) < 1e-3 && sameDir) continue;
+    res.push(b);
+  }
+  res.push(out[out.length-1]);
+  return res;
+}
+function tryRoute() {
+  // 新请求先清理上一条结果，避免残留旧路线冒充新结果
+  removeRoutePath();
+  lastRoute = null; routePts = [];
+  if (!routeStart || !routeEndPt) { routeInfo.style.display = 'none'; relayoutBelow(); return; }
+  const graph = buildTempGraph(routeStart, routeEndPt);
+  // 起终点相同 / 映射到同一接入点 → 已到达（0 米，不生成路径）
+  if (graph.same) {
+    navState = {kind: 'arrived'};
+    renderRoute();
+    updateTransform();
+    return;
+  }
+  const r = dijkstra(graph, graph.sIdx, graph.tIdx);
+  if (!r || r.path.length < 2) { navState = {kind: 'unreachable'}; renderRoute(); updateTransform(); return; }
+  // 路径点（米，xz）：仅取道路节点（起终点已作为投影点插入临时图，不再拼接建筑中心，避免穿楼）
+  const nodeXZ = r.path.map(i => ({x: graph.nodes[i].x, z: graph.nodes[i].z}));
+  const routeXZ = simplifyXZ(nodeXZ);
+  routePts = routeXZ.map(p => xz2px(p.x, p.z));
+  routePair = drawStyledPath(routeLayer, routePts, (roadNet.style && roadNet.style.cornerRadius) || 8);
+  // 行走步骤：按最终路径（米）生成，方向变化处断段；末段不再被“到达”覆盖
+  const heading = (dx, dz) => Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? '向东' : '向西') : (dz > 0 ? '向南' : '向北');
+  const steps = [];
+  let cum = 0;
+  for (let i = 1; i < routeXZ.length; i++) {
+    const a = routeXZ[i-1], b = routeXZ[i];
+    const len = Math.hypot(a.x-b.x, a.z-b.z);
+    if (len < 1e-6) continue;
+    const startM = cum; cum += len;
+    steps.push({dir: heading(b.x-a.x, b.z-a.z), meters: Math.round(len), startM, endM: cum});
+  }
+  // 按真实转向给明确转弯（第一个路段按绝对方位，之后按左右转）
+  const turnOf = (prev, cur) => {
+    const MODE = {向东:0, 向北:1, 向西:2, 向南:3};
+    let d = (MODE[cur] - MODE[prev] + 4) % 4;
+    return d === 0 ? '直行' : d === 1 ? '左转' : d === 2 ? '掉头' : '右转';
+  };
+  steps.forEach((s, i) => { s.turn = i === 0 ? '起步（' + s.dir + '）' : turnOf(steps[i-1].dir, s.dir); });
+  lastRoute = {path: r.path, dist: cum, steps};
+  navState = {kind: 'normal'};
+  renderRoute();
+  updateTransform();
+}
+function renderRoute() {
+  const st = navState || {};
+  const head = '<b style="color:#ffd166">路线：' + routeStartName + ' → ' + routeEndName + '</b><br>';
+  const clr = '<span style="color:#9aa0a6;cursor:pointer" onclick="clearRoute()">✕ 清除路线</span>';
+  if (st.kind === 'arrived') {
+    // 同地点：清掉旧路线，隐藏无用结果面板，不生成绕圈路线
+    routeInfo.style.display = 'none';
+    relayoutBelow();
+    return;
+  } else if (st.kind === 'unreachable') {
+    routeInfo.innerHTML = head +
+      '<b style="color:#f28b82">没有可用路线</b>（两地在当前路网上不连通）<br>' + clr;
+  } else if (!lastRoute) {
+    routeInfo.style.display = 'none'; return;
+  } else {
+    routeInfo.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+      '<b style="color:#ffd166">路线：' + routeStartName + ' → ' + routeEndName + '</b>' + clr + '</div>';
+  }
+  if (window.innerWidth <= 640 && panel.style.display !== 'none') return;
+  routeInfo.style.display = 'block';
+  relayoutBelow();
+}
+function clearRoute() {
+  // 清除只移除当前路线与终点：保留有效起点，界面与内部状态一致
+  removeRoutePath();
+  routePts = [];
+  routeEndPt = null; routeEndName = ''; routeEndId = null;
+  lastRoute = null; traveledM = -1; offRouteM = 0; navState = null;
+  routeInfo.style.display = 'none';
+  relayoutBelow();
+  updateTransform();
+  // 反馈：起点被保留（无论默认大门还是用户选的），明确告诉用户不必重选起点
+  if (routeStart) showStatus('路线已清除，起点仍为' + routeStartName + '，请选择新终点');
+}
+window.clearRoute = clearRoute;
+window.setRouteEndById = function(id) {
+  const f = byId[id];
+  if (!f) return;
+  const px = featPx(f);
+  if (!px) return;
+  const [x, z] = px2xz(px[0], px[1]);
+  routeEndPt = {x, z};
+  routeEndId = id;
+  routeEndName = f.kind === 'checkin' ? f.name.replace('报到点-','') : f.name;
+  traveledM = -1; offRouteM = 0;
+  if (!routeStart) {
+    // 没有有效起点：界面与状态统一为待选起点并要求先选起点，不再静默
+    setPickPlaceholder();
+    navState = null; lastRoute = null; removeRoutePath(); routePts = [];
+    routeInfo.innerHTML = '<b style="color:#f28b82">请先选择起点</b>' +
+      '<br><span style="color:#9aa0a6;cursor:pointer" onclick="clearRoute()">✕ 清除路线</span>';
+    routeInfo.style.display = 'block'; relayoutBelow();
+  } else {
+    tryRoute();
+  }
+  closePanel();
+};
+window.setRouteStartById = function(id){
+  const f = byId[id]; if (!f) return;
+  const px = featPx(f); if (!px) return;
+  const [x, z] = px2xz(px[0], px[1]);
+  routeStart = {x, z};
+  routeStartName = f.kind === 'checkin' ? f.name.replace('报到点-','') : f.name;
+  routeStartId = id;                      // 同地点判定用（ID 而非名称/坐标）
+  userPickedStart = true;                 // 记录用户已主动选起点（唯一不置位的是默认「大门」预填）
+  setPickValue(id);                       // 1) 同步起点选择框
+  if (routeEndPt) {
+    tryRoute();                           // 2) 已有终点：立即重算并显示路线
+  } else {
+    // 3) 无终点：清掉可能残留的旧路线/状态，提示稍后自动消失
+    removeRoutePath(); routePts = [];
+    lastRoute = null; traveledM = -1; offRouteM = 0; navState = null;
+    routeInfo.style.display = 'none';
+  }
+  // 4) 无论屏幕尺寸，先关弹窗，再给出反馈（不重置地图缩放/平移，交互连贯）
+  closePanel();
+  if (!routeEndPt) showStatus('起点已设为' + routeStartName + '，请选择终点');
+};
+document.getElementById('startPick').onchange = e => {
+  const v = e.target.value;
+  if (v === '__ph__') {
+    // 已有有效起点时不允许选回占位项：回退显示到当前起点，保持界面与内部状态一致
+    if (routeStart && routeStartId) { setPickValue(routeStartId); return; }
+    return;
+  }
+  setRouteStartById(v);
+};
+function setPickValue(id) {
+  const sp = document.getElementById('startPick');
+  if (sp.querySelector('option[value="' + id + '"]')) sp.value = id;
+}
+function setPickPlaceholder() {
+  const sp = document.getElementById('startPick');
+  if (sp.querySelector('option[value="__ph__"]')) sp.value = '__ph__';
+}
+// 默认起点：大门（仅预填起点坐标与 ID，userPickedStart 保持 false，不视为用户已选点）
+{
+  const gateFeat = feats.find(f => f.kind === 'gate' && f.name === '大门');
+  if (gateFeat) {
+    const px = featPx(gateFeat);
+    if (px) { const [x, z] = px2xz(px[0], px[1]); routeStart = {x, z}; routeStartName = gateFeat.name; routeStartId = gateFeat.id; setPickValue(gateFeat.id); }
+  }
+}
+
+// ---------- 定位（GPS WGS84→GCJ02 / 点选模拟）+ 跟随 ----------
+function wgs2gcj(lon, lat) {
+  const a = 6378245.0, ee = 0.00669342162296594323;
+  const tl = (x, y) => {
+    let r = -100 + 2*x + 3*y + 0.2*y*y + 0.1*x*y + 0.2*Math.sqrt(Math.abs(x));
+    r += (20*Math.sin(6*x*Math.PI) + 20*Math.sin(2*x*Math.PI)) * 2/3;
+    r += (20*Math.sin(y*Math.PI) + 40*Math.sin(y/3*Math.PI)) * 2/3;
+    r += (160*Math.sin(y/12*Math.PI) + 320*Math.sin(y*Math.PI/30)) * 2/3;
+    return r;
+  };
+  const tg = (x, y) => {
+    let r = 300 + x + 2*y + 0.1*x*x + 0.1*x*y + 0.1*Math.sqrt(Math.abs(x));
+    r += (20*Math.sin(6*x*Math.PI) + 20*Math.sin(2*x*Math.PI)) * 2/3;
+    r += (20*Math.sin(x*Math.PI) + 40*Math.sin(x/3*Math.PI)) * 2/3;
+    r += (150*Math.sin(x/12*Math.PI) + 300*Math.sin(x/30*Math.PI)) * 2/3;
+    return r;
+  };
+  if (lon < 73.66 || lon > 135.05 || lat < 3.86 || lat > 53.55) return [lon, lat];
+  const dlat = tl(lon-105, lat-35), dlon = tg(lon-105, lat-35);
+  const rad = lat/180*Math.PI, magic = 1 - ee*Math.sin(rad)**2, sq = Math.sqrt(magic);
+  return [lon + dlon*180/(a/sq*Math.cos(rad)*Math.PI),
+          lat + dlat*180/((a*(1-ee))/(magic*sq)*Math.PI)];
+}
+let mePx = null, followMode = false, pickMode = false;
+function setMyLocal(e, n, source) {
+  mePx = [(e - TF_B) / TF_A, (TF_D - n) / (-TF_C)];
+  meMarkerEl.style.display = 'block';
+  if (followMode) centerOnContent(mePx[0], mePx[1]);
+  if (source) showStatus(source);
+  updateNavProgress();
+  updateTransform();
+}
+const toolBar = document.createElement('div');
+// 宽度交给 CSS（手机媒体查询铺满左右；横屏为左侧竖排列，超高时可滚动），内联 max-width 会压过媒体查询
+toolBar.style.cssText = 'position:absolute;bottom:12px;right:12px;z-index:20;display:flex;gap:6px;flex-wrap:wrap';
+toolBar.className = 'toolBar';
+const locStatus = document.createElement('div');
+locStatus.id = 'locStatus';
+locStatus.style.cssText = 'position:absolute;bottom:52px;right:12px;z-index:20;color:#d5d9de;font-size:12px;background:rgba(20,24,32,.85);padding:5px 9px;border-radius:6px;display:none;max-width:320px;pointer-events:none';
+document.getElementById('app').appendChild(locStatus);
+// 提示条只是纯文字反馈：不拦截任何点击，且与缩放 +/-/恢复 控件重叠时横向让开
+function avoidZoomCtl(el) {
+  if (!el) return;
+  el.style.pointerEvents = 'none';
+  const zc = document.getElementById('zoomCtl');
+  if (!zc || getComputedStyle(zc).display === 'none') return;
+  const zr = zc.getBoundingClientRect();
+  if (!zr.width || !zr.height) return;
+  const r = el.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const overlapX = r.right > zr.left - 4 && r.left < zr.right + 4;
+  const overlapY = r.bottom > zr.top - 4 && r.top < zr.bottom + 4;
+  const gap = 8;
+  if (overlapX && overlapY) {
+    el.style.right = Math.round(window.innerWidth - zr.left + gap) + 'px';
+
+  } else {
+    el.style.right = '';
+  }
+}
+function relayoutBelow() {
+  if (!isNarrow()) {
+    locStatus.style.top = '';
+    locStatus.style.bottom = '52px';
+    locStatus.style.right = '';
+    avoidZoomCtl(locStatus);
+    return;
+  }
+  const appTop = document.getElementById('app').getBoundingClientRect().top;
+  const tb = document.querySelector('.toolBar');
+  const belowTb = tb.getBoundingClientRect().bottom - appTop + 6;
+  if (isSideLayout()) {
+    // 横屏：状态条与路线卡片都放在左列工具栏下方，避免压住右侧地图上的缩放按钮
+    locStatus.style.top = belowTb + 'px';
+    locStatus.style.bottom = 'auto';
+    const lsH = (locStatus.style.display !== 'none' && getComputedStyle(locStatus).display !== 'none')
+      ? locStatus.getBoundingClientRect().height + 4 : 0;
+    const riTop = belowTb + lsH;
+    routeInfo.style.top = riTop + 'px';
+    routeInfo.style.bottom = 'auto';
+    routeInfo.style.maxHeight = Math.max(56, viewH() - riTop - 6) + 'px';
+    return;
+  }
+  locStatus.style.top = belowTb + 'px';
+  locStatus.style.bottom = 'auto';
+  avoidZoomCtl(locStatus);
+  const lsVisible = locStatus.style.display !== 'none' && getComputedStyle(locStatus).display !== 'none';
+  const lsH = lsVisible ? locStatus.getBoundingClientRect().height + 4 : 0;
+  const riTop = belowTb + lsH;
+  routeInfo.style.top = riTop + 'px';
+  routeInfo.style.bottom = 'auto';
+  const riVisible = routeInfo.style.display !== 'none' && getComputedStyle(routeInfo).display !== 'none';
+  const riH = riVisible ? routeInfo.getBoundingClientRect().height + 6 : 0;
+  const footer = document.getElementById('footer');
+  if (footer) {
+    footer.style.top = (riTop + riH) + 'px';
+    footer.style.bottom = 'auto';
+  }
+  const vh = viewH();
+  routeInfo.style.maxHeight = Math.max(60, vh - riTop - 4) + 'px';
+  // 注意：详情面板的高度不再由本函数设置。手机端它是底部展开面板，高度按 --appH 与安全区
+  // 在 CSS 里算（标题/操作固定、正文滚动），两者各设一套会互相打架。
+  const panel = document.getElementById('panel');
+  if (panel) { panel.style.top = ''; panel.style.bottom = ''; panel.style.maxHeight = ''; }
+}
+function showStatus(t) {
+  if (window.innerWidth <= 640 && panel.style.display !== 'none') { pendingStatus = t; return; }
+  pendingStatus = null;
+  locStatus.textContent = t;
+  locStatus.style.display = 'block';
+  locStatus.style.right = '';
+  relayoutBelow();
+  avoidZoomCtl(locStatus);   // 文字撑开后重新测量一次，避免首帧未避让
+
+  setTimeout(() => { locStatus.style.display = 'none'; relayoutBelow(); }, 6000);
+}
+// 入口按钮：图标与文字分开成两个 span（极窄屏只隐藏 .ic 保标签完整），尺寸交给 CSS
+function mkBtn(icon, label, fn, href){
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.style.cssText = 'background:rgba(25,28,36,.92);color:#e8eaed;border:1px solid rgba(255,255,255,.18);' +
+    'border-radius:8px;cursor:pointer;box-sizing:border-box';
+  if (icon){
+    const i = document.createElement('span');
+    i.className = 'ic';
+    i.setAttribute('aria-hidden', 'true');
+    i.textContent = icon;
+    b.appendChild(i);
+  }
+  const t = document.createElement('span');
+  t.className = 'tx';
+  t.textContent = label;
+  b.appendChild(t);
+  b.setAttribute('aria-label', label);
+  b.onclick = () => { if (href) location.href = href; else fn(); };
+  toolBar.appendChild(b);
+  return b;
+}
+// 路网核对预览：按 style 画出全部 29 条折线（默认隐藏）
+function buildNetworkPreview() {
+  const st = roadNet.style || {};
+  const group = document.createElementNS(SVGNS, 'g');
+  group.setAttribute('opacity', '0.9');
+  for (const P of roadPolys) {
+    const pts = P.map(p => { const px = xz2px(p.x, p.z); return px; });
+    const d = roundPath(pts, st.cornerRadius || 8);
+    if (!d) continue;
+    const outer = document.createElementNS(SVGNS, 'path');
+    outer.setAttribute('d', d); outer.setAttribute('fill', 'none');
+    outer.setAttribute('stroke', st.outerColor || '#ffffff');
+    outer.setAttribute('stroke-width', st.outerWidth || 14);
+    outer.setAttribute('stroke-linecap', 'round'); outer.setAttribute('stroke-linejoin', 'round');
+    const inner = document.createElementNS(SVGNS, 'path');
+    inner.setAttribute('d', d); inner.setAttribute('fill', 'none');
+    inner.setAttribute('stroke', st.innerColor || '#ff1c26');
+    inner.setAttribute('stroke-width', st.innerWidth || 7);
+    inner.setAttribute('stroke-linecap', 'round'); inner.setAttribute('stroke-linejoin', 'round');
+    group.appendChild(outer); group.appendChild(inner);
+  }
+  netLayer.appendChild(group);
+}
+buildNetworkPreview();
+// 路网预览 / 模拟定位 / 跟随：仅保留为开发调试入口，不再放普通用户按钮。
+// 入口：URL 加 ?debug=1（或 #debug）；控制台可用 window.__nav.debug.*
+let netShown = false;
+function toggleNetwork(force) {
+  netShown = (force === undefined) ? !netShown : !!force;
+  netLayer.style.display = netShown ? 'block' : 'none';
+  showStatus(netShown ? '已显示全部路网（核对预览）：' + roadPolys.length + ' 条折线' : '已隐藏路网预览');
+  updateTransform();
+  return netShown;
+}
+let locWatchId = null;
+function toggleGps(force) {
+  const on = (force === undefined) ? locWatchId === null : !!force;
+  if (!on) {
+    if (locWatchId !== null) { navigator.geolocation.clearWatch(locWatchId); locWatchId = null; }
+    showStatus('已停止定位');
+    return false;
+  }
+  if (!navigator.geolocation) { showStatus('此环境不支持定位；可用 debug.pick() 模拟'); return false; }
+  locWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      const [glon, glat] = wgs2gcj(pos.coords.longitude, pos.coords.latitude);
+      const [e, n] = proj(glon, glat);
+      setMyLocal(e, n, 'GPS（精度约 ' + Math.round(pos.coords.accuracy) + ' 米）');
+    },
+    err => showStatus('定位失败：' + err.message + '。手机浏览器要 HTTPS 才给定位，可用 debug.pick() 模拟。'),
+    {enableHighAccuracy: true, maximumAge: 2000});
+  return true;
+}
+function setPickMode(force) {
+  pickMode = (force === undefined) ? !pickMode : !!force;
+  if (pickMode) showStatus('点选模式：在地图上点一下，把你的位置放过去（模拟行走用）');
+  return pickMode;
+}
+function setFollowMode(force) {
+  followMode = (force === undefined) ? !followMode : !!force;
+  return followMode;
+}
+// 普通用户按钮：三个入口（新生手册 / 培养计划 / 入学待办）。竖屏三等宽 ≥44px，横屏左列竖排
+toolBar.setAttribute('role', 'group');
+toolBar.setAttribute('aria-label', '新生手册、培养计划与入学待办');
+mkBtn('📖', '新生手册', null, 'handbook.html');
+mkBtn('📋', '培养计划', null, 'curriculum.html');
+mkBtn('✅', '入学待办', null, 'onboarding.html');
+document.getElementById('app').appendChild(toolBar);
+
+// ---------- 使用说明（可从标题栏重复打开，关闭后地图操作恢复） ----------
+const helpOv = document.getElementById('helpOv');
+function openHelp() {
+  helpOv.hidden = false;
+  const body = helpOv.querySelector('.hBody');
+  if (body) body.scrollTop = 0;
+  clearResults();
+  const ok = document.getElementById('helpOk');
+  if (ok && ok.focus) { try { ok.focus({preventScroll: true}); } catch (e) {} }
+}
+function closeHelp() {
+  helpOv.hidden = true;
+  const hb = document.getElementById('helpBtn');
+  if (hb && hb.focus) { try { hb.focus({preventScroll: true}); } catch (e) {} }
+}
+{
+  const bind = (el, fn) => {
+    if (!el) return;
+    el.onclick = e => { e.preventDefault(); e.stopPropagation(); fn(); };
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } };
+  };
+  bind(document.getElementById('helpBtn'), openHelp);
+  bind(document.getElementById('helpClose'), closeHelp);
+  bind(document.getElementById('helpOk'), closeHelp);
+  // 点遮罩空白处也能关；点卡片本身不关
+  helpOv.addEventListener('click', e => { if (e.target === helpOv) closeHelp(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !helpOv.hidden) closeHelp(); });
+}
+// 页脚显隐统一入口：隐藏时一并关掉命中测试，避免一块透明层压住缩放按钮/工具栏
+function showFooter(on) {
+  if (!footer) return;
+  footer.style.display = on ? 'block' : 'none';
+  footer.style.pointerEvents = 'none';   // 页脚只做说明，永远不参与命中测试
+  footer.setAttribute('aria-hidden', on ? 'false' : 'true');
+}
+const footer = document.createElement('div');
+footer.id = 'footer';
+footer.style.cssText = 'position:absolute;left:0;right:0;bottom:4px;z-index:15;pointer-events:none;text-align:center;color:#9aa0a6;font-size:11px;line-height:1.6;display:none;padding:0 8px';
+footer.innerHTML = '© 2026 上海理工大学基础学院 · 军工路1100号<br>草案级导览，地标位置待实地校正';
+document.getElementById('app').appendChild(footer);
+function updateNavProgress() {
+  if (!lastRoute || !mePx) return;
+  const [x, z] = px2xz(mePx[0], mePx[1]);
+  const me = {x, z};
+  // 用最终显示路径（像素）逐段求最近投影点，估算已走距离
+  let acc = 0, bestD = 1e18, bestTraveled = 0;
+  const pts = routePts.map(p => px2xz(p[0], p[1]));
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i-1], b = pts[i];
+    const abx = b[0]-a[0], abz = b[1]-a[1], abLen = Math.hypot(abx, abz);
+    if (abLen < 1e-9) continue;
+    const t = Math.max(0, Math.min(1, ((me.x-a[0])*abx + (me.z-a[1])*abz) / (abLen*abLen)));
+    const px = a[0] + abx*t, pz = a[1] + abz*t;
+    const d = Math.hypot(me.x-px, me.z-pz);
+    if (d < bestD) { bestD = d; bestTraveled = acc + abLen*t; }
+    acc += abLen;
+  }
+  offRouteM = bestD; traveledM = bestTraveled;
+  renderRoute();
+}
+
+// ---------- 搜索 ----------
+const q = document.getElementById('q');
+const noResult = document.getElementById('noResult');
+function focusFeature(f){
+  const px = featPx(f);
+  if (!px) return;
+  centerOnContent(px[0], px[1]);
+  showPanel(f);
+}
+const resultsEl = document.getElementById('searchResults');
+const catSel = document.getElementById('catFilter');
+// 当前搜索池：仅受分类筛选影响（分类只影响展示，不改 feats/路网）
+function searchPool() {
+  const cat = catSel.value;
+  return feats.filter(x => x.name && (x.kind === 'building' || x.kind === 'gate') && (!cat || x.category === cat));
+}
+function clearResults() { resultsEl.innerHTML = ''; resultsEl.style.display = 'none'; }
+// 输入即匹配：多匹配时展示列表，不直接跳到第一处
+function renderSearchResults() {
+  const kw = q.value.trim();
+  if (!kw) { clearResults(); noResult.style.display = 'none'; return; }
+  noResult.style.display = 'none';
+  const pool = searchPool();
+  const matches = pool.filter(x => x.name.includes(kw) || x.name.replace(/（.*$/,'').includes(kw));
+  if (!matches.length) { clearResults(); return; }
+  resultsEl.innerHTML = '';
+  matches.forEach(x => {
+    const li = document.createElement('li');
+    const sub = (x.kind === 'gate' ? '校门' : (CAT_LABEL[x.category] || ''));
+    li.innerHTML = x.name + (sub ? '<span class="rsub">' + sub + '</span>' : '');
+    li.onclick = () => pickSearchResult(x);
+    resultsEl.appendChild(li);
+  });
+  resultsEl.style.display = 'block';
+}
+function pickSearchResult(f) {
+  if (!f) return;
+  clearResults();
+  noResult.style.display = 'none';
+  focusFeature(f);
+}
+// 回车或搜索按钮：唯一匹配直接定位，多匹配列出让用户点选，无匹配给出提示
+function runSearch() {
+  const kw = q.value.trim();
+  if (!kw) { clearResults(); noResult.style.display = 'none'; return; }
+  const pool = searchPool();
+  const matches = pool.filter(x => x.name.includes(kw) || x.name.replace(/（.*$/,'').includes(kw));
+  if (!matches.length) {
+    clearResults();
+    closePanel(); // 搜索失败不再残留上次地点详情
+    const cat = catSel.value;
+    noResult.textContent = '未找到「' + kw + '」' + (cat ? '（当前分类：'+(CAT_LABEL[cat]||cat)+'）' : '');
+    noResult.style.display = 'block';
+    return;
+  }
+  noResult.style.display = 'none';
+  if (matches.length === 1) { pickSearchResult(matches[0]); return; }
+  resultsEl.innerHTML = '';
+  matches.forEach(x => {
+    const li = document.createElement('li');
+    const sub = (x.kind === 'gate' ? '校门' : (CAT_LABEL[x.category] || ''));
+    li.innerHTML = x.name + (sub ? '<span class="rsub">' + sub + '</span>' : '');
+    li.onclick = () => pickSearchResult(x);
+    resultsEl.appendChild(li);
+  });
+  resultsEl.style.display = 'block';
+}
+q.addEventListener('input', () => {
+  noResult.style.display = 'none';
+  renderSearchResults();
+});
+q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } });
+document.getElementById('searchBtn').onclick = () => runSearch();
+// 分类切换：真正筛选地图标记与搜索结果；恢复全部分类恢复全部显示
+function applyCategoryFilter() {
+  for (const m of markerList) {
+    m.el.style.display = markerInCategory(m.f) ? '' : 'none';
+  }
+  // 当前详情已被分类排除 → 关闭弹窗，避免显示看不见的地点
+  if (currentPanelFeature && !markerInCategory(currentPanelFeature)) closePanel();
+  noResult.style.display = 'none';
+  if (q.value.trim()) renderSearchResults(); else clearResults();
+}
+catSel.onchange = () => { noResult.style.display = 'none'; applyCategoryFilter(); };
+{
+  const params=new URLSearchParams(location.search);
+  const placeParam=params.get('place');
+  if(placeParam&&byId[placeParam])focusFeature(byId[placeParam]);
+}
+
+// ---------- 数据说明面板（独立入口，默认收起） ----------
+const infoBtn = document.getElementById('infoBtn');
+infoBtn.onclick = () => dataInfo.style.display = dataInfo.style.display === 'block' ? 'none' : 'block';
+const dataInfo = document.createElement('div');
+dataInfo.style.cssText = 'position:absolute;top:60px;right:12px;z-index:30;width:320px;max-height:70vh;overflow:auto;' +
+  'background:rgba(25,28,36,.96);color:#e8eaed;border-radius:10px;padding:14px 16px;font-size:13px;line-height:1.8;display:none;' +
+  'border:1px solid rgba(255,255,255,.1)';
+dataInfo.innerHTML = '<b style="color:#ffd166">这份数据是怎么来的</b><div style="margin-top:8px">' +
+  '🏢 楼名来源：以底图标注为准，正在逐个核对中<br>' +
+  '📐 楼栋位置：地标均待逐一核实，尚未与底图精确对齐<br>' +
+  '🚫 垃圾房(b03)、后勤物业用房(b14)未显示；报到点标记(c01-c03)已移除<br>' +
+  '🛣 路网：按用户确认的导向参考图重建（主路+入口支线），路线距离为估算<br>' +
+  '🗺 底图：校区平面图插画（treefree，WebP 265KB / PNG 兜底）<br>' +
+  '⚠ 整体为草案级，实地校对进行中，不作为精确测量依据</div>' +
+  '<div style="margin-top:10px;color:#9aa0a6" id="dataCounts"></div>' +
+  '<span style="color:#9aa0a6;cursor:pointer" onclick="dataInfo.style.display=\'none\'">✕ 关闭</span>';
+document.getElementById('app').appendChild(dataInfo);
+window.dataInfo = dataInfo;
+{
+  const k = {};
+  for (const f of feats) k[f.kind] = (k[f.kind] || 0) + 1;
+  document.getElementById('dataCounts').textContent =
+    '当前数据：' + (k.building || 0) + ' 栋楼 · ' + roadPolys.length + ' 条道路折线 · ' +
+    (k.gate || 0) + ' 个出入口 · ' + (k.checkin || 0) + ' 个报到点';
+}
+
+// ---------- 初始化 ----------
+// 测试/调试钩子（供自动化验收读取内部状态）
+window.__nav = {
+  byId, showPanel, closePanel, renderRoute, clearRoute,
+  features: feats,   // 供验收脚本按名称定位地点
+  get placePhotoKeys() { return Object.keys(placePhotos); },
+  photoOf(id) { return placePhotos[id] || []; },
+  get photoOpenToken() { return photoPanelToken; },
+  get baseNodeCount() { return baseNodes.length; },
+  get baseEdgeCount() { return baseAdj.reduce((s, l) => s + l.length, 0); },
+  get navState() { return navState; },
+  get routeStartName() { return routeStartName; },
+  get routeStartId() { return routeStartId; },
+  get userPickedStart() { return userPickedStart; },
+  get routeEndName() { return routeEndName; },
+  get routeDistMeters() { return lastRoute ? Math.round(lastRoute.dist) : null; },
+  get routePtsPx() { return routePts.map(p => [Math.round(p[0]), Math.round(p[1])]); },
+  startOptionCount() { const sp = document.getElementById('startPick'); let n = 0; for (const o of sp.options) if (o.value && o.value !== '__ph__') n++; return n; },
+  get startPickValue() { return document.getElementById('startPick').value; },
+  // ---- 地图缩放（供验收读取内部状态与模拟手势） ----
+  get mapScale() { return scale; },
+  get mapMinScale() { return minScale; },
+  get mapMaxScale() { return maxScale(); },
+  get mapOffset() { return {x: offsetX, y: offsetY}; },
+  get viewportSize() { return {w: mapViewport.clientWidth, h: mapViewport.clientHeight}; },
+  get viewportRect() { const r = mapViewport.getBoundingClientRect(); return {left: r.left, top: r.top, width: r.width, height: r.height}; },
+  get fitSnap() { return _fitSnap ? {..._fitSnap} : null; },
+  zoomTo: (s, ax, ay) => zoomAt(s, ax, ay),
+  zoomById: (btn) => { document.getElementById(btn).click(); return scale; },
+  resetView,
+  visibleArea: () => visibleArea(),   // 缩放/居中/平移共用的区域（验收可读）
+  // 标记在视口内的中心点 + 圆点/标签的屏幕盒子（几何与真实渲染一致）
+  markerBox(id) {
+    const m = markerList.find(x => x.f.id === id);
+    if (!m) return null;
+    const vr = mapViewport.getBoundingClientRect();
+    const dot = m.el.querySelector('.dot').getBoundingClientRect();
+    const lbl = m.el.querySelector('.lbl').getBoundingClientRect();
+    const el = m.el.getBoundingClientRect();
+    return {cx: vr.left + m.px * scale + offsetX, cy: vr.top + m.py * scale + offsetY,
+            dot: {w: dot.width, h: dot.height, left: dot.left, top: dot.top},
+            lbl: {w: lbl.width, h: lbl.height, left: lbl.left, top: lbl.top, cx: lbl.left + lbl.width / 2, cy: lbl.top + lbl.height / 2},
+            hit: {w: el.width, h: el.height}};
+  },
+  // 视口中心（用于点缩放按钮后验证锚点不动）
+  zoomAnchorPoint() {
+    const va = visibleArea();
+    const vr = mapViewport.getBoundingClientRect();
+    return {x: vr.left + va.cx, y: vr.top + va.cy};
+  },
+  // 视口坐标 → 该处地图内容是否在范围（用于滚轮/捏合锚点比对）
+  contentPointAt(clientX, clientY) {
+    const vr = mapViewport.getBoundingClientRect();
+    return {x: (clientX - vr.left - offsetX) / scale, y: (clientY - vr.top - offsetY) / scale};
+  },
+  // 当前缩放状态：底图/路线/标记三层是否同步（验收用）
+  layersSync() {
+    const rects = {};
+    for (const id of ['groundImg', 'routeSvg', 'meMarkerEl', 'b07']) {
+      const el = id === 'b07' ? (markerList.find(m => m.f.id === 'b07') || {}).el : document.getElementById(id);
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      rects[id] = {l: r.left, t: r.top, w: r.width, h: r.height};
+    }
+    return {scale, ox: offsetX, oy: offsetY, gw: gw(), gh: gh(), borders: panBounds(), rects};
+  },
+  get markerVisibleCount() { return markerList.filter(m => m.el.style.display !== 'none').length; },
+  get markerTotalCount() { return markerList.length; },
+  get searchResultsVisible() { return resultsEl.style.display !== 'none'; },
+  get searchResultCount() { return resultsEl.querySelectorAll('li').length; },
+  get noResultVisible() { return noResult.style.display === 'block' || noResult.style.display === '' && getComputedStyle(noResult).display !== 'none'; },
+  get panelVisible() { return panel.style.display !== 'none' && getComputedStyle(panel).display !== 'none'; },
+  // 手机端标题固定在面板头部（#panelTitle2），正文里不再重复；两者取先命中者
+  get panelTitle() { const h = document.getElementById('panelTitle2'); return h && h.textContent ? h.textContent : ''; },
+  get panelFeatureId() { return currentPanelFeature ? currentPanelFeature.id : ''; },
+  markerInCategoryById: id => { const f = byId[id]; return f ? markerInCategory(f) : false; },
+  // 标记中心的视口坐标（供验收真实点击/触摸；几何与 handleMapClick 一致）
+  markerClientPoint(id, vpLeft, vpTop) {
+    const m = markerList.find(x => x.f.id === id);
+    if (!m) return null;
+    return {x: vpLeft + m.px * scale + offsetX, y: vpTop + m.py * scale + offsetY};
+  },
+  setSearch: kw => { q.value = kw; q.dispatchEvent(new Event('input')); },
+  runSearch: () => runSearch(),
+  clickResult: i => { const li = resultsEl.querySelectorAll('li')[i]; if (li) li.click(); },
+  setCategory: c => { catSel.value = c; applyCategoryFilter(); },
+  setStart: id => setRouteStartById(id),
+  setEnd: id => setRouteEndById(id),
+  routeEndpointsPx() {
+    if (!routePts.length) return null;
+    const f = routePts[0], l = routePts[routePts.length-1];
+    return {first: [Math.round(f[0]), Math.round(f[1])], last: [Math.round(l[0]), Math.round(l[1])]};
+  },
+  featPxById(id) { const f = byId[id]; if (!f) return null; const p = featPx(f); return p ? [Math.round(p[0]), Math.round(p[1])] : null; },
+  sameRoadTest() {
+    const r2 = (rx, ry) => { const [x, z] = px2xz(rx*1452/1451, ry*1083/1084); return {x, z}; };
+    const S = r2(450, 566), T = r2(500, 566);
+    const g = buildTempGraph(S, T);
+    const r = dijkstra(g, g.sIdx, g.tIdx);
+    if (!r) return {error: 'no route', sIdx: g.sIdx, tIdx: g.tIdx, n: g.nodes.length};
+    const xs = r.path.map(i => Math.round(xz2px(g.nodes[i].x, g.nodes[i].z)[0]));
+    return {meters: r.dist, xs};
+  },
+  // 隔离路网测试：只复制一条直线边，起终点在同一内部投影点 → 期望 same、距离 0；断开则不可达
+  isolatedSamePlaceTest() {
+    const saveN = baseNodes, saveA = baseAdj;
+    baseNodes = [{x: 0, z: 0}, {x: 100, z: 0}];
+    baseAdj = [[[1, 100, '校园道路']], [[0, 100, '校园道路']]];
+    const g = buildTempGraph({x: 50, z: 0}, {x: 50, z: 0});
+    const res = {same: g.same, dist: g.same ? 0 : null, sIdx: g.sIdx, tIdx: g.tIdx, nodeCount: g.nodes.length};
+    // 断开：移除起点所有出边 → 预期不可达
+    const g2 = buildTempGraph({x: 10, z: 0}, {x: 90, z: 0});
+    g2.adj = g2.adj.map((l, i) => i === g2.sIdx ? [] : l);
+    const r2 = dijkstra(g2, g2.sIdx, g2.tIdx);
+    res.unreachableWhenCut = !r2;
+    baseNodes = saveN; baseAdj = saveA;
+    return res;
+  },
+};
+// 开发调试入口：URL 加 ?debug=1（或 #debug）时才激活；普通用户不可见
+window.__nav.debug = {
+  on: false,
+  network: (f) => toggleNetwork(f),
+  gps: (f) => toggleGps(f),
+  pick: (f) => setPickMode(f),
+  follow: (f) => setFollowMode(f),
+};
+{
+  const dbg = new URLSearchParams(location.search).get('debug') || (location.hash.indexOf('debug') >= 0 ? '1' : '');
+  if (dbg && dbg !== '0') {
+    window.__nav.debug.on = true;
+    window.__nav.debug.network(true);
+    if (document.getElementById('stTitle')) document.getElementById('stTitle').textContent = '上海理工大学基础学院 · 校园导览 — 调试模式：路网已显示，可用 __nav.debug.* 控制';
+  }
+}
+// 初始适应 + 视口监听：
+// resize / visualViewport 变化（地址栏收起展开、旋屏、分屏、软键盘）都走 onViewportChange，
+// 已缩放的视图不会被无条件 fitMap 重置。
+_lastW = window.innerWidth; _lastH = viewH();
+fitMap();
+addEventListener('resize', onResize);
+addEventListener('orientationchange', () => setTimeout(onResize, 120));
+if (window.visualViewport) {
+  visualViewport.addEventListener('resize', onResize);
+  visualViewport.addEventListener('scroll', () => { syncAppHeight(); layoutTopOnly(); });
+}
+
+// ---------- 非首屏资源延后加载（不挡交互） ----------
+// 手册与培养计划是两个独立页面，用户不点就不必现在下载
+(function(){
+  const idle = window.requestIdleCallback || (fn => setTimeout(fn, 1200));
+  idle(() => {
+    for (const href of ['handbook.html', 'curriculum.html', 'onboarding.html']) {
+      const l = document.createElement('link');
+      l.rel = 'prefetch'; l.href = href;
+      document.head.appendChild(l);
+    }
+  }, { timeout: 3000 });
+})();
+</script>
+</body>
+</html>
