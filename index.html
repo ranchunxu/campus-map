@@ -311,9 +311,8 @@
 </div>
 <script type="module">
 // ---------- 数据 ----------
-// 底图先出预览图（内部尺寸 = 原图 42%，JS 用 IMG_W 等内部尺寸摆放），高清图后到；
-// JSON 全部并行拉（照片清单失败也不影响主图初始化）
-const PREVIEW_W = 610;   // treefree-preview.webp 的内部尺寸，高清图到位时从 610 放大到 1452
+// 底图先出 38KB 预览图（CSS 拉伸到与高清图同一 1452×1083 盒子），265KB 高清图后到；
+// JSON 全部并行拉（照片清单单独兜底，不影响主图初始化）
 const jsonFetch = (u, fb) => fetch(u).then(r => r.ok ? r.json() : fb).catch(() => fb);
 const [_resp, phm, roadNet, placePhotos] = await Promise.all([
   jsonFetch('./data/campus.json', null),
