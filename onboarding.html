@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>入学待办 · 上海理工大学基础学院</title>
+<style>
+/* =====================================================================
+   入学待办 · 独立页面
+   设计语言沿用手册/培养计划：藏青墨 / 暖纸 / 单一鎏金强调
+   内容只做整理与勾选，不声明表单开放、不放具体日期与物理地点
+   ===================================================================== */
+:root{
+  --ink:#1b2231; --ink-strong:#10141f;
+  --paper:#f6f4ef; --paper-2:#efede6; --card:#fff;
+  --navy:#0d1220; --navy-2:#161e33; --navy-3:#1f2942;
+  --gold:#b8912e; --gold-deep:#8a6d1a; --gold-bright:#e3c56b; --gold-soft:#f4ecd4;
+  --line:#e2ddd0; --line-2:#d5cfc0; --muted:#6e7382;
+  --warn:#b3401f; --ok:#2e7d4f; --na:#7a7f8c;
+  --r-md:12px; --r-sm:8px;
+  --shadow-1:0 1px 2px rgba(18,23,38,.05),0 2px 10px rgba(18,23,38,.05);
+  --sans:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--ink);
+  font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+::selection{background:var(--gold-bright);color:var(--ink-strong)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+a{color:var(--gold-deep)}
+
+/* ---------- 页头 ---------- */
+.hd{background:var(--navy);color:#e9e6dc;border-bottom:3px solid var(--gold)}
+.hdIn{max-width:900px;margin:0 auto;padding:14px 20px 13px}
+.hdTop{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.back{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:4px 10px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.24);color:#cfd6e4;text-decoration:none;font-size:12.5px;white-space:nowrap}
+.back:hover{background:rgba(255,255,255,.08);color:#fff}
+.hd h1{margin:0;font-size:19px;letter-spacing:1.5px;font-weight:800;color:#fff}
+.hd h1 b{color:var(--gold-bright);font-weight:800}
+.hd p{margin:5px 0 0;font-size:12.5px;color:#a9b2c4;line-height:1.55}
+.basis{margin:8px 0 0;font-size:12.5px;color:#a9b2c4}
+.basis summary{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:3px 10px;cursor:pointer;
+  border:1px dashed rgba(255,255,255,.26);border-radius:var(--r-sm);color:#cfd6e4;list-style:none}
+.basis summary::-webkit-details-marker{display:none}
+.basis summary::before{content:"▸";font-size:10px;color:var(--gold-bright)}
+.basis[open] summary::before{content:"▾"}
+.basis .bx{margin:8px 0 0;padding:10px 12px;border-radius:var(--r-sm);background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);font-size:12.5px;line-height:1.7;color:#b9c2d2}
+.basis .bx p{margin:0 0 6px;font-size:12.5px;color:#b9c2d2}
+.basis .bx p:last-child{margin-bottom:0}
+.basis .bx .lg{color:#8f99ad}
+
+/* ---------- 主区 ---------- */
+main{max-width:900px;margin:0 auto;padding:14px 20px calc(28px + env(safe-area-inset-bottom))}
+
+/* 统计 */
+.stats{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding:2px 0 10px;font-size:13px;color:var(--muted)}
+.stats .s{display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap}
+.stats .s b{font-size:17px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.stats .s.done b{color:var(--ok)}
+.stats .s.confirm b{color:var(--gold-deep)}
+.stats .s.na b{color:var(--na)}
+.stats .tot{color:var(--muted);font-size:12px}
+
+/* 工具条：搜索 + 筛选 */
+.tools{display:flex;gap:8px;align-items:center;margin:0 0 6px}
+.srch{position:relative;flex:1 1 auto;min-width:0}
+.srch input{width:100%;height:44px;padding:0 38px 0 34px;border:1px solid var(--line-2);border-radius:var(--r-sm);
+  background:var(--card);color:var(--ink);font-size:16px;font-family:inherit;box-shadow:var(--shadow-1)}
+.srch input::placeholder{color:#9aa0ae;font-size:14px}
+.srch input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,145,46,.15);outline:none}
+.srch .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none}
+.srch .clr{position:absolute;right:4px;top:4px;width:36px;height:36px;border:none;background:transparent;
+  color:var(--muted);font-size:15px;cursor:pointer;border-radius:50%;display:none}
+.srch .clr.on{display:block}
+.srch .clr:hover{background:var(--paper-2)}
+.flt select{height:44px;min-width:104px;padding:0 8px;border:1px solid var(--line-2);border-radius:var(--r-sm);
+  background:var(--card);color:var(--ink);font-size:14px;font-family:inherit;box-shadow:var(--shadow-1)}
+
+/* 分组 */
+.grp{margin-top:16px}
+.grp>h2{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:13.5px;font-weight:800;letter-spacing:1px;color:var(--gold-deep)}
+.grp>h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.grp>h2 .n{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:0}
+
+/* 事项行 */
+.task{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);margin-bottom:6px;overflow:hidden}
+.task.done{background:#fbfaf6}
+.tMain{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;
+  padding:6px 8px 6px 6px}
+.chk{width:44px;height:44px;flex:none;border-radius:10px;border:1.5px solid var(--line-2);background:#fff;
+  color:transparent;font-size:17px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  transition:background .15s,border-color .15s,color .15s}
+.chk.pend:hover{border-color:var(--gold);background:var(--gold-soft)}
+.chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.chk.q{border-style:dashed;border-color:var(--gold);color:var(--gold-deep);background:var(--gold-soft);font-size:16px}
+.chk.na{border-color:var(--line-2);color:var(--na);background:var(--paper-2);font-size:16px}
+.tTitle{min-height:44px;padding:2px 0;border:none;background:transparent;text-align:left;font-family:inherit;
+  font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;line-height:1.45;display:flex;flex-wrap:wrap;
+  align-items:center;gap:4px 8px;min-width:0}
+.task.done .tTitle{color:#4c5364}
+.task.na .tTitle{color:#6b7080}
+.tTitle .tx{min-width:0;overflow-wrap:anywhere}
+.tag{font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;border:1px solid var(--line-2);
+  color:var(--muted);background:var(--paper-2);white-space:nowrap;letter-spacing:.2px}
+.tag.st-done{color:#1f6b41;background:#e8f4ec;border-color:#bfdcc9}
+.tag.st-confirm{color:var(--gold-deep);background:var(--gold-soft);border-color:#e4d4a4}
+.tag.st-na{color:#5f6472;background:#eceef1;border-color:#d4d7de}
+.tag.k-cond{color:#7a4a12;background:#fbf0e0;border-color:#ecd3ae}
+.tag.k-sugg{color:#3c5a7a;background:#eaf1f8;border-color:#c8dcef}
+.tag.hit{color:var(--gold-deep);background:var(--gold-soft);border-color:#e4d4a4;font-weight:600}
+.tMore{width:44px;height:44px;flex:none;border:1px solid var(--line-2);border-radius:10px;background:#fff;
+  color:var(--muted);font-size:12px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.tMore:hover{border-color:var(--gold);color:var(--gold-deep)}
+.tMore .ar{display:inline-block;transition:transform .2s var(--ease,none)}
+
+/* 详情 */
+.tBody{padding:2px 14px 14px;border-top:1px dashed var(--line);font-size:13.5px;color:#333a49}
+.tBody[hidden]{display:none}
+.sec{margin-top:10px}
+.sec>h3{margin:0 0 3px;font-size:12px;font-weight:800;letter-spacing:.8px;color:var(--muted);text-transform:uppercase}
+.sec ul,.sec ol{margin:0;padding-left:20px}
+.sec li{margin:2px 0}
+.sec .none{color:var(--muted)}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+.acts button{min-height:44px;padding:0 14px;border-radius:var(--r-sm);border:1px solid var(--line-2);
+  background:#fff;color:var(--ink);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.acts button:hover{border-color:var(--gold)}
+.acts button.pri{background:var(--navy);border-color:var(--navy);color:#f4f2ea}
+.acts button.pri:hover{background:var(--navy-2)}
+.acts button.warn{color:var(--warn);border-color:#e2c6bc}
+.acts .hint{flex:1 1 100%;font-size:12px;color:var(--muted);line-height:1.5}
+.proof{margin-top:12px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fbfaf6}
+.proof>summary{cursor:pointer;padding:9px 11px;font-size:13px;font-weight:700;color:var(--gold-deep);list-style:none}
+.proof>summary::-webkit-details-marker{display:none}
+.proof>summary::before{content:"▸ ";font-size:11px}
+.proof[open]>summary::before{content:"▾ "}
+.proofOl{margin:0;padding:0 11px 11px;list-style:none}
+.proofOl>li{padding:7px 0;border-top:1px dashed var(--line);font-size:13px;line-height:1.6}
+.proofOl .pn{display:inline-block;min-width:22px;font-weight:800;color:var(--gold-deep);font-variant-numeric:tabular-nums}
+.proofOl .pt{font-weight:700}
+.proofOl .pd{color:var(--muted);font-size:12px}
+.proofOl .pm{margin:2px 0 0}
+.proofOl .pw{color:var(--warn);font-size:12px;margin:2px 0 0}
+
+/* 空结果 / 错误 */
+.empty{display:none;padding:26px 10px;text-align:center;color:var(--muted);font-size:14px}
+.empty.on{display:block}
+.empty button{margin-top:10px;min-height:44px;padding:0 16px;border-radius:var(--r-sm);
+  border:1px solid var(--line-2);background:#fff;color:var(--ink);font-family:inherit;font-size:14px;cursor:pointer}
+.err{display:none;margin:18px 0;padding:16px;border:1px solid #e4cfc6;border-radius:var(--r-md);background:#fdf6f3}
+.err.on{display:block}
+.err b{display:block;margin-bottom:4px;color:var(--warn)}
+.err p{margin:0 0 12px;font-size:13.5px;color:#4a4f5c}
+.err .row{display:flex;gap:8px;flex-wrap:wrap}
+.err button,.err a{min-height:44px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);border:1px solid var(--line-2);background:#fff;color:var(--ink);font-family:inherit;
+  font-size:14px;cursor:pointer;text-decoration:none}
+.err button.pri{background:var(--navy);border-color:var(--navy);color:#f4f2ea}
+
+/* 存储提示 */
+.store{margin-top:6px;font-size:12.5px;color:var(--warn);display:none}
+.store.on{display:block}
+.store button{margin-left:8px;min-height:32px;padding:0 10px;border-radius:var(--r-sm);
+  border:1px solid currentColor;background:transparent;color:inherit;font-family:inherit;font-size:12.5px;cursor:pointer}
+
+/* 底部 */
+.ft{margin-top:22px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);
+  display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:space-between}
+.ft .note{max-width:560px;line-height:1.6}
+.ft .reset{min-height:36px;padding:0 12px;border-radius:var(--r-sm);border:1px solid var(--line-2);
+  background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;cursor:pointer}
+.ft .reset:hover{color:var(--warn);border-color:#e2c6bc}
+.ft .confirm{display:none;align-items:center;gap:8px;flex-wrap:wrap}
+.ft .confirm.on{display:flex}
+.ft .confirm span{color:var(--warn);font-size:12.5px}
+.ft .confirm button{min-height:36px;padding:0 12px;border-radius:var(--r-sm);font-family:inherit;font-size:12.5px;cursor:pointer;
+  border:1px solid var(--line-2);background:#fff;color:var(--ink)}
+.ft .confirm button.yes{border-color:#d9b6aa;color:var(--warn)}
+
+/* 撤销 toast */
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(14px);
+  bottom:calc(14px + env(safe-area-inset-bottom));z-index:50;
+  display:flex;align-items:center;gap:10px;max-width:calc(100vw - 28px);
+  padding:10px 12px;border-radius:var(--r-md);background:rgba(13,18,32,.95);color:#eceadf;
+  font-size:13px;box-shadow:0 8px 28px rgba(12,16,26,.28);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.on{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+.toast button{min-height:32px;padding:0 10px;border-radius:var(--r-sm);border:1px solid rgba(255,255,255,.34);
+  background:transparent;color:var(--gold-bright);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+[hidden]{display:none !important}
+
+@media (max-width:640px){
+  body{font-size:14.5px}
+  main{padding:12px 14px calc(24px + env(safe-area-inset-bottom))}
+  .hdIn{padding:11px 14px 11px}
+  .hd h1{font-size:17px}
+  .stats{gap:3px 12px;padding-bottom:8px}
+  .stats .s b{font-size:16px}
+  .tools{gap:6px}
+  .flt select{min-width:88px;font-size:13.5px;padding:0 4px}
+  .srch input{padding-left:32px}
+  .tBody{padding:2px 11px 12px}
+  .acts button{flex:1 1 auto}
+  .ft{justify-content:flex-start}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+}
+@media print{
+  .hd,.tools,.ft,.toast,.tMore{display:none}
+  body{background:#fff}
+  .tBody{display:block !important}
+}
+</style>
+</head>
+<body>
+
+<header class="hd">
+  <div class="hdIn">
+    <div class="hdTop">
+      <a class="back" href="index.html">← 返回校园地图</a>
+      <h1>入学<b>待办</b></h1>
+    </div>
+    <p id="intro">按需确认，逐项办理。完成状态仅保存在本机。</p>
+    <details class="basis" id="basis">
+      <summary>查看依据</summary>
+      <div class="bx" id="basisBody"></div>
+    </details>
+  </div>
+</header>
+
+<main>
+  <div class="stats" id="stats" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="tools">
+    <div class="srch">
+      <span class="ico" aria-hidden="true">🔍</span>
+      <input id="q" type="search" placeholder="搜事项、材料、办理说明…" autocomplete="off"
+             aria-label="搜索事项、材料和办理说明" enterkeyhint="search">
+      <button class="clr" id="qClr" type="button" aria-label="清空搜索">✕</button>
+    </div>
+    <div class="flt">
+      <select id="f" aria-label="按状态筛选">
+        <option value="all">全部</option>
+        <option value="open">未完成</option>
+        <option value="done">已完成</option>
+        <option value="na">不适用</option>
+      </select>
+    </div>
+  </div>
+  <div class="store" id="storeNote" role="status"></div>
+
+  <div id="list"></div>
+  <div class="empty" id="empty" role="status">
+    <div>未找到相关事项</div>
+    <button type="button" id="clearAll">清除搜索和筛选</button>
+  </div>
+
+  <div class="err" id="errCard" role="alert">
+    <b>待办清单暂时无法加载</b>
+    <p id="errMsg">内容数据没有读到，可能是网络中断或文件缺失。已保留本机进度，重试不会清空。</p>
+    <div class="row">
+      <button type="button" class="pri" id="retry">重试</button>
+      <a href="index.html">返回校园地图</a>
+    </div>
+  </div>
+
+  <footer class="ft">
+    <div class="note">
+      本页只整理流程，不代表表单仍在开放，也不代表政策长期有效；具体以学校当年通知为准。
+      进度只存在当前浏览器，换设备、换浏览器、隐私模式或清理缓存后不会同步。
+    </div>
+    <div>
+      <button class="reset" type="button" id="resetBtn">重置进度</button>
+      <span class="confirm" id="resetConfirm">
+        <span>确认清空本机进度？</span>
+        <button type="button" class="yes" id="resetYes">确认重置</button>
+        <button type="button" id="resetNo">取消</button>
+      </span>
+    </div>
+  </footer>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="sr" id="srAnnounce" aria-live="polite"></div>
+
+<script>
+(function(){
+  'use strict';
+  var KEY = 'usst_onboarding_state_v1';
+  var SCHEMA = 1;
+  var ST = { PENDING:'pending', CONFIRM:'needs_confirmation', DONE:'done', NA:'not_applicable' };
+  var OK_ST = [ST.PENDING, ST.CONFIRM, ST.DONE, ST.NA];
+  var ST_TEXT = {}; ST_TEXT[ST.PENDING]='待办理'; ST_TEXT[ST.CONFIRM]='待确认'; ST_TEXT[ST.DONE]='已完成'; ST_TEXT[ST.NA]='不适用';
+
+  var DATA = null;
+  var state = {};            // taskId -> status
+  var expanded = {};         // taskId -> true
+  var storageBad = false;    // 本机进度读取异常：只读、不写盘、提示用户主动重置
+  var saveFailed = false;    // 写入失败：会话内可用，但要提示可能丢失
+  var resetFailed = false;   // 重置时删除本机进度失败
+  var toastTimer = null;
+  var focusWant = null;      // 重绘后要恢复焦点：{type:'check'|'title'|'more'|'act', id, act}
+
+  var el = function(id){ return document.getElementById(id); };
+  var listEl = el('list'), statsEl = el('stats'), qEl = el('q'), fEl = el('f'),
+      emptyEl = el('empty'), storeEl = el('storeNote'), errEl = el('errCard'),
+      toastEl = el('toast'), srEl = el('srAnnounce');
+
+  function defStatus(t){ return t.kind === 'common' ? ST.PENDING : ST.CONFIRM; }
+
+  /* ---------------- 本机存储 ---------------- */
+  function readStore(){
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); }
+    catch(e){ storageBad = true; return; }
+    if (!raw) return;
+    var obj = null;
+    try { obj = JSON.parse(raw); }
+    catch(e){ storageBad = true; return; }
+    // 结构不符或版本不兼容：只读，绝不覆盖用户的原始数据
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)){ storageBad = true; return; }
+    if (obj.schemaVersion !== SCHEMA){ storageBad = true; return; }
+    if (!obj.tasks || typeof obj.tasks !== 'object' || Array.isArray(obj.tasks)){ storageBad = true; return; }
+    // 只收合法 taskId + 合法状态；其余为缺损项，按默认状态处理（不改写存储）
+    var src = obj.tasks;
+    for (var k in src){
+      if (!Object.prototype.hasOwnProperty.call(src, k)) continue;
+      var v = src[k];
+      if (typeof v === 'string' && OK_ST.indexOf(v) >= 0) state[k] = v;
+    }
+  }
+  function writeStore(){
+    // 读到损坏/不兼容数据时进入只读模式：用户明确重置前不写盘
+    if (storageBad){
+      saveFailed = true;
+      renderStoreNote();
+      return false;
+    }
+    var out = { schemaVersion: SCHEMA, tasks: {} };
+    for (var id in state){
+      if (Object.prototype.hasOwnProperty.call(state, id)) out.tasks[id] = state[id];
+    }
+    try {
+      localStorage.setItem(KEY, JSON.stringify(out));
+      if (saveFailed){ saveFailed = false; renderStoreNote(); }
+      return true;
+    } catch(e){
+      saveFailed = true;
+      renderStoreNote();
+      return false;
+    }
+  }
+  function renderStoreNote(){
+    var b1;
+    if (storageBad){
+      storeEl.textContent = '已有进度读取异常：本机原有数据保持原样、未被覆盖。下面显示的是默认状态' +
+        (saveFailed ? '；本次的勾选只在当前页面有效，未能保存。' : '，勾选与状态修改在重置前不会保存。');
+      b1 = document.createElement('button');
+      b1.type = 'button'; b1.textContent = '重置本机进度';
+      b1.onclick = function(){ askReset(true); };
+      storeEl.appendChild(b1);
+      storeEl.classList.add('on');
+      return;
+    }
+    if (resetFailed){
+      storeEl.textContent = '重置失败：本机原有进度仍保留、没有被清空，界面已恢复为读取到的原状态。';
+      b1 = document.createElement('button');
+      b1.type = 'button'; b1.textContent = '重试重置';
+      b1.onclick = function(){ askReset(true); };
+      storeEl.appendChild(b1);
+      storeEl.classList.add('on');
+      return;
+    }
+    if (saveFailed){
+      storeEl.textContent = '本次进度未能保存，关闭页面后可能丢失。';
+      storeEl.classList.add('on');
+      return;
+    }
+    storeEl.textContent = '';
+    storeEl.classList.remove('on');
+    if (document.activeElement === storeEl){
+      var rb = el('resetBtn');
+      if (rb && !rb.hidden && rb.focus){ try{ rb.focus({preventScroll:true}); }catch(e){ rb.focus(); } }
+    }
+  }
+
+  /* ---------------- 状态变更 ---------------- */
+  function setStatus(id, next, announce, actKey){
+    if (OK_ST.indexOf(next) < 0) return;
+    var prev = state[id];
+    var tk = activeToken();
+    if (!tk || tk.id !== id) tk = { type: 'act', id: id, act: actKey || '' };
+    state[id] = next;
+    var ok = writeStore();
+    render(tk);
+    var t = byId(id);
+    var name = t ? t.title : '该项';
+    if (!ok){
+      var m = '标记已更新，但本次进度未能保存，关闭页面后可能丢失';
+      showToast(m, null);
+      srEl.textContent = name + ' 已改为' + ST_TEXT[next] + '，但未能保存';
+      return;
+    }
+    var msg = name + '：' + ST_TEXT[next];
+    if (prev && prev !== next){
+      showToast(msg, function(){ setStatus(id, prev, true); });
+      srEl.textContent = msg + '，可撤销';
+    } else {
+      showToast(msg, null);
+      srEl.textContent = msg;
+    }
+    if (announce === false) return;
+  }
+  function byId(id){
+    if (!DATA) return null;
+    for (var i=0;i<DATA.tasks.length;i++){ if (DATA.tasks[i].id === id) return DATA.tasks[i]; }
+    return null;
+  }
+
+  /* ---------------- toast ---------------- */
+  function showToast(msg, undo){
+    toastEl.textContent = '';
+    var sp = document.createElement('span');
+    sp.textContent = msg;
+    toastEl.appendChild(sp);
+    if (undo){
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = '撤销';
+      b.onclick = function(){ hideToast(); undo(); };
+      toastEl.appendChild(b);
+    }
+    toastEl.classList.add('on');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, undo ? 8000 : 4200);
+  }
+  function hideToast(){
+    if (toastTimer){ clearTimeout(toastTimer); toastTimer = null; }
+    toastEl.classList.remove('on');
+    toastEl.textContent = '';
+  }
+
+  /* ---------------- 统计 ---------------- */
+  function counts(){
+    var c = { done:0, pending:0, confirm:0, na:0, total:0 };
+    if (!DATA) return c;
+    for (var i=0;i<DATA.tasks.length;i++){
+      var t = DATA.tasks[i], s = state[t.id] || defStatus(t);
+      c.total++;
+      if (s === ST.DONE) c.done++;
+      else if (s === ST.NA) c.na++;
+      else if (s === ST.CONFIRM) c.confirm++;
+      else c.pending++;
+    }
+    return c;
+  }
+  function renderStats(){
+    var c = counts();
+    statsEl.textContent = '';
+    var items = [
+      { k:'done', label:'已完成', v:c.done },
+      { k:'', label:'待办理', v:c.pending },
+      { k:'confirm', label:'待确认', v:c.confirm },
+      { k:'na', label:'不适用', v:c.na }
+    ];
+    for (var i=0;i<items.length;i++){
+      var s = document.createElement('span');
+      s.className = 's ' + items[i].k;
+      var b = document.createElement('b'); b.textContent = String(items[i].v);
+      var l = document.createElement('span'); l.textContent = items[i].label;
+      s.appendChild(b); s.appendChild(l);
+      statsEl.appendChild(s);
+    }
+    var tot = document.createElement('span');
+    tot.className = 'tot';
+    tot.textContent = '共 ' + c.total + ' 项';
+    statsEl.appendChild(tot);
+  }
+
+  /* ---------------- 过滤 ---------------- */
+  function norm(s){ return String(s == null ? '' : s).toLowerCase().replace(/\s+/g,''); }
+  // 困难认定的 14 类家庭与证明材料挂在该事项下，使材料名也能搜到本事项
+  function proofRows(id){
+    return (id === 'difficulty' && DATA && DATA.proofMaterials && DATA.proofMaterials.length)
+      ? DATA.proofMaterials.slice() : [];
+  }
+  function haystack(t){
+    if (t._hay) return t._hay;
+    var parts = [t.title, t.audience || '', t.kind || '', t.phase || ''];
+    (t.materials||[]).forEach(function(x){ parts.push(x); });
+    (t.steps||[]).forEach(function(x){ parts.push(x); });
+    (t.notes||[]).forEach(function(x){ parts.push(x); });
+    proofRows(t.id).forEach(function(p){
+      parts.push(p.type || '');
+      parts.push(p.department || '');
+      parts.push(p.note || '');
+      (p.materials || []).forEach(function(x){ parts.push(x); });
+    });
+    t._hay = norm(parts.join(' '));
+    return t._hay;
+  }
+  function proofHitCount(t, q){
+    if (!q) return 0;
+    var n = 0;
+    proofRows(t.id).forEach(function(p){
+      var parts = [p.type || '', p.department || '', p.note || ''].concat(p.materials || []);
+      if (norm(parts.join(' ')).indexOf(q) >= 0) n++;
+    });
+    return n;
+  }
+  function passFilter(t){
+    var s = state[t.id] || defStatus(t);
+    var f = fEl.value;
+    if (f === 'done') return s === ST.DONE;
+    if (f === 'na') return s === ST.NA;
+    if (f === 'open') return s === ST.PENDING || s === ST.CONFIRM;
+    return true;
+  }
+  function passSearch(t){
+    var q = norm(qEl.value);
+    if (!q) return true;
+    return haystack(t).indexOf(q) >= 0;
+  }
+
+  /* ---------------- 渲染列表 ---------------- */
+  function statusTag(s){
+    var sp = document.createElement('span');
+    sp.className = 'tag st-' + (s === ST.DONE ? 'done' : s === ST.CONFIRM ? 'confirm' : s === ST.NA ? 'na' : 'pending');
+    var mark = s === ST.DONE ? '✓ ' : s === ST.CONFIRM ? '? ' : s === ST.NA ? '— ' : '';
+    sp.textContent = mark + ST_TEXT[s];
+    return sp;
+  }
+  function kindTag(kind){
+    if (kind === 'common') return null;
+    var sp = document.createElement('span');
+    sp.className = 'tag ' + (kind === 'conditional' ? 'k-cond' : 'k-sugg');
+    sp.textContent = kind === 'conditional' ? '条件适用' : '建议了解';
+    return sp;
+  }
+
+  function buildRow(t){
+    var s = state[t.id] || defStatus(t);
+    var row = document.createElement('div');
+    row.className = 'task' + (s === ST.DONE ? ' done' : s === ST.NA ? ' na' : '');
+    row.dataset.id = t.id;
+
+    var main = document.createElement('div');
+    main.className = 'tMain';
+
+    var chk = document.createElement('button');
+    chk.type = 'button';
+    chk.className = 'chk';
+    chk.dataset.act = 'chk';
+    if (s === ST.DONE){
+      chk.className = 'chk on';
+      chk.setAttribute('role','checkbox');
+      chk.setAttribute('aria-checked','true');
+      chk.textContent = '✓';
+      chk.setAttribute('aria-label', '取消「' + t.title + '」的完成标记');
+      chk.onclick = function(){ setStatus(t.id, ST.PENDING, true, 'chk'); };
+    } else if (s === ST.CONFIRM){
+      chk.className = 'chk q';
+      chk.textContent = '?';
+      chk.setAttribute('aria-label', '「' + t.title + '」待确认是否适用，展开后选择');
+      chk.onclick = function(){ openTask(t.id, true, 'act'); };
+    } else if (s === ST.NA){
+      chk.className = 'chk na';
+      chk.textContent = '—';
+      chk.setAttribute('aria-label', '「' + t.title + '」已标记不适用，展开后可恢复');
+      chk.onclick = function(){ openTask(t.id, false, 'act'); };
+    } else {
+      chk.className = 'chk pend';
+      chk.setAttribute('role','checkbox');
+      chk.setAttribute('aria-checked','false');
+      chk.textContent = '';
+      chk.setAttribute('aria-label', '标记「' + t.title + '」为已完成');
+      chk.onclick = function(){ setStatus(t.id, ST.DONE, true, 'chk'); };
+    }
+    main.appendChild(chk);
+
+    var title = document.createElement('button');
+    title.type = 'button';
+    title.className = 'tTitle';
+    title.dataset.act = 'title';
+    title.setAttribute('aria-expanded', expanded[t.id] ? 'true' : 'false');
+    title.setAttribute('aria-controls', 'body-' + t.id);
+    var tx = document.createElement('span');
+    tx.className = 'tx';
+    tx.textContent = t.title;
+    title.appendChild(tx);
+    var kt = kindTag(t.kind);
+    if (kt) title.appendChild(kt);
+    title.appendChild(statusTag(s));
+    title.title = '展开或收起材料、步骤与注意事项';
+    title.onclick = function(){ openTask(t.id, false, 'title'); };
+    main.appendChild(title);
+
+    var hitq = norm(qEl.value);
+    if (hitq){
+      var ph = proofHitCount(t, hitq);
+      if (ph > 0){
+        var hb = document.createElement('span');
+        hb.className = 'tag hit';
+        hb.textContent = '证明材料命中 ' + ph + ' 类';
+        hb.title = '关键词出现在本事项的困难认定证明材料对照中，展开可查看';
+        title.appendChild(hb);
+      }
+    }
+
+    var more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'tMore';
+    more.dataset.act = 'more';
+    more.setAttribute('aria-expanded', expanded[t.id] ? 'true' : 'false');
+    more.setAttribute('aria-controls', 'body-' + t.id);
+    more.setAttribute('aria-label', (expanded[t.id] ? '收起' : '展开') + '「' + t.title + '」的详情');
+    var ar = document.createElement('span');
+    ar.className = 'ar';
+    ar.textContent = expanded[t.id] ? '▾' : '▸';
+    more.appendChild(ar);
+    more.onclick = function(){ openTask(t.id, false, 'more'); };
+    main.appendChild(more);
+
+    row.appendChild(main);
+
+    var body = document.createElement('div');
+    body.className = 'tBody';
+    body.id = 'body-' + t.id;
+    if (!expanded[t.id]) body.hidden = true;
+    buildBody(body, t, s);
+    row.appendChild(body);
+    return row;
+  }
+
+  function sec(title, node){
+    var d = document.createElement('div');
+    d.className = 'sec';
+    var h = document.createElement('h3'); h.textContent = title;
+    d.appendChild(h);
+    d.appendChild(node);
+    return d;
+  }
+  function ul(items, fallback){
+    if (!items || !items.length){
+      var p = document.createElement('div');
+      p.className = 'none';
+      p.textContent = fallback || '按通知准备';
+      return p;
+    }
+    var u = document.createElement('ul');
+    for (var i=0;i<items.length;i++){
+      var li = document.createElement('li'); li.textContent = items[i]; u.appendChild(li);
+    }
+    return u;
+  }
+  function ol(items){
+    var o = document.createElement('ol');
+    for (var i=0;i<items.length;i++){
+      var li = document.createElement('li'); li.textContent = items[i]; o.appendChild(li);
+    }
+    return o;
+  }
+
+  function buildBody(body, t, s){
+    if (t.audience){
+      var au = document.createElement('div');
+      au.className = 'none';
+      au.textContent = '适用对象：' + t.audience;
+      body.appendChild(au);
+    }
+    body.appendChild(sec('所需材料', ul(t.materials)));
+    if (t.steps && t.steps.length) body.appendChild(sec('办理步骤', ol(t.steps)));
+    if (t.notes && t.notes.length) body.appendChild(sec('注意事项', ul(t.notes)));
+
+    if (t.kind !== 'common'){
+      var hint0 = document.createElement('div');
+      hint0.className = 'none';
+      hint0.style.marginTop = '10px';
+      hint0.textContent = t.kind === 'conditional'
+        ? '此项只对符合条件的人需要办理，请先确认是否适用。'
+        : '此项为建议了解，不是人人必须办理。';
+      body.appendChild(hint0);
+    }
+
+    if (t.id === 'difficulty' && DATA.proofMaterials && DATA.proofMaterials.length){
+      var pd = document.createElement('details');
+      pd.className = 'proof';
+      var ps = document.createElement('summary');
+      ps.dataset.act = 'proof';
+      ps.textContent = '家庭经济困难认定 · 证明材料对照（' + DATA.proofMaterials.length + ' 类，按家庭类型查）';
+      pd.appendChild(ps);
+      var pol = document.createElement('ol');
+      pol.className = 'proofOl';
+      for (var i=0;i<DATA.proofMaterials.length;i++){
+        var p = DATA.proofMaterials[i];
+        var li = document.createElement('li');
+        var n = document.createElement('span'); n.className = 'pn'; n.textContent = p.number + '.';
+        var ty = document.createElement('span'); ty.className = 'pt'; ty.textContent = p.type;
+        var dp = document.createElement('span'); dp.className = 'pd';
+        dp.textContent = p.department ? '（' + p.department + '）' : '';
+        li.appendChild(n); li.appendChild(ty); li.appendChild(dp);
+        if (p.note){
+          var nt = document.createElement('div'); nt.className = 'pw'; nt.textContent = p.note;
+          li.appendChild(nt);
+        }
+        var mm = document.createElement('div'); mm.className = 'pm';
+        if (p.materials && p.materials.length){
+          mm.textContent = '材料：' + p.materials.join('；');
+        } else {
+          mm.className = 'pm pw';
+          mm.textContent = '材料：原表未列出，请咨询确认（不自动沿用其他类型）';
+        }
+        li.appendChild(mm);
+        pol.appendChild(li);
+      }
+      pd.appendChild(pol);
+      body.appendChild(pd);
+    }
+
+    var src = document.createElement('div');
+    src.className = 'none';
+    src.style.marginTop = '10px';
+    src.style.fontSize = '12px';
+    var refs = (t.sourceRefs || []).join('、');
+    var lg = DATA.sourceLegend || {};
+    src.textContent = '来源：' + (refs || '—') +
+      '（' + (lg.X ? 'X= ' + lg.X : '') + (lg.X && lg.P ? '；' : '') + (lg.P ? 'P= ' + lg.P : '') + '）';
+    body.appendChild(src);
+
+    var acts = document.createElement('div');
+    acts.className = 'acts';
+    var hint = document.createElement('div');
+    hint.className = 'hint';
+
+    function btn(label, cls, fn, aria){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if (cls) b.className = cls;
+      if (aria) b.setAttribute('aria-label', aria);
+      b.dataset.act = label;
+      b.onclick = fn;
+      acts.appendChild(b);
+      return b;
+    }
+
+    if (s === ST.CONFIRM){
+      hint.textContent = '请先确认是否适用：确认需要办理后才会进入「待办理」，不适用不会被算成已完成。';
+      btn('需要办理', 'pri', function(){ setStatus(t.id, ST.PENDING, true, '需要办理'); }, '确认「' + t.title + '」需要办理');
+      btn('不适用', '', function(){ setStatus(t.id, ST.NA, true, '不适用'); }, '「' + t.title + '」不适用于我');
+    } else if (s === ST.NA){
+      hint.textContent = '已标记为不适用，不计入已完成；如果判断有误可以恢复。';
+      btn('恢复为待办', 'pri', function(){ setStatus(t.id, defStatus(t), true, '恢复为待办'); }, '恢复「' + t.title + '」为待办');
+    } else if (s === ST.DONE){
+      hint.textContent = '已标记完成，进度只保存在本机。';
+      btn('取消完成', '', function(){ setStatus(t.id, ST.PENDING, true, '取消完成'); }, '取消「' + t.title + '」的完成标记');
+      btn('标记不适用', 'warn', function(){ setStatus(t.id, ST.NA, true, '标记不适用'); }, '「' + t.title + '」不适用于我');
+    } else {
+      hint.textContent = '完成情况由你自己确认；打开详情、点链接不会自动标记完成。';
+      btn('标记已完成', 'pri', function(){ setStatus(t.id, ST.DONE, true, '标记已完成'); }, '标记「' + t.title + '」为已完成');
+      btn('标记不适用', 'warn', function(){ setStatus(t.id, ST.NA, true, '标记不适用'); }, '「' + t.title + '」不适用于我');
+    }
+    body.appendChild(acts);
+    body.appendChild(hint);
+  }
+
+  function openTask(id, focusActs){
+    expanded[id] = !expanded[id];
+    var wasOpen = expanded[id];
+    render({ id: id, act: 'title' });
+    if (!wasOpen) return;
+    var row = rowById(id);
+    if (!row) return;
+    if (focusActs){
+      var body = row.querySelector('.tBody');
+      var first = body ? body.querySelector('.acts button') : null;
+      if (first && first.focus){ try{ first.focus({preventScroll:false}); }catch(e){ first.focus(); } }
+    }
+  }
+
+  /* ---------------- 重绘后的键盘焦点 ----------------
+     列表整体重建会丢焦点，记录原控件（行 + 控件标记）并在重绘后原位恢复，
+     避免展开、勾选后按 Tab 又跳回页面顶部；原行被筛选掉时按相邻事项接力。 */
+  var GROUP_ACTS = { chk:1, title:1, more:1, proof:1 };
+  function rowById(id){
+    var rows = listEl.querySelectorAll('.task');
+    for (var i=0;i<rows.length;i++){
+      if (rows[i].dataset.id === id) return rows[i];
+    }
+    return null;
+  }
+  function activeToken(){
+    var a = document.activeElement;
+    if (!a) return null;
+    if (a === storeEl) return { id: '', store: true };
+    if (!listEl.contains(a)) return null;
+    var row = a;
+    while (row && row !== listEl && !(row.classList && row.classList.contains('task'))) row = row.parentNode;
+    if (!row || row === listEl || !row.dataset) return null;
+    var rows = listEl.querySelectorAll('.task'), idx = -1;
+    for (var i=0;i<rows.length;i++){
+      if (rows[i] === row){ idx = i; break; }
+    }
+    return {
+      id: row.dataset.id,
+      idx: idx,
+      act: (a.dataset && a.dataset.act) ? a.dataset.act : '',
+      label: (a.textContent || '').replace(/\s+/g,' ').trim()
+    };
+  }
+  function focusQuiet(t){
+    if (!t || !t.focus) return false;
+    if (document.activeElement === t) return true;
+    try { t.focus({preventScroll:true}); }
+    catch(e){ try { t.focus(); } catch(e2){ return false; } }
+    return document.activeElement === t;
+  }
+  function restoreFocus(tk){
+    if (!tk) return;
+    if (tk.store){
+      if (document.activeElement !== storeEl && storeEl.className.indexOf('on') >= 0){
+        try { storeEl.focus({preventScroll:true}); } catch(e){}
+      }
+      return;
+    }
+    var row = rowById(tk.id);
+    if (!row){ restoreNeighbor(tk); return; }
+    var cands = row.querySelectorAll('.chk, .tTitle, .tMore, .acts button, .proof > summary');
+    var target = null, i;
+    if (tk.act){
+      for (i=0;i<cands.length;i++){
+        if ((cands[i].dataset.act || '') === tk.act && (cands[i].textContent || '').replace(/\s+/g,' ').trim() === tk.label){
+          target = cands[i]; break;
+        }
+      }
+      if (!target){
+        for (i=0;i<cands.length;i++){
+          if ((cands[i].dataset.act || '') === tk.act){ target = cands[i]; break; }
+        }
+      }
+      // 动作按钮的文案会随状态变化（如「需要办理」→「标记已完成」），回退到本行第一个动作按钮
+      if (!target && !GROUP_ACTS[tk.act]){
+        var ab = row.querySelectorAll('.acts button');
+        if (ab.length) target = ab[0];
+      }
+    }
+    if (!target) target = row.querySelector('.tTitle');
+    if (!target || document.activeElement === target) return;
+    try { target.focus({preventScroll:true}); }
+    catch(e){ try { target.focus(); } catch(e2){} }
+  }
+
+  /* 原行被筛选 / 搜索排除后不在列表里：把焦点交给新位置，而不是丢回 body 或页面顶部。
+     顺序：原位置上的下一项 → 最后一项（原上一项）→ 列表为空时交给状态筛选控件 #f。 */
+  function restoreNeighbor(tk){
+    var now = listEl.querySelectorAll('.task');
+    var idx = (typeof tk.idx === 'number' && tk.idx >= 0) ? tk.idx : 0;
+    var next = (idx < now.length) ? now[idx] : (now.length ? now[now.length - 1] : null);
+    var target = null;
+    if (next) target = next.querySelector('.tTitle') || next.querySelector('.chk');
+    if (!focusQuiet(target) && now.length){
+      target = now[now.length - 1].querySelector('.tTitle') || now[now.length - 1].querySelector('.chk');
+      focusQuiet(target);
+    }
+    if (document.activeElement !== target && fEl) focusQuiet(fEl);
+    var a = document.activeElement;
+    if (a && a !== document.body && typeof a.scrollIntoView === 'function'){
+      var r = a.getBoundingClientRect();
+      if (r.height && (r.top < 0 || r.bottom > (window.innerHeight || 0))){
+        try { a.scrollIntoView({block:'nearest'}); } catch(e){}
+      }
+    }
+    if (srEl){
+      srEl.textContent = (srEl.textContent ? srEl.textContent + '；' : '') + (now.length
+        ? '原事项已不在当前筛选结果中，焦点移到第 ' + (idx < now.length ? idx + 1 : now.length) + ' 项可见事项'
+        : '当前筛选下没有事项，焦点移到状态筛选');
+    }
+  }
+
+  function rememberFocus(){
+    var tk = activeToken();
+    if (!tk) return;
+    focusWant = tk;
+  }
+  function render(focusOverride){
+    var tk = focusOverride || activeToken() || focusWant;
+    focusWant = null;
+    renderStats();
+    if (!DATA){ renderStoreNote(); return; }
+    var any = false;
+    listEl.textContent = '';
+    for (var gi=0; gi<DATA.phases.length; gi++){
+      var phase = DATA.phases[gi];
+      var items = DATA.tasks.filter(function(t){ return t.phase === phase && passFilter(t) && passSearch(t); });
+      var grp = document.createElement('section');
+      grp.className = 'grp';
+      var h = document.createElement('h2');
+      var hn = document.createElement('span');
+      hn.textContent = phase;
+      var cnt = document.createElement('span');
+      cnt.className = 'n';
+      cnt.textContent = items.length + ' 项';
+      h.appendChild(hn); h.appendChild(cnt);
+      grp.appendChild(h);
+      if (!items.length){
+        var none = document.createElement('div');
+        none.className = 'empty on';
+        none.style.padding = '10px 4px';
+        none.style.textAlign = 'left';
+        none.style.fontSize = '13px';
+        none.textContent = '本组没有符合当前条件的事项';
+        grp.appendChild(none);
+      } else {
+        any = true;
+        for (var i=0;i<items.length;i++) grp.appendChild(buildRow(items[i]));
+      }
+      listEl.appendChild(grp);
+    }
+    emptyEl.classList.toggle('on', !any);
+    listEl.hidden = !any ? false : false;
+    renderStoreNote();
+    restoreFocus(tk);
+  }
+
+  /* ---------------- 重置 ---------------- */
+  function askReset(immediate){
+    el('resetConfirm').classList.add('on');
+    el('resetBtn').hidden = true;
+    if (immediate){
+      el('resetConfirm').scrollIntoView({ block:'center' });
+      el('resetYes').focus();
+    }
+  }
+  function cancelReset(){
+    el('resetConfirm').classList.remove('on');
+    el('resetBtn').hidden = false;
+    el('resetBtn').focus();
+  }
+  function doReset(){
+    // 只删本模块自己的 key，绝不清空 localStorage 其它数据
+    var removed = true;
+    try { localStorage.removeItem(KEY); }
+    catch(e){ removed = false; }
+    if (removed){
+      var left = null;
+      try { left = localStorage.getItem(KEY); } catch(e){ left = null; }
+      if (left !== null) removed = false;
+    }
+    if (!removed){
+      // 重置失败：保留原状态与界面，不谎报已清空
+      resetFailed = true;
+      cancelReset();
+      renderStoreNote();
+      var m1 = '重置失败：本机进度没有被清空，原状态仍保留';
+      showToast(m1, null);
+      srEl.textContent = m1;
+      if (storeEl.focus){ try{ storeEl.focus(); }catch(e){} }
+      return;
+    }
+    // 删除成功：恢复到默认状态。存储保持为空，下次打开即按默认状态渲染
+    resetFailed = false;
+    storageBad = false; saveFailed = false;
+    state = {};
+    expanded = {};
+    if (DATA){
+      for (var i=0;i<DATA.tasks.length;i++) state[DATA.tasks[i].id] = defStatus(DATA.tasks[i]);
+    }
+    render();
+    cancelReset();
+    var m2 = '已清空本机进度，全部事项回到默认状态';
+    showToast(m2, null);
+    srEl.textContent = m2;
+  }
+
+  /* ---------------- 启动 ---------------- */
+  function bind(){
+    qEl.addEventListener('input', function(){
+      el('qClr').classList.toggle('on', !!qEl.value);
+      render();
+    });
+    el('qClr').addEventListener('click', function(){
+      qEl.value = '';
+      el('qClr').classList.remove('on');
+      render();
+      qEl.focus();
+    });
+    fEl.addEventListener('change', render);
+    el('clearAll').addEventListener('click', function(){
+      qEl.value = '';
+      el('qClr').classList.remove('on');
+      fEl.value = 'all';
+      render();
+      qEl.focus();
+    });
+    el('resetBtn').addEventListener('click', function(){ askReset(false); });
+    el('resetNo').addEventListener('click', cancelReset);
+    el('resetYes').addEventListener('click', doReset);
+    storeEl.setAttribute('tabindex', '-1');
+    el('retry').addEventListener('click', function(){
+      errEl.classList.remove('on');
+      boot();
+    });
+  }
+
+  function fillBasis(){
+    var bx = el('basisBody');
+    bx.textContent = '';
+    var p1 = document.createElement('p');
+    p1.textContent = DATA.sourceNote || '依据新生报到资料整理，具体以学校当年通知为准。';
+    bx.appendChild(p1);
+    var p2 = document.createElement('p');
+    p2.textContent = '本页只整理流程与材料要求，不声明相关表单仍在开放，也不代表政策长期有效；相冲突的安排一律以学校后续通知为准。';
+    bx.appendChild(p2);
+    if (DATA.sourceLegend){
+      var p3 = document.createElement('p');
+      p3.className = 'lg';
+      var parts = [];
+      for (var k in DATA.sourceLegend){
+        if (Object.prototype.hasOwnProperty.call(DATA.sourceLegend, k)) parts.push(k + ' = ' + DATA.sourceLegend[k]);
+      }
+      p3.textContent = '来源简称：' + parts.join('；') + '。';
+      bx.appendChild(p3);
+    }
+  }
+
+  function validate(d){
+    if (!d || typeof d !== 'object') return false;
+    if (!Array.isArray(d.tasks) || !d.tasks.length) return false;
+    if (!Array.isArray(d.phases) || !d.phases.length) return false;
+    for (var i=0;i<d.tasks.length;i++){
+      var t = d.tasks[i];
+      if (!t || typeof t.id !== 'string' || !t.id) return false;
+      if (typeof t.title !== 'string' || !t.title) return false;
+      if (t.kind !== 'common' && t.kind !== 'conditional' && t.kind !== 'suggested') return false;
+      if (d.phases.indexOf(t.phase) < 0) return false;
+    }
+    return true;
+  }
+
+  function boot(){
+    if (DATA){ render(); return; }
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var to = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 12000);
+    fetch('./data/onboarding_tasks.json', ctrl ? { signal: ctrl.signal, cache:'no-cache' } : { cache:'no-cache' })
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(d){
+        clearTimeout(to);
+        if (!validate(d)) throw new Error('数据格式不完整');
+        DATA = d;
+        if (d.title) document.title = d.title + ' · 上海理工大学基础学院';
+        if (d.intro) el('intro').textContent = d.intro;
+        // 新任务补默认状态；只统计当前数据的有效 ID
+        for (var i=0;i<d.tasks.length;i++){
+          var t = d.tasks[i];
+          if (!state[t.id]) state[t.id] = defStatus(t);
+        }
+        fillBasis();
+        renderStoreNote();
+        render();
+      })
+      .catch(function(err){
+        clearTimeout(to);
+        el('errMsg').textContent = '内容数据没有读到（' + (err && err.message ? err.message : '网络错误') + '）。已保留本机进度，重试不会清空。';
+        errEl.classList.add('on');
+        listEl.textContent = '';
+        statsEl.textContent = '';
+      });
+  }
+
+  readStore();
+  bind();
+  boot();
+})();
+</script>
+</body>
+</html>
