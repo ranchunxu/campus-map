@@ -672,5 +672,10 @@ td.name{min-width:180px}
   }
 })();
 </script>
+<script>
+/* 子页排障：未捕获异常在控制台点名，不弹窗、不改界面 */
+addEventListener('error', function(e){ try{ console.error('[运行时错误]', e.message, (e.filename||'')+':'+e.lineno); }catch(_){} });
+addEventListener('unhandledrejection', function(e){ try{ console.error('[未处理的 Promise 拒绝]', (e.reason && (e.reason.stack || e.reason.message)) || e.reason); }catch(_){} });
+</script>
 </body>
 </html>
