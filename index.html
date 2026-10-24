@@ -66,6 +66,9 @@
   #panel .pBlk{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:28px;
     padding:0 8px;border-radius:6px;background:rgba(255,255,255,.1);color:#e8eaed;font-size:13px;cursor:pointer;line-height:1;}
   #panel .pBlk:active{background:rgba(138,180,248,.35);}
+  /* 全局兜底：.pBlk 的 display:inline-flex 优先级高于浏览器默认的 [hidden]{display:none}，
+     不加这条桌面端「展开详情」按钮会照常显示并抢布局 */
+  [hidden]{display:none !important;}
   #panel #panelClose{font-size:15px;}
   #tip{position:absolute;bottom:12px;left:12px;z-index:20;color:#d5d9de;font-size:12px;
     background:rgba(20,24,32,.7);padding:6px 10px;border-radius:6px;}
@@ -90,6 +93,11 @@
   #searchResults li:last-child{border-bottom:0;}
   #searchResults li:hover{background:rgba(138,180,248,.18);}
   #searchResults li .rsub{color:#9aa0a6;font-size:11px;margin-left:6px;}
+  /* 地图入口按钮（新生手册 / 培养计划 / 入学待办）：数量由 JS 生成，桌面自然排成一行靠右下 */
+  .toolBar button{min-height:32px;padding:7px 10px;font-size:12px;white-space:nowrap;flex:none;box-sizing:border-box;
+    font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:5px;}
+  .toolBar button .tx{white-space:nowrap;}
+  .toolBar.isCol{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
   @media (max-width:640px), (max-height:500px){
     html,body{background:#eef0f3}
     #banner{font-size:12px;padding:4px 10px;line-height:1.35;white-space:nowrap;overflow:visible;gap:6px}
@@ -117,10 +125,10 @@
     #panel .pFoot{flex:none;display:flex;gap:8px;padding:8px 0 calc(8px + var(--sBot,0px));}
     #tip{display:none}
     #routeInfo{left:8px !important;right:8px !important;max-width:none !important;max-height:36vh}
-    /* 工具栏两钮并排等宽、高度 ≥44、字号 ≥14（不再压字压内边距） */
-    .toolBar{left:8px;right:8px;gap:8px;max-width:none;flex-wrap:nowrap;}
-    .toolBar button{flex:1 1 0;min-width:0;min-height:44px;padding:0 10px !important;font-size:14px !important;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    /* 工具栏三入口：竖屏三等宽并排，高度 ≥44、字号 ≥14；只有当前两个入口带装饰图标，
+       第三入口不带图标，320px 宽下仍要完整显示四字标签（靠 flex 均分与不缩字，不截断） */
+    .toolBar{left:8px;right:8px;gap:6px;max-width:none;flex-wrap:nowrap;}
+    .toolBar button{flex:1 1 0;min-width:0;min-height:44px;padding:0 6px !important;font-size:14px !important;}
     #meMarkerEl .dot{width:16px;height:16px;}
     #zoomCtl{right:8px;bottom:8px;gap:6px;}
     #zoomCtl button{width:44px;height:44px;font-size:18px;}
@@ -129,11 +137,15 @@
     .marker.smallLbl .lbl{font-size:8px;padding:0 1px}
     /* 相邻标记密集：圆点显式 7px 外径、无边框，背景改由 box-shadow 画描边，避免默认边框撑大 */
     .marker .dot{box-sizing:border-box;width:7px;height:7px;border:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.4);}
-    /* 横屏：搜索区在左、地图在右，工具栏改为竖排贴左列下沿，两钮各占一半高度（仍 ≥44） */
-    .toolBar.isCol{flex-direction:column;flex-wrap:nowrap;gap:6px;right:auto;max-width:none;}
+    /* 横屏：搜索区在左、地图在右，工具栏改为竖排贴左列下沿，每钮仍 ≥44 且保持四字标签 */
+    .toolBar.isCol{flex-direction:column;flex-wrap:nowrap;gap:6px;right:auto;max-width:none;padding:0;}
     .toolBar.isCol button{flex:0 0 auto;width:100%;min-height:44px;}
     #search{max-width:calc(100vw - 16px);}
     #search .fldRow select{min-width:0;width:100%;}
+  }
+  /* 极窄屏（320px）：隐藏入口装饰图标保四字标签完整，不缩字号、不截断文字 */
+  @media (max-width:360px){
+    .toolBar .ic{display:none !important;}
   }
   /* 校园照片：缩略图网格 + 点击放大 */
   .phHead{color:#cfd6df;font-size:12px;margin:2px 0 6px;}
@@ -280,7 +292,7 @@
           <li><b>恢复全图</b>：点右侧「恢复」，视图回到整幅校园图；起点、终点和路线不会丢。</li>
           <li><b>选择起点和终点</b>：「导航起点」下拉可选起点；在详情里点「从这里出发」或「到这里去」自动生成路线。</li>
           <li><b>清除路线</b>：点路线提示条上的「✕ 清除路线」，起点会保留，直接点新地点即可再算。</li>
-          <li><b>新生手册 / 培养计划</b>：点地图上的「新生手册」「培养计划」两个按钮进入对应页面。</li>
+          <li><b>三个入口</b>：点地图上的「新生手册」「培养计划」「入学待办」按钮分别进入对应页面；「入学待办」是独立的清单页，勾选进度只存在本机。</li>
         </ol>
         <div class="hNote">手机浏览器地址栏收起 / 展开、横竖屏切换时地图与详情会自动按可见区域重排，不会重置你的缩放。</div>
       </div>
@@ -520,7 +532,7 @@ function resetLayoutStyles() {
 // 详情展开时地图容器被收短过；收起或关闭详情时必须恢复，否则地图被压成 120px 条
 function restoreMapArea() {
   mapViewport.style.height = '';
-  if (isNarrow()) layoutTopOnly();
+  layoutTopOnly();   // 手机重排顶部并重算高度；桌面走 applyDesktopLayout 顺带清掉内联定位
 }
 // 竖屏详情「展开」中：地图容器收短到面板上沿，返回该高度；未展开返回 null
 function panelExpandedGap() {
@@ -1086,37 +1098,36 @@ function closePanel() {
   panel.style.display = 'none';
   panel.classList.remove('expanded');
   currentPanelFeature = null;
-  if (isNarrow()) {
-    restoreMapArea();   // 展开中关闭时把地图容器还原，否则地图被压成 120px 条
-    if (navState || lastRoute) renderRoute();   // 恢复已保存的导航状态（正常/已到达/不可达）
-    showFooter(!isNarrow());   // 手机端不显示页脚：它会压在底部缩放按钮上
-    relayoutBelow();
-    if (pendingStatus) { const ps = pendingStatus; pendingStatus = null; showStatus(ps); }
-  }
+  // 桌面与手机都要还原：展开态残留的容器高度/内联定位不清掉，关掉详情后地图会留一条被压扁的窄带
+  restoreMapArea();
+  if (navState || lastRoute) renderRoute();   // 恢复已保存的导航状态（正常/已到达/不可达）
+  showFooter(!isNarrow());   // 手机端不显示页脚：它会压在底部缩放按钮上
+  relayoutBelow();
+  if (pendingStatus) { const ps = pendingStatus; pendingStatus = null; showStatus(ps); }
 }
 window.closePanel = closePanel;
 function setPanelExpandVisible(on) {
   const el = document.getElementById('panelExpand');
   if (!el) return;
-  const show = !!(on && !isSideLayout());
+  const show = !!(on && panelExpandSupported());
   if (show) el.removeAttribute('hidden'); else el.setAttribute('hidden', '');
 }
+// 「展开 / 收起」只服务手机竖屏的底部面板：桌面右上浮窗与横屏并排面板都是整高，不提供该操作
+function panelExpandSupported() { return isNarrow() && !isSideLayout(); }
 // 详情底部面板的「展开 / 收起」：展开后占满可见高度（按 --appH，不含浏览器底栏），再点收起
 function togglePanelExpand(force) {
+  if (!panelExpandSupported()) return false;   // 桌面/横屏：不切 class、不写内联高度
   if (panel.style.display === 'none') return false;
   const on = (force === undefined) ? !panel.classList.contains('expanded') : !!force;
   panel.classList.toggle('expanded', on);
   document.getElementById('panelExpand').textContent = on ? '⤡ 收起' : '⤢ 展开';
   document.getElementById('panelExpand').setAttribute('aria-label', on ? '收起详情' : '展开详情');
-  if (!isSideLayout()) {
-    if (on) {
-      // 竖屏展开：地图容器收短到面板上沿，展开后地图仍可见可拖
-      const gap = panelExpandedGap();
-      if (gap !== null) mapViewport.style.height = gap + 'px';
-      updateTransform();
-    } else {
-      restoreMapArea();   // 收回原高度，缩放/平移不动
-    }
+  if (on) {
+    // 竖屏展开：地图容器收短到面板上沿，展开后地图仍可见可拖
+    const gap = panelExpandedGap();
+    if (gap !== null) mapViewport.style.height = gap + 'px';
+  } else {
+    restoreMapArea();   // 收回原高度，缩放/平移不动
   }
   relayoutBelow();
   updateTransform();
@@ -1573,7 +1584,7 @@ function setMyLocal(e, n, source) {
   updateTransform();
 }
 const toolBar = document.createElement('div');
-// 宽度交给 CSS（桌面 max-width:60vw / 手机媒体查询铺满左右），内联 max-width 会压过媒体查询
+// 宽度交给 CSS（手机媒体查询铺满左右；横屏为左侧竖排列，超高时可滚动），内联 max-width 会压过媒体查询
 toolBar.style.cssText = 'position:absolute;bottom:12px;right:12px;z-index:20;display:flex;gap:6px;flex-wrap:wrap';
 toolBar.className = 'toolBar';
 const locStatus = document.createElement('div');
@@ -1656,11 +1667,25 @@ function showStatus(t) {
 
   setTimeout(() => { locStatus.style.display = 'none'; relayoutBelow(); }, 6000);
 }
-function mkBtn(label, fn) {
+// 入口按钮：图标与文字分开成两个 span（极窄屏只隐藏 .ic 保标签完整），尺寸交给 CSS
+function mkBtn(icon, label, fn, href){
   const b = document.createElement('button');
-  b.textContent = label;
-  b.style.cssText = 'background:rgba(25,28,36,.92);color:#e8eaed;border:1px solid rgba(255,255,255,.18);padding:7px 10px;border-radius:8px;cursor:pointer;font-size:12px;box-sizing:border-box';
-  b.onclick = fn;
+  b.type = 'button';
+  b.style.cssText = 'background:rgba(25,28,36,.92);color:#e8eaed;border:1px solid rgba(255,255,255,.18);' +
+    'border-radius:8px;cursor:pointer;box-sizing:border-box';
+  if (icon){
+    const i = document.createElement('span');
+    i.className = 'ic';
+    i.setAttribute('aria-hidden', 'true');
+    i.textContent = icon;
+    b.appendChild(i);
+  }
+  const t = document.createElement('span');
+  t.className = 'tx';
+  t.textContent = label;
+  b.appendChild(t);
+  b.setAttribute('aria-label', label);
+  b.onclick = () => { if (href) location.href = href; else fn(); };
   toolBar.appendChild(b);
   return b;
 }
@@ -1726,11 +1751,12 @@ function setFollowMode(force) {
   followMode = (force === undefined) ? !followMode : !!force;
   return followMode;
 }
-// 普通用户按钮：只保留导览相关入口（手机端两钮并排等宽、高度 ≥44、字号 ≥14，见媒体查询）
+// 普通用户按钮：三个入口（新生手册 / 培养计划 / 入学待办）。竖屏三等宽 ≥44px，横屏左列竖排
 toolBar.setAttribute('role', 'group');
-toolBar.setAttribute('aria-label', '新生手册与培养计划');
-mkBtn('📖 新生手册', () => location.href = 'handbook.html');
-mkBtn('📋 培养计划', () => location.href = 'curriculum.html');
+toolBar.setAttribute('aria-label', '新生手册、培养计划与入学待办');
+mkBtn('📖', '新生手册', null, 'handbook.html');
+mkBtn('📋', '培养计划', null, 'curriculum.html');
+mkBtn('✅', '入学待办', null, 'onboarding.html');
 document.getElementById('app').appendChild(toolBar);
 
 // ---------- 使用说明（可从标题栏重复打开，关闭后地图操作恢复） ----------
@@ -2062,7 +2088,7 @@ if (window.visualViewport) {
 (function(){
   const idle = window.requestIdleCallback || (fn => setTimeout(fn, 1200));
   idle(() => {
-    for (const href of ['handbook.html', 'curriculum.html']) {
+    for (const href of ['handbook.html', 'curriculum.html', 'onboarding.html']) {
       const l = document.createElement('link');
       l.rel = 'prefetch'; l.href = href;
       document.head.appendChild(l);
