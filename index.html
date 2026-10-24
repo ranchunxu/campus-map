@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>上海理工大学基础学院 · 校园导览</title>
 <meta name="description" content="上海理工大学基础学院军工路1100号校区导览：楼栋定位、出入口、步行路径规划与新生手册。">
-<link rel="preload" as="image" href="./data/treefree.webp" fetchpriority="high">
+<!-- 首屏只抢「小预览底图 + 主数据」：38KB 的预览图立刻铺上，265KB 高清底图在它之后补 -->
+<link rel="preload" as="image" href="./data/treefree-preview.webp" type="image/webp" fetchpriority="high">
 <link rel="preload" as="fetch" href="./data/campus.json" crossorigin="anonymous">
 <style>
   /* 安全区与动态视口：--sTop/--sBot 由 JS 依据设备安全区写入，--appH/--appTop 依据 visualViewport 写入 */
@@ -20,7 +21,15 @@
   #mapViewport.dragging{cursor:grabbing;}
   #mapLayer{position:absolute;top:0;left:0;transform-origin:0 0;}
   #mapLayer picture{display:block;}
-  #groundImg{display:block;width:1452px;height:1083px;user-select:none;-webkit-user-drag:none;}
+  #groundImg{display:block;width:1452px;height:1083px;user-select:none;-webkit-user-drag:none;
+    opacity:0;transition:opacity .2s linear;}
+  /* 首屏先铺 38KB 的预览底图（拉伸到同一 1452×1083 盒子，标记位置完全一致），
+     约 265KB 的高清底图解码完成后淡入盖住它；高清失败就一直用预览图，画面不空白 */
+  #groundPreview{position:absolute;left:0;top:0;z-index:0;display:block;width:1452px;height:1083px;
+    user-select:none;-webkit-user-drag:none;pointer-events:none;}
+  #mapLayer picture{position:relative;z-index:1;}
+  #mapLayer.hi #groundImg{opacity:1;}
+  @media (prefers-reduced-motion:reduce){#groundImg{transition:none;}}
   #overlay{position:absolute;inset:0;z-index:2;pointer-events:none;}
   /* 标记外层只做像素定位（固定 28px 透明触控区），不随地图 scale 变形 */
   .marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;z-index:3;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
@@ -237,7 +246,7 @@
 <body>
 <div id="app">
   <div id="mapViewport">
-      <div id="mapLayer"><picture><source srcset="./data/treefree.webp" type="image/webp"><img id="groundImg" src="./data/treefree.png" alt="校区平面图" fetchpriority="high" decoding="async"></picture></div>
+      <div id="mapLayer"><img id="groundPreview" src="./data/treefree-preview.webp" alt="" aria-hidden="true" decoding="async"><picture><source srcset="./data/treefree.webp" type="image/webp"><img id="groundImg" src="./data/treefree.png" alt="校区平面图" fetchpriority="high" decoding="async"></picture></div>
       <svg id="routeSvg"></svg>
       <div id="overlay"></div>
       <div id="meMarkerEl" style="display:none"><div class="dot"></div></div>
@@ -302,18 +311,17 @@
 </div>
 <script type="module">
 // ---------- 数据 ----------
-// 底图 265KB 走 <picture> 先渲染，JSON 三件并行拉；全部就位再初始化交互
-const [resp, phmResp, roadNetResp] = await Promise.all([
-  fetch('./data/campus.json'),
-  fetch('./data/place_handbook_map.json'),
-  fetch('./data/road_network.json'),
+// 底图先出预览图（内部尺寸 = 原图 42%，JS 用 IMG_W 等内部尺寸摆放），高清图后到；
+// JSON 全部并行拉（照片清单失败也不影响主图初始化）
+const PREVIEW_W = 610;   // treefree-preview.webp 的内部尺寸，高清图到位时从 610 放大到 1452
+const jsonFetch = (u, fb) => fetch(u).then(r => r.ok ? r.json() : fb).catch(() => fb);
+const [_resp, phm, roadNet, placePhotos] = await Promise.all([
+  jsonFetch('./data/campus.json', null),
+  jsonFetch('./data/place_handbook_map.json', {place_to_handbook: {}}),
+  jsonFetch('./data/road_network.json', {polylines: [], style: {}}),
+  jsonFetch('./data/place_photos.json', {}),
 ]);
-// 照片清单：只含文件名与尺寸，不含图片本体；缩略图随详情按需加载
-let placePhotos = {};
-try { placePhotos = await (await fetch('./data/place_photos.json')).json(); } catch (e) { placePhotos = {}; }
-const data = await resp.json();
-const phm = await phmResp.json();
-const roadNet = await roadNetResp.json();
+const data = _resp;
 const meta = data.meta;
 const HIDDEN = new Set(['b03','b14','c01','c02','c03']);
 const feats = data.features.filter(f => f.kind === 'road' || !HIDDEN.has(f.id));
@@ -472,6 +480,8 @@ function drawStyledPath(parent, pts, r) {
 let scale = 0.5;                 // 内容坐标 → 视口像素的比例
 let minScale = 0.2;              // 缩放下限 = 适应全图（fitMap 时按可见区域重算）
 const MAX_SCALE_FACTOR = 4;      // 缩放上限 ≈ 适应状态的 4 倍
+// 底图「内容坐标系」尺寸。标记、路网、居中都按它换算，与图片实际像素无关：
+// 预览图（610×455）和高清图（1452×1083）都经 CSS 拉伸到同一 1452×1083 盒子里，位置完全一致。
 const IMG_W = 1452, IMG_H = 1083;
 let offsetX = 0, offsetY = 0;    // 内容坐标原点在视口内的像素位置
 let _fitSnap = null;             // 「适应地图」快照：只恢复视图，不动起终点与路线
@@ -722,6 +732,7 @@ function updateTransform() {
   routeSvg.setAttribute('width', IMG_W);
   routeSvg.setAttribute('height', IMG_H);
   routeSvg.style.transform = 'translate(' + offsetX + 'px,' + offsetY + 'px) scale(' + scale + ')';
+
   if (mePx) {
     meMarkerEl.style.left = (mePx[0] * scale + offsetX) + 'px';
     meMarkerEl.style.top = (mePx[1] * scale + offsetY) + 'px';
@@ -884,7 +895,18 @@ function handleMapClick(e) {
   }
 }
 
-// ---------- 地点标记 ----------
+// 高清底图接管：标记在内容坐标里是固定的，先按预览尺寸把视口缩放比算好（标记/路线立刻可用），
+// 高清图解码完再切换视口状态并淡入，位置不变、只变清晰度。
+function useHiGround() {
+  const g = document.getElementById('groundImg');
+  const swap = () => { mapLayer.classList.add('hi'); };   // 只切清晰度，不改任何尺寸/坐标，无需重排
+  if (g.complete && g.naturalWidth > 0) { swap(); return; }
+  const done = () => { g.removeEventListener('load', done); g.removeEventListener('error', done); swap(); };
+  g.addEventListener('load', done);
+  g.addEventListener('error', done);   // 高清图挂了就继续用预览图，位置按 1452 口径算也不影响
+}
+useHiGround();
+
 const markerList = [];
 for (const f of feats) {
   const px = featPx(f);
@@ -1689,8 +1711,12 @@ function mkBtn(icon, label, fn, href){
   toolBar.appendChild(b);
   return b;
 }
-// 路网核对预览：按 style 画出全部 29 条折线（默认隐藏）
+// 路网核对预览：按 style 画出全部 29 条折线（默认隐藏）。
+// 29 条线 58 个 SVG 节点只在 ?debug=1 时才用得上，首屏推迟到空闲期再画，不占启动帧。
+let netPreviewBuilt = false;
 function buildNetworkPreview() {
+  if (netPreviewBuilt) return;
+  netPreviewBuilt = true;
   const st = roadNet.style || {};
   const group = document.createElementNS(SVGNS, 'g');
   group.setAttribute('opacity', '0.9');
@@ -1712,12 +1738,17 @@ function buildNetworkPreview() {
   }
   netLayer.appendChild(group);
 }
-buildNetworkPreview();
+// 首屏不画：空闲时补上（调试入口打开时若还没画，toggleNetwork 会立刻补画）
+(function scheduleNetPreview() {
+  const idle = window.requestIdleCallback || (fn => setTimeout(fn, 800));
+  idle(() => buildNetworkPreview(), { timeout: 4000 });
+})();
 // 路网预览 / 模拟定位 / 跟随：仅保留为开发调试入口，不再放普通用户按钮。
 // 入口：URL 加 ?debug=1（或 #debug）；控制台可用 window.__nav.debug.*
 let netShown = false;
 function toggleNetwork(force) {
   netShown = (force === undefined) ? !netShown : !!force;
+  if (netShown) buildNetworkPreview();   // 空闲任务还没轮到就先补画，调试入口不受影响
   netLayer.style.display = netShown ? 'block' : 'none';
   showStatus(netShown ? '已显示全部路网（核对预览）：' + roadPolys.length + ' 条折线' : '已隐藏路网预览');
   updateTransform();
